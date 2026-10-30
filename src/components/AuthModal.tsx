@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: "#0b0f19",
+    backgroundColor: "#0c1324",
     borderWidth: 1,
     borderColor: "#232d4b",
     borderRadius: 10,

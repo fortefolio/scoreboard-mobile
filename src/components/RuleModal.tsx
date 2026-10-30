@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
-    backgroundColor: "#0b0f19",
+    backgroundColor: "#0c1324",
     borderWidth: 1,
     borderColor: "#232d4b",
     borderRadius: 10,
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   },
   pill: {
     flex: 1,
-    backgroundColor: "#0b0f19",
+    backgroundColor: "#0c1324",
     borderWidth: 1,
     borderColor: "#232d4b",
     paddingVertical: 10,

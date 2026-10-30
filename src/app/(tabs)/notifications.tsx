@@ -191,7 +191,7 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0b0f19",
+    backgroundColor: "#0c1324",
   },
   header: {
     flexDirection: "row",
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#0b0f19",
+    backgroundColor: "#0c1324",
     alignItems: "center",
     justifyContent: "center",
   },

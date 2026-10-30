@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getLocales } from "expo-localization";
+import { Platform } from "react-native";
 import { Locale, Translations } from "./types";
 import { en } from "./locales/en";
 import { pt } from "./locales/pt";
@@ -33,6 +34,32 @@ function getNestedValue(obj: any, path: string): string | undefined {
   return typeof current === "string" ? current : undefined;
 }
 
+async function getStoredLocale(): Promise<string | null> {
+  try {
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+      const val = window.localStorage.getItem(STORAGE_KEY);
+      if (val) return val;
+    }
+    return await AsyncStorage.getItem(STORAGE_KEY);
+  } catch (e) {
+    return null;
+  }
+}
+
+async function setStoredLocale(loc: string): Promise<void> {
+  try {
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.setItem(STORAGE_KEY, loc);
+      if (typeof document !== "undefined" && document.documentElement) {
+        document.documentElement.lang = loc;
+      }
+    }
+    await AsyncStorage.setItem(STORAGE_KEY, loc);
+  } catch (e) {
+    console.warn("Failed to persist preferred language:", e);
+  }
+}
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("en");
   const [isReady, setIsReady] = useState(false);
@@ -40,9 +67,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function loadSavedLocale() {
       try {
-        const saved = await AsyncStorage.getItem(STORAGE_KEY);
+        const saved = await getStoredLocale();
         if (saved && (saved === "en" || saved === "pt")) {
-          setLocaleState(saved);
+          setLocaleState(saved as Locale);
         } else {
           // Detect device locale
           const deviceLocales = getLocales();
@@ -62,12 +89,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setLocale = async (newLocale: Locale) => {
-    try {
-      setLocaleState(newLocale);
-      await AsyncStorage.setItem(STORAGE_KEY, newLocale);
-    } catch (e) {
-      console.warn("Failed to persist preferred language:", e);
-    }
+    setLocaleState(newLocale);
+    await setStoredLocale(newLocale);
   };
 
   const currentDict = dictionaries[locale] || en;

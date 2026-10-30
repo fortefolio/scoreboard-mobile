@@ -298,7 +298,7 @@ export default function TournamentDetailScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0b0f19",
+    backgroundColor: "#0c1324",
   },
   centered: {
     flex: 1,
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabBtnActive: {
-    backgroundColor: "#0b0f19",
+    backgroundColor: "#0c1324",
     borderWidth: 1,
     borderColor: "#4f46e5",
   },

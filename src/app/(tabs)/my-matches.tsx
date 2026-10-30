@@ -102,7 +102,7 @@ export default function MyMatchesScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0b0f19",
+    backgroundColor: "#0c1324",
   },
   header: {
     paddingHorizontal: 16,

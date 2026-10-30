@@ -5,21 +5,23 @@ import { Ionicons } from "@expo/vector-icons";
 import { TopBar } from "@/components/TopBar";
 import { AuthModal } from "@/components/AuthModal";
 import { useAuth } from "@/components/AuthProvider";
-import { useLanguage } from "@/lib/i18n";
-import { Colors, Spacing } from "@/constants/theme";
+import { useTranslation } from "@/lib/i18n";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 export default function ProfileScreen() {
-  const { t, locale, setLocale } = useLanguage();
+  const { t, locale, setLocale } = useTranslation();
   const { user, signOut } = useAuth();
   const [authModalVisible, setAuthModalVisible] = useState(false);
 
   const handleSignOut = () => {
     Alert.alert(
-      t("nav.signOut") || "Terminar Sessão",
-      "Tem a certeza de que pretende sair da sua conta?",
+      t("nav.signOut"),
+      locale === "pt"
+        ? "Tem a certeza de que pretende sair da sua conta?"
+        : "Are you sure you want to sign out?",
       [
-        { text: t("common.cancel") || "Cancelar", style: "cancel" },
-        { text: t("nav.signOut") || "Sair", style: "destructive", onPress: () => signOut() },
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("nav.signOut"), style: "destructive", onPress: () => signOut() },
       ]
     );
   };
@@ -39,10 +41,12 @@ export default function ProfileScreen() {
 
           <View style={styles.userInfo}>
             <Text style={styles.userEmail} numberOfLines={1}>
-              {user ? user.email : "Utilizador Convidado"}
+              {user ? user.email : locale === "pt" ? "Utilizador Convidado" : "Guest User"}
             </Text>
             <Text style={styles.userRole}>
-              {user ? "Conta ScoreBoard Ativa" : "Modo Visitante"}
+              {user
+                ? locale === "pt" ? "Conta ScoreBoard Ativa" : "Active ScoreBoard Account"
+                : locale === "pt" ? "Modo Visitante" : "Guest Mode"}
             </Text>
           </View>
 
@@ -51,13 +55,15 @@ export default function ProfileScreen() {
               style={styles.loginCardBtn}
               onPress={() => setAuthModalVisible(true)}
             >
-              <Text style={styles.loginCardBtnText}>{t("nav.signIn") || "Entrar"}</Text>
+              <Text style={styles.loginCardBtnText}>{t("nav.signIn")}</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {/* Section: Idioma / Language */}
-        <Text style={styles.sectionHeader}>Idioma & Região</Text>
+        <Text style={styles.sectionHeader}>
+          {locale === "pt" ? "Idioma & Região" : "Language & Region"}
+        </Text>
         <View style={styles.sectionCard}>
           <TouchableOpacity
             style={[styles.rowItem, locale === "pt" && styles.rowItemActive]}
@@ -85,12 +91,16 @@ export default function ProfileScreen() {
         </View>
 
         {/* Section: Sistema & Aplicação */}
-        <Text style={styles.sectionHeader}>Aplicação & Sistema</Text>
+        <Text style={styles.sectionHeader}>
+          {locale === "pt" ? "Aplicação & Sistema" : "Application & System"}
+        </Text>
         <View style={styles.sectionCard}>
           <View style={styles.rowItem}>
             <View style={styles.rowLeft}>
               <Ionicons name="moon-outline" size={20} color="#94a3b8" />
-              <Text style={styles.rowLabel}>Tema Noturno</Text>
+              <Text style={styles.rowLabel}>
+                {locale === "pt" ? "Tema" : "Theme"}
+              </Text>
             </View>
             <Text style={styles.rowValue}>ScoreBoard Dark</Text>
           </View>
@@ -100,17 +110,19 @@ export default function ProfileScreen() {
           <View style={styles.rowItem}>
             <View style={styles.rowLeft}>
               <Ionicons name="information-circle-outline" size={20} color="#94a3b8" />
-              <Text style={styles.rowLabel}>Versão</Text>
+              <Text style={styles.rowLabel}>
+                {locale === "pt" ? "Versão" : "Version"}
+              </Text>
             </View>
-            <Text style={styles.rowValue}>1.0.0 (Phase 2)</Text>
+            <Text style={styles.rowValue}>1.0.0 (Expo SDK 58)</Text>
           </View>
         </View>
 
         {/* Section: Terminar Sessão */}
         {user && (
           <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
-            <Ionicons name="log-out-outline" size={20} color="#ef4444" />
-            <Text style={styles.signOutText}>{t("nav.signOut") || "Terminar Sessão"}</Text>
+            <Ionicons name="log-out-outline" size={20} color="#ffb4ab" />
+            <Text style={styles.signOutText}>{t("nav.signOut")}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -123,7 +135,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0b0f19",
+    backgroundColor: ScoreBoardTheme.background,
   },
   content: {
     padding: 16,
@@ -132,10 +144,10 @@ const styles = StyleSheet.create({
   userCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
     borderWidth: 1,
-    borderColor: "#232d4b",
-    borderRadius: 16,
+    borderColor: ScoreBoardTheme.borderGhost,
+    borderRadius: 20,
     padding: 16,
     marginBottom: 24,
   },
@@ -143,7 +155,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.primaryContainer,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -157,41 +169,41 @@ const styles = StyleSheet.create({
     marginLeft: 14,
   },
   userEmail: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
   },
   userRole: {
     fontSize: 12,
-    color: "#94a3b8",
+    color: "rgba(220, 225, 251, 0.55)",
     marginTop: 3,
   },
   loginCardBtn: {
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.primaryContainer,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   loginCardBtnText: {
     color: "#ffffff",
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "800",
     textTransform: "uppercase",
   },
   sectionHeader: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#64748b",
+    fontSize: 11,
+    fontWeight: "800",
+    color: "rgba(220, 225, 251, 0.5)",
     textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 8,
     marginLeft: 4,
   },
   sectionCard: {
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
     borderWidth: 1,
-    borderColor: "#232d4b",
-    borderRadius: 16,
+    borderColor: ScoreBoardTheme.borderGhost,
+    borderRadius: 18,
     marginBottom: 24,
     overflow: "hidden",
   },
@@ -203,7 +215,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   rowItemActive: {
-    backgroundColor: "rgba(79, 70, 229, 0.08)",
+    backgroundColor: "rgba(78, 222, 163, 0.08)",
   },
   rowLeft: {
     flexDirection: "row",
@@ -211,37 +223,38 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emoji: {
-    fontSize: 20,
+    fontSize: 18,
   },
   rowLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
   },
   rowValue: {
     fontSize: 13,
-    color: "#94a3b8",
+    color: "rgba(220, 225, 251, 0.6)",
+    fontWeight: "500",
   },
   rowDivider: {
     height: 1,
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.borderGhost,
     marginHorizontal: 16,
   },
   signOutBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(239, 68, 68, 0.12)",
+    gap: 8,
+    backgroundColor: "rgba(147, 0, 10, 0.2)",
     borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.3)",
+    borderColor: "rgba(255, 180, 171, 0.2)",
     paddingVertical: 14,
     borderRadius: 14,
-    gap: 8,
     marginTop: 8,
   },
   signOutText: {
-    color: "#ef4444",
-    fontSize: 15,
-    fontWeight: "700",
+    color: "#ffb4ab",
+    fontSize: 14,
+    fontWeight: "800",
   },
 });
