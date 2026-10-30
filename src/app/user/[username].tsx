@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { MatchCard } from "@/components/MatchCard";
 import { TournamentCard } from "@/components/TournamentCard";
+import { TopBar } from "@/components/TopBar";
 import { useLanguage } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
 
@@ -103,6 +104,9 @@ export default function PublicUserProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      {/* Main Global TopBar */}
+      <TopBar />
+
       {/* Top Bar */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
