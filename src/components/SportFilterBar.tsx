@@ -1,21 +1,23 @@
 import React from "react";
 import { ScrollView, TouchableOpacity, Text, StyleSheet } from "react-native";
-import { useLanguage } from "@/lib/i18n";
+import { useTranslation, getSportTranslation } from "@/lib/i18n";
+import { SportIcon } from "@/components/SportIcon";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 export interface SportOption {
   key: string;
   labelKey: string;
-  icon: string;
+  sportType?: string;
 }
 
 const SPORTS: SportOption[] = [
-  { key: "all", labelKey: "sports.all", icon: "🏆" },
-  { key: "Basketball", labelKey: "sports.basketball", icon: "🏀" },
-  { key: "Volleyball", labelKey: "sports.volleyball", icon: "🏐" },
-  { key: "Beach Volleyball", labelKey: "sports.beachVolleyball", icon: "🏖️" },
-  { key: "Football", labelKey: "sports.football", icon: "⚽" },
-  { key: "Tennis", labelKey: "sports.tennis", icon: "🎾" },
-  { key: "Padel", labelKey: "sports.padel", icon: "🎾" },
+  { key: "all", labelKey: "sports.all" },
+  { key: "Tennis", labelKey: "sports.tennis", sportType: "Tennis" },
+  { key: "Padel", labelKey: "sports.padel", sportType: "Padel" },
+  { key: "Volleyball", labelKey: "sports.volleyball", sportType: "Volleyball" },
+  { key: "Beach Volleyball", labelKey: "sports.beachVolleyball", sportType: "Beach Volleyball" },
+  { key: "Football", labelKey: "sports.football", sportType: "Football" },
+  { key: "Basketball", labelKey: "sports.basketball", sportType: "Basketball" },
 ];
 
 interface SportFilterBarProps {
@@ -24,7 +26,7 @@ interface SportFilterBarProps {
 }
 
 export function SportFilterBar({ selectedSport, onSelectSport }: SportFilterBarProps) {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   return (
     <ScrollView
@@ -34,15 +36,21 @@ export function SportFilterBar({ selectedSport, onSelectSport }: SportFilterBarP
       style={styles.container}
     >
       {SPORTS.map((s) => {
-        const isSelected = selectedSport === s.key;
+        const isSelected = selectedSport.toLowerCase() === s.key.toLowerCase();
         return (
           <TouchableOpacity
             key={s.key}
             style={[styles.pill, isSelected && styles.pillActive]}
             onPress={() => onSelectSport(s.key)}
-            activeOpacity={0.7}
+            activeOpacity={0.75}
           >
-            <Text style={styles.pillIcon}>{s.icon}</Text>
+            {s.sportType ? (
+              <SportIcon
+                sport={s.sportType}
+                size={14}
+                color={isSelected ? "#ffffff" : "rgba(195, 192, 255, 0.7)"}
+              />
+            ) : null}
             <Text style={[styles.pillText, isSelected && styles.pillTextActive]}>
               {t(s.labelKey) || s.key}
             </Text>
@@ -55,40 +63,36 @@ export function SportFilterBar({ selectedSport, onSelectSport }: SportFilterBarP
 
 const styles = StyleSheet.create({
   container: {
-    maxHeight: 52,
-    marginVertical: 4,
+    maxHeight: 46,
+    marginVertical: 6,
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingVertical: 6,
     gap: 8,
     alignItems: "center",
   },
   pill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#151b2d",
-    borderWidth: 1,
-    borderColor: "#232d4b",
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
     gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderGhost,
   },
   pillActive: {
-    backgroundColor: "#4f46e5",
-    borderColor: "#6366f1",
-  },
-  pillIcon: {
-    fontSize: 14,
+    backgroundColor: ScoreBoardTheme.primaryContainer,
+    borderColor: "rgba(195, 192, 255, 0.4)",
   },
   pillText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#94a3b8",
+    fontSize: 12,
+    fontWeight: "700",
+    color: "rgba(220, 225, 251, 0.65)",
   },
   pillTextActive: {
     color: "#ffffff",
-    fontWeight: "700",
+    fontWeight: "800",
   },
 });

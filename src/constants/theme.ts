@@ -7,6 +7,33 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+export const ScoreBoardTheme = {
+  background: '#0c1324',
+  surface: '#0c1324',
+  surfaceDim: '#0c1324',
+  surfaceContainerLowest: '#070d1f',
+  surfaceContainerLow: '#151b2d',
+  surfaceContainer: '#191f31',
+  surfaceContainerHigh: '#23293c',
+  surfaceContainerHighest: '#2e3447',
+  onSurface: '#dce1fb',
+  onSurfaceVariant: '#94a3b8',
+  primary: '#c3c0ff',
+  primaryContainer: '#4f46e5',
+  onPrimary: '#1d00a5',
+  onPrimaryContainer: '#dad7ff',
+  secondary: '#4edea3',
+  secondaryContainer: '#00a572',
+  tertiary: '#ffb690',
+  tertiaryContainer: '#a04500',
+  error: '#ffb4ab',
+  errorContainer: '#93000a',
+  borderGhost: 'rgba(255, 255, 255, 0.05)',
+  borderSubtle: 'rgba(255, 255, 255, 0.10)',
+  borderAccent: 'rgba(79, 70, 229, 0.30)',
+  gold: '#fbbf24',
+} as const;
+
 export const Colors = {
   light: {
     text: '#0f172a',
@@ -23,14 +50,14 @@ export const Colors = {
     danger: '#ef4444',
   },
   dark: {
-    text: '#f8fafc',
-    background: '#0b0f19',
+    text: '#dce1fb',
+    background: '#0c1324',
     backgroundElement: '#151b2d',
-    backgroundSelected: '#1a2035',
+    backgroundSelected: '#191f31',
     textSecondary: '#94a3b8',
     surface: '#151b2d',
-    surfaceElevated: '#1a2035',
-    border: '#232d4b',
+    surfaceElevated: '#23293c',
+    border: 'rgba(255, 255, 255, 0.05)',
     primary: '#4f46e5',
     success: '#4edea3',
     warning: '#f59e0b',

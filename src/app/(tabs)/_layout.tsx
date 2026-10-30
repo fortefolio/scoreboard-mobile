@@ -3,11 +3,12 @@ import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Platform } from "react-native";
 import { useAuth } from "@/components/AuthProvider";
-import { useLanguage } from "@/lib/i18n";
+import { useTranslation } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 export default function TabLayout() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
 
@@ -53,19 +54,20 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#4edea3",
-        tabBarInactiveTintColor: "#64748b",
+        tabBarActiveTintColor: ScoreBoardTheme.secondary,
+        tabBarInactiveTintColor: "rgba(220, 225, 251, 0.4)",
         tabBarStyle: {
-          backgroundColor: "#0d1322",
-          borderTopColor: "#1e293b",
+          backgroundColor: ScoreBoardTheme.background,
+          borderTopColor: ScoreBoardTheme.borderGhost,
           borderTopWidth: 1,
           height: Platform.OS === "ios" ? 84 : 64,
           paddingTop: 8,
           paddingBottom: Platform.OS === "ios" ? 28 : 8,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "600",
+          fontSize: 10,
+          fontWeight: "700",
+          letterSpacing: 0.3,
         },
       }}
     >

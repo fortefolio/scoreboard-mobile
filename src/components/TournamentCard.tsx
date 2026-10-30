@@ -2,9 +2,10 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useLanguage } from "@/lib/i18n";
-import { useFollow } from "@/lib/hooks/useFollow";
-import { Colors } from "@/constants/theme";
+import { useTranslation, getSportTranslation } from "@/lib/i18n";
+import { SportIcon } from "@/components/SportIcon";
+import { FollowButton } from "@/components/FollowButton";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 export interface TournamentCardProps {
   tournament: {
@@ -12,18 +13,18 @@ export interface TournamentCardProps {
     name: string;
     sport_type: string;
     status: string;
+    format?: string | null;
     start_date?: string | null;
     end_date?: string | null;
     created_at?: string;
   };
+  onAuthRequired?: () => void;
 }
 
-export function TournamentCard({ tournament }: TournamentCardProps) {
-  const { t } = useLanguage();
+export function TournamentCard({ tournament, onAuthRequired }: TournamentCardProps) {
+  const { t } = useTranslation();
   const router = useRouter();
-  const { isFollowing, toggleFollow } = useFollow();
 
-  const following = isFollowing(tournament.id, "tournament");
   const isLive = tournament.status === "ongoing";
 
   const formatDate = (dateStr?: string | null) => {
@@ -38,7 +39,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
 
   const startDate = formatDate(tournament.start_date);
   const endDate = formatDate(tournament.end_date);
-  const dateDisplay = startDate && endDate ? `${startDate} - ${endDate}` : startDate || "Em breve";
+  const dateDisplay = startDate && endDate ? `${startDate} - ${endDate}` : startDate || t("tournaments.upcoming");
 
   return (
     <TouchableOpacity
@@ -46,56 +47,63 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
       onPress={() => router.push(`/tournament/${tournament.id}` as any)}
       activeOpacity={0.85}
     >
-      {/* Top Meta Header */}
-      <View style={styles.topMeta}>
-        <View style={styles.sportBadge}>
-          <Text style={styles.sportText}>{tournament.sport_type}</Text>
+      {/* Top Header */}
+      <View style={styles.header}>
+        <View style={styles.sportHeaderLeft}>
+          <SportIcon sport={tournament.sport_type} size={15} color="#c3c0ff" />
+          <Text style={styles.sportTag} numberOfLines={1}>
+            {getSportTranslation(tournament.sport_type, t)}
+          </Text>
         </View>
 
-        <View style={styles.rightMeta}>
+        <View style={styles.headerRight}>
           {isLive ? (
-            <View style={styles.liveBadge}>
+            <View style={styles.livePill}>
               <View style={styles.liveDot} />
-              <Text style={styles.liveText}>{t("status.live") || "A DECORRER"}</Text>
+              <Text style={styles.livePillText}>{t("status.live")}</Text>
             </View>
           ) : (
-            <Text style={styles.statusLabel}>
+            <Text style={styles.statusMutedText}>
               {tournament.status === "completed"
-                ? t("status.completed") || "TERMINADO"
-                : t("status.scheduled") || "AGENDADO"}
+                ? t("status.final")
+                : tournament.status === "scheduled" || tournament.status === "pending"
+                ? t("status.scheduled")
+                : tournament.status}
             </Text>
           )}
 
-          {/* Follow Toggle */}
-          <TouchableOpacity
-            style={styles.followBtn}
-            onPress={() => toggleFollow(tournament.id, "tournament")}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons
-              name={following ? "heart" : "heart-outline"}
-              size={18}
-              color={following ? "#ef4444" : "#64748b"}
-            />
-          </TouchableOpacity>
+          <FollowButton
+            entityId={tournament.id}
+            entityType="tournament"
+            size={16}
+            onAuthRequired={onAuthRequired}
+          />
         </View>
       </View>
 
-      {/* Title */}
-      <Text style={styles.title} numberOfLines={2}>
-        {tournament.name}
-      </Text>
+      {/* Main Tournament Name */}
+      <View style={styles.body}>
+        <Text style={styles.tournamentName} numberOfLines={2}>
+          {tournament.name}
+        </Text>
+
+        {/* Format / Type Pill */}
+        {tournament.format && (
+          <View style={styles.formatPill}>
+            <Text style={styles.formatText}>{tournament.format}</Text>
+          </View>
+        )}
+      </View>
 
       {/* Footer Info */}
-      <View style={styles.footerRow}>
-        <View style={styles.infoItem}>
-          <Ionicons name="calendar-outline" size={14} color="#64748b" />
-          <Text style={styles.infoText}>{dateDisplay}</Text>
+      <View style={styles.footer}>
+        <View style={styles.footerMeta}>
+          <Ionicons name="calendar-outline" size={13} color="rgba(220, 225, 251, 0.45)" />
+          <Text style={styles.dateText}>{dateDisplay}</Text>
         </View>
 
-        <View style={styles.infoItem}>
-          <Ionicons name="trophy-outline" size={14} color="#64748b" />
-          <Text style={styles.infoText}>Torneio Oficial</Text>
+        <View style={styles.arrowCircle}>
+          <Ionicons name="chevron-forward" size={14} color="#c3c0ff" />
         </View>
       </View>
     </TouchableOpacity>
@@ -104,89 +112,127 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#232d4b",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
+    borderColor: ScoreBoardTheme.borderGhost,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  topMeta: {
+  header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 12,
+    gap: 8,
   },
-  sportBadge: {
-    backgroundColor: "rgba(79, 70, 229, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(79, 70, 229, 0.3)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+  sportHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    flex: 1,
+    minWidth: 0,
   },
-  sportText: {
+  sportTag: {
     fontSize: 10,
-    fontWeight: "700",
-    color: "#a5b4fc",
+    fontWeight: "900",
     textTransform: "uppercase",
+    letterSpacing: 1.2,
+    color: "rgba(195, 192, 255, 0.75)",
   },
-  rightMeta: {
+  headerRight: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  liveBadge: {
+  livePill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(78, 222, 163, 0.15)",
-    paddingHorizontal: 7,
+    gap: 5,
+    backgroundColor: "rgba(79, 70, 229, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(79, 70, 229, 0.35)",
+    paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
-    gap: 4,
+    borderRadius: 9999,
   },
   liveDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#4edea3",
+    backgroundColor: ScoreBoardTheme.secondary,
   },
-  liveText: {
+  livePillText: {
+    fontSize: 10,
+    fontWeight: "900",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    color: ScoreBoardTheme.primary,
+  },
+  statusMutedText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#4edea3",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    color: "rgba(220, 225, 251, 0.45)",
   },
-  statusLabel: {
+  body: {
+    marginVertical: 4,
+    gap: 8,
+  },
+  tournamentName: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: ScoreBoardTheme.onSurface,
+    lineHeight: 22,
+    letterSpacing: -0.3,
+  },
+  formatPill: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
+  formatText: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#64748b",
     textTransform: "uppercase",
+    letterSpacing: 0.6,
+    color: "rgba(220, 225, 251, 0.65)",
   },
-  followBtn: {
-    padding: 2,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#f8fafc",
-    lineHeight: 22,
-    marginBottom: 12,
-  },
-  footerRow: {
+  footer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#1e293b",
+    justifyContent: "space-between",
+    marginTop: 12,
     paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255, 255, 255, 0.04)",
   },
-  infoItem: {
+  footerMeta: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 6,
   },
-  infoText: {
-    fontSize: 12,
-    color: "#94a3b8",
+  dateText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "rgba(220, 225, 251, 0.6)",
+  },
+  arrowCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(79, 70, 229, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

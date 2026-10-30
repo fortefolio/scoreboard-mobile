@@ -3,17 +3,17 @@ import { View, Text, TouchableOpacity, StyleSheet, Modal } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "./AuthProvider";
-import { useLanguage, Locale } from "@/lib/i18n";
+import { useTranslation, Locale } from "@/lib/i18n";
 import { AuthModal } from "./AuthModal";
 import { supabase } from "@/lib/supabase/client";
-import { Colors, Spacing } from "@/constants/theme";
+import { ScoreBoardTheme, Spacing } from "@/constants/theme";
 
 interface TopBarProps {
   onSearchPress?: () => void;
 }
 
 export function TopBar({ onSearchPress }: TopBarProps) {
-  const { locale, setLocale, t } = useLanguage();
+  const { locale, setLocale, t } = useTranslation();
   const { user, signOut } = useAuth();
   const router = useRouter();
 
@@ -30,17 +30,20 @@ export function TopBar({ onSearchPress }: TopBarProps) {
     }
 
     const fetchUnread = async () => {
-      const { count } = await supabase
-        .from("notifications")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .is("read_at", null);
-      setUnreadCount(count || 0);
+      try {
+        const { count } = await supabase
+          .from("notifications")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .is("read_at", null);
+        setUnreadCount(count || 0);
+      } catch (e) {
+        // Silently fail if table or network is unavailable
+      }
     };
 
     fetchUnread();
 
-    // Realtime listener for incoming notifications
     const channel = supabase
       .channel("user-notifications-count")
       .on(
@@ -78,7 +81,7 @@ export function TopBar({ onSearchPress }: TopBarProps) {
         <View style={styles.actionsRow}>
           {/* Language Selector Button */}
           <TouchableOpacity
-            style={styles.actionBtn}
+            style={styles.langBtn}
             onPress={() => setLangModalVisible(true)}
             activeOpacity={0.7}
           >
@@ -86,26 +89,24 @@ export function TopBar({ onSearchPress }: TopBarProps) {
           </TouchableOpacity>
 
           {/* Notifications Bell */}
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={() => {
-              if (user) {
-                router.push("/(tabs)/notifications");
-              } else {
-                setAuthModalVisible(true);
-              }
-            }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="notifications-outline" size={20} color="#cbd5e1" />
-            {unreadCount > 0 && (
-              <View style={styles.badgeDot}>
-                <Text style={styles.badgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          {user && (
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => router.push("/(tabs)/notifications")}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="notifications-outline" size={19} color="#dce1fb" />
+              {unreadCount > 0 && (
+                <View style={styles.badgeCircle}>
+                  <Text style={styles.badgeText}>
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
 
-          {/* User Status / Avatar */}
+          {/* User Avatar or Sign In Button */}
           {user ? (
             <TouchableOpacity
               style={styles.avatarBtn}
@@ -124,7 +125,7 @@ export function TopBar({ onSearchPress }: TopBarProps) {
               onPress={() => setAuthModalVisible(true)}
               activeOpacity={0.8}
             >
-              <Text style={styles.signInBtnText}>{t("nav.signIn") || "Entrar"}</Text>
+              <Text style={styles.signInBtnText}>{t("nav.signIn") || "Sign In"}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -143,7 +144,9 @@ export function TopBar({ onSearchPress }: TopBarProps) {
           onPress={() => setLangModalVisible(false)}
         >
           <View style={styles.langModalCard}>
-            <Text style={styles.modalTitle}>Escolher Idioma / Language</Text>
+            <Text style={styles.modalTitle}>
+              {locale === "pt" ? "Escolher Idioma" : "Select Language"}
+            </Text>
             <TouchableOpacity
               style={[styles.langOption, locale === "pt" && styles.langOptionActive]}
               onPress={async () => {
@@ -153,7 +156,7 @@ export function TopBar({ onSearchPress }: TopBarProps) {
             >
               <Text style={styles.langOptionEmoji}>🇵🇹</Text>
               <Text style={styles.langOptionLabel}>Português</Text>
-              {locale === "pt" && <Ionicons name="checkmark-sharp" size={20} color="#4edea3" />}
+              {locale === "pt" && <Ionicons name="checkmark-sharp" size={18} color="#4edea3" />}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -165,7 +168,7 @@ export function TopBar({ onSearchPress }: TopBarProps) {
             >
               <Text style={styles.langOptionEmoji}>🇬🇧</Text>
               <Text style={styles.langOptionLabel}>English</Text>
-              {locale === "en" && <Ionicons name="checkmark-sharp" size={20} color="#4edea3" />}
+              {locale === "en" && <Ionicons name="checkmark-sharp" size={18} color="#4edea3" />}
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -185,17 +188,10 @@ export function TopBar({ onSearchPress }: TopBarProps) {
         >
           <View style={styles.userMenuCard}>
             <View style={styles.userMenuHeader}>
-              <View style={styles.avatarCircleLarge}>
-                <Text style={styles.avatarInitialLarge}>
-                  {(user?.email?.[0] || "U").toUpperCase()}
-                </Text>
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.userMenuEmail} numberOfLines={1}>
-                  {user?.email}
-                </Text>
-                <Text style={styles.userMenuRole}>Membro ScoreBoard</Text>
-              </View>
+              <Text style={styles.userMenuLabel}>{t("nav.signedInAs")}</Text>
+              <Text style={styles.userMenuEmail} numberOfLines={1}>
+                {user?.email}
+              </Text>
             </View>
 
             <View style={styles.menuDivider} />
@@ -207,8 +203,8 @@ export function TopBar({ onSearchPress }: TopBarProps) {
                 router.push("/(tabs)/profile");
               }}
             >
-              <Ionicons name="person-outline" size={18} color="#cbd5e1" />
-              <Text style={styles.menuItemText}>{t("nav.settings") || "Perfil & Definições"}</Text>
+              <Ionicons name="person-outline" size={18} color="#dce1fb" />
+              <Text style={styles.menuItemText}>{t("nav.settings")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -218,8 +214,8 @@ export function TopBar({ onSearchPress }: TopBarProps) {
                 router.push("/(tabs)/my-matches");
               }}
             >
-              <Ionicons name="trophy-outline" size={18} color="#cbd5e1" />
-              <Text style={styles.menuItemText}>{t("nav.myMatches") || "Os Meus Jogos"}</Text>
+              <Ionicons name="trophy-outline" size={18} color="#dce1fb" />
+              <Text style={styles.menuItemText}>{t("nav.myMatches")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -229,8 +225,8 @@ export function TopBar({ onSearchPress }: TopBarProps) {
                 router.push("/(tabs)/my-tournaments");
               }}
             >
-              <Ionicons name="ribbon-outline" size={18} color="#cbd5e1" />
-              <Text style={styles.menuItemText}>{t("nav.myTournaments") || "Os Meus Torneios"}</Text>
+              <Ionicons name="ribbon-outline" size={18} color="#dce1fb" />
+              <Text style={styles.menuItemText}>{t("nav.myTournaments")}</Text>
             </TouchableOpacity>
 
             <View style={styles.menuDivider} />
@@ -242,9 +238,9 @@ export function TopBar({ onSearchPress }: TopBarProps) {
                 await signOut();
               }}
             >
-              <Ionicons name="log-out-outline" size={18} color="#ef4444" />
-              <Text style={[styles.menuItemText, { color: "#ef4444" }]}>
-                {t("nav.signOut") || "Terminar Sessão"}
+              <Ionicons name="log-out-outline" size={18} color="#ffb4ab" />
+              <Text style={[styles.menuItemText, { color: "#ffb4ab" }]}>
+                {t("nav.signOut")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -259,192 +255,193 @@ export function TopBar({ onSearchPress }: TopBarProps) {
 
 const styles = StyleSheet.create({
   container: {
-    height: 56,
+    height: 58,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: Spacing.four,
-    backgroundColor: "#0b0f19",
+    paddingHorizontal: 16,
+    backgroundColor: ScoreBoardTheme.background,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
+    borderBottomColor: ScoreBoardTheme.borderGhost,
   },
   logoBtn: {
     paddingVertical: 4,
   },
   digitalLogo: {
     fontFamily: "Digital7",
-    fontSize: 26,
+    fontSize: 28,
     color: "#ffffff",
     letterSpacing: -0.5,
   },
   actionsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
   },
-  actionBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    backgroundColor: "#151b2d",
-    borderRadius: 8,
+  langBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
+    borderRadius: 9999,
     borderWidth: 1,
-    borderColor: "#232d4b",
-    position: "relative",
-    justifyContent: "center",
-    alignItems: "center",
+    borderColor: ScoreBoardTheme.borderGhost,
   },
   langBadge: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#cbd5e1",
+    fontSize: 11,
+    fontWeight: "800",
+    color: ScoreBoardTheme.onSurface,
   },
-  badgeDot: {
+  actionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderGhost,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+  },
+  badgeCircle: {
     position: "absolute",
-    top: -4,
-    right: -4,
+    top: -2,
+    right: -2,
     backgroundColor: "#ef4444",
+    borderRadius: 9,
     minWidth: 16,
     height: 16,
-    borderRadius: 8,
-    alignItems: "center",
     justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 3,
   },
   badgeText: {
-    color: "#ffffff",
     fontSize: 9,
-    fontWeight: "800",
-  },
-  signInBtn: {
-    backgroundColor: "#4f46e5",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  signInBtnText: {
+    fontWeight: "900",
     color: "#ffffff",
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
   avatarBtn: {
     padding: 2,
   },
   avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#4f46e5",
-    alignItems: "center",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(79, 70, 229, 0.2)",
+    borderWidth: 1.5,
+    borderColor: "rgba(79, 70, 229, 0.4)",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#6366f1",
+    alignItems: "center",
   },
   avatarInitial: {
-    color: "#ffffff",
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "900",
+    color: ScoreBoardTheme.primary,
+  },
+  signInBtn: {
+    backgroundColor: ScoreBoardTheme.primaryContainer,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 12,
+  },
+  signInBtnText: {
+    fontSize: 12,
+    fontWeight: "900",
+    color: "#ffffff",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "center",
     alignItems: "center",
-    padding: Spacing.four,
+    padding: 20,
   },
   langModalCard: {
-    width: "100%",
+    width: "85%",
     maxWidth: 320,
-    backgroundColor: "#151b2d",
-    borderRadius: 16,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#232d4b",
-    padding: Spacing.four,
+    borderColor: ScoreBoardTheme.borderGhost,
+    padding: 20,
+    gap: 12,
   },
   modalTitle: {
     fontSize: 15,
-    fontWeight: "700",
-    color: "#f8fafc",
-    marginBottom: Spacing.three,
-    textAlign: "center",
+    fontWeight: "800",
+    color: ScoreBoardTheme.onSurface,
+    marginBottom: 6,
   },
   langOption: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    backgroundColor: "#0b0f19",
-    borderWidth: 1,
-    borderColor: "#232d4b",
-    marginBottom: 8,
+    gap: 12,
+    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
+    padding: 14,
+    borderRadius: 12,
   },
   langOptionActive: {
-    borderColor: "#4f46e5",
-    backgroundColor: "rgba(79, 70, 229, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(78, 222, 163, 0.5)",
   },
   langOptionEmoji: {
-    fontSize: 20,
-    marginRight: 10,
+    fontSize: 18,
   },
   langOptionLabel: {
     fontSize: 14,
-    color: "#f8fafc",
-    fontWeight: "600",
+    fontWeight: "700",
+    color: ScoreBoardTheme.onSurface,
     flex: 1,
   },
   userMenuCard: {
-    width: "100%",
-    maxWidth: 320,
-    backgroundColor: "#151b2d",
-    borderRadius: 16,
+    width: 240,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#232d4b",
-    padding: Spacing.four,
+    borderColor: ScoreBoardTheme.borderGhost,
+    padding: 12,
+    position: "absolute",
+    top: 70,
+    right: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 8,
   },
   userMenuHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Spacing.three,
+    padding: 8,
   },
-  avatarCircleLarge: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#4f46e5",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarInitialLarge: {
-    color: "#ffffff",
-    fontSize: 18,
-    fontWeight: "700",
+  userMenuLabel: {
+    fontSize: 9,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    color: "rgba(220, 225, 251, 0.5)",
+    marginBottom: 2,
   },
   userMenuEmail: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#f8fafc",
-  },
-  userMenuRole: {
     fontSize: 12,
-    color: "#94a3b8",
-    marginTop: 2,
+    fontWeight: "700",
+    color: ScoreBoardTheme.onSurface,
   },
   menuDivider: {
     height: 1,
-    backgroundColor: "#1e293b",
-    marginVertical: Spacing.two,
+    backgroundColor: ScoreBoardTheme.borderGhost,
+    marginVertical: 4,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 10,
     paddingVertical: 10,
-    gap: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
   },
   menuItemText: {
-    color: "#cbd5e1",
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: 13,
+    fontWeight: "600",
+    color: ScoreBoardTheme.onSurface,
   },
 });

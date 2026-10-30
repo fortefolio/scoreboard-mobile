@@ -1,7 +1,8 @@
 import React from "react";
 import { View, TextInput, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useLanguage } from "@/lib/i18n";
+import { useTranslation } from "@/lib/i18n";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 interface SearchBarProps {
   searchQuery: string;
@@ -16,7 +17,7 @@ export function SearchBar({
   statusFilter,
   onStatusChange,
 }: SearchBarProps) {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   const statuses = [
     { key: "all", labelKey: "status.all" },
@@ -29,11 +30,11 @@ export function SearchBar({
     <View style={styles.container}>
       {/* Search Input */}
       <View style={styles.inputWrapper}>
-        <Ionicons name="search" size={18} color="#64748b" style={styles.searchIcon} />
+        <Ionicons name="search" size={17} color="rgba(220, 225, 251, 0.4)" style={styles.searchIcon} />
         <TextInput
           style={styles.input}
-          placeholder={t("common.searchPlaceholder") || "Pesquisar torneios, equipas..."}
-          placeholderTextColor="#64748b"
+          placeholder={t("common.searchPlaceholder")}
+          placeholderTextColor="rgba(220, 225, 251, 0.4)"
           value={searchQuery}
           onChangeText={onSearchChange}
           returnKeyType="search"
@@ -41,7 +42,7 @@ export function SearchBar({
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => onSearchChange("")} style={styles.clearBtn}>
-            <Ionicons name="close-circle" size={18} color="#94a3b8" />
+            <Ionicons name="close-circle" size={17} color="rgba(220, 225, 251, 0.5)" />
           </TouchableOpacity>
         )}
       </View>
@@ -62,15 +63,22 @@ export function SearchBar({
               onPress={() => onStatusChange(item.key)}
               activeOpacity={0.7}
             >
-              {isLive && <View style={styles.livePulse} />}
+              {isLive && (
+                <View
+                  style={[
+                    styles.statusDot,
+                    isSelected ? styles.statusDotLiveActive : styles.statusDotLive,
+                  ]}
+                />
+              )}
               <Text
                 style={[
                   styles.statusText,
                   isSelected && styles.statusTextActive,
-                  isLive && isSelected && styles.statusTextLive,
+                  isLive && isSelected && styles.statusTextLiveActive,
                 ]}
               >
-                {t(item.labelKey) || item.key}
+                {t(item.labelKey)}
               </Text>
             </TouchableOpacity>
           );
@@ -83,71 +91,79 @@ export function SearchBar({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 4,
+    marginVertical: 4,
     gap: 8,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#232d4b",
-    borderRadius: 12,
+    borderColor: ScoreBoardTheme.borderGhost,
     paddingHorizontal: 12,
-    height: 42,
+    height: 44,
   },
   searchIcon: {
     marginRight: 8,
   },
   input: {
     flex: 1,
-    color: "#f8fafc",
-    fontSize: 14,
     height: "100%",
+    fontSize: 13,
+    color: ScoreBoardTheme.onSurface,
+    fontWeight: "500",
   },
   clearBtn: {
     padding: 4,
   },
   statusRow: {
     flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   statusBtn: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#101626",
-    borderWidth: 1,
-    borderColor: "#1e293b",
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 8,
+    justifyContent: "center",
     gap: 5,
+    paddingVertical: 7,
+    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderGhost,
   },
   statusBtnActive: {
-    backgroundColor: "rgba(79, 70, 229, 0.2)",
-    borderColor: "#4f46e5",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   statusBtnLive: {
-    backgroundColor: "rgba(78, 222, 163, 0.15)",
-    borderColor: "#4edea3",
+    backgroundColor: "rgba(78, 222, 163, 0.12)",
+    borderColor: "rgba(78, 222, 163, 0.35)",
   },
-  livePulse: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+  statusDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+  },
+  statusDotLive: {
+    backgroundColor: "rgba(78, 222, 163, 0.6)",
+  },
+  statusDotLiveActive: {
     backgroundColor: "#4edea3",
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#64748b",
+    fontSize: 11,
+    fontWeight: "700",
+    color: "rgba(220, 225, 251, 0.5)",
   },
   statusTextActive: {
-    color: "#a5b4fc",
-    fontWeight: "700",
+    color: ScoreBoardTheme.onSurface,
+    fontWeight: "800",
   },
-  statusTextLive: {
+  statusTextLiveActive: {
     color: "#4edea3",
+    fontWeight: "800",
   },
 });

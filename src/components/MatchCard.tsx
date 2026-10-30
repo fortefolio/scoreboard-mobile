@@ -1,125 +1,85 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useLanguage } from "@/lib/i18n";
-import { useFollow } from "@/lib/hooks/useFollow";
-import { Colors } from "@/constants/theme";
+import { useTranslation, getSportTranslation } from "@/lib/i18n";
+import { SportIcon } from "@/components/SportIcon";
+import { FollowButton } from "@/components/FollowButton";
+import { countSetsWon, extractSetsData } from "@/lib/scoring/sets";
+import { formatTeamOrPlayerName, getInitials } from "@/lib/utils/formatName";
+import { ScoreBoardTheme } from "@/constants/theme";
+
+const TENNIS_POINTS = ["0", "15", "30", "40", "AD"];
 
 export interface MatchCardProps {
-  match: {
-    id: string;
-    sport_type: string;
-    status: string;
-    tournament_id?: string | null;
-    tournaments?: { name: string } | null;
-    participants?: Array<{ name: string; score?: any }> | null;
-    scores?: any;
-    created_at?: string;
-  };
+  match: any;
+  onAuthRequired?: () => void;
 }
 
-export function MatchCard({ match }: MatchCardProps) {
-  const { t } = useLanguage();
+export function MatchCard({ match, onAuthRequired }: MatchCardProps) {
+  const { t } = useTranslation();
   const router = useRouter();
-  const { isFollowing, toggleFollow } = useFollow();
 
-  const following = isFollowing(match.id, "match");
-  const isLive = match.status === "ongoing";
-  const isCompleted = match.status === "completed";
+  const isOngoing = match.status === "ongoing";
+  const rawSetData = extractSetsData(match.scores);
+  const setScores = Array.isArray(rawSetData)
+    ? rawSetData.map((s: any) => {
+        if (Array.isArray(s)) return { t1: s[0] ?? 0, t2: s[1] ?? 0 };
+        return { t1: s.team1 ?? s.home ?? 0, t2: s.team2 ?? s.away ?? 0 };
+      })
+    : [];
 
-  const teamAName = match.participants?.[0]?.name || t("common.teamDefault") + " A";
-  const teamBName = match.participants?.[1]?.name || t("common.teamDefault") + " B";
+  const setsWon = [countSetsWon(rawSetData, 0), countSetsWon(rawSetData, 1)];
+  const isBeachVolleyball =
+    match.sport_type === "Beach Volleyball" || match.sport_type === "beach_volleyball";
+  const setsToWin = isBeachVolleyball ? 2 : 3;
+  const isMatchFinished =
+    match.status === "completed" ||
+    (match.sport_type !== "Football" &&
+      match.sport_type !== "Basketball" &&
+      (setsWon[0] >= setsToWin || setsWon[1] >= setsToWin));
+  const isOngoingDisplay = isOngoing && !isMatchFinished;
 
-  // Score extraction helper
-  const renderScore = () => {
-    const scores = match.scores;
-    if (!scores) return null;
+  const currentSetNum = Math.min(
+    isBeachVolleyball ? 3 : 5,
+    setScores.length + (isOngoingDisplay ? 1 : 0)
+  );
 
-    if (match.sport_type === "Football") {
-      const goalsA = scores.football?.goals?.[0] ?? scores.goals?.[0] ?? 0;
-      const goalsB = scores.football?.goals?.[1] ?? scores.goals?.[1] ?? 0;
-      return (
-        <View style={styles.scoreRow}>
-          <Text style={styles.digitalScore}>{goalsA}</Text>
-          <Text style={styles.scoreSeparator}>-</Text>
-          <Text style={styles.digitalScore}>{goalsB}</Text>
-        </View>
-      );
+  const currentGames = match.scores?.tennis?.games || [0, 0];
+  const isRacketSport = match.sport_type === "Tennis" || match.sport_type === "Padel";
+  const isPointsBased = match.sport_type === "Football" || match.sport_type === "Basketball";
+
+  const renderPoints = (idx: number) => {
+    if (isRacketSport && match.scores?.tennis) {
+      const p = match.scores.tennis.points?.[idx] ?? 0;
+      const opp = match.scores.tennis.points?.[idx === 0 ? 1 : 0] ?? 0;
+      if (p >= 3 && opp >= 3) return p > opp ? "AD" : "40";
+      return TENNIS_POINTS[p] || "0";
     }
-
-    if (match.sport_type === "Tennis" || match.sport_type === "Padel") {
-      const sets = scores.tennis?.sets || [];
-      const games = scores.tennis?.games || [0, 0];
-      const points = scores.tennis?.points || [0, 0];
-
-      // Format points to 0, 15, 30, 40, AD
-      const formatPoint = (pts: number) => {
-        if (pts === 0) return "0";
-        if (pts === 1) return "15";
-        if (pts === 2) return "30";
-        if (pts === 3) return "40";
-        if (pts >= 4) return "AD";
-        return String(pts);
-      };
-
-      return (
-        <View style={styles.tennisScoreContainer}>
-          {sets.length > 0 && (
-            <Text style={styles.setsText}>
-              {sets.map((s: any) => `${s[0]}-${s[1]}`).join("  ")}
-            </Text>
-          )}
-          <View style={styles.scoreRow}>
-            <Text style={styles.digitalScoreSmall}>{games[0]}</Text>
-            <Text style={styles.scoreSeparator}>-</Text>
-            <Text style={styles.digitalScoreSmall}>{games[1]}</Text>
-            {isLive && (
-              <Text style={styles.gamePointsText}>
-                ({formatPoint(points[0])} : {formatPoint(points[1])})
-              </Text>
-            )}
-          </View>
-        </View>
-      );
-    }
-
-    if (match.sport_type === "Volleyball" || match.sport_type === "Beach Volleyball") {
-      const sets = scores.volleyball?.sets || [];
-      const currentPoints = scores.volleyball?.current_points || [0, 0];
-      const setsWonA = sets.filter((s: any) => s[0] > s[1]).length;
-      const setsWonB = sets.filter((s: any) => s[1] > s[0]).length;
-
-      return (
-        <View style={styles.tennisScoreContainer}>
-          <View style={styles.scoreRow}>
-            <Text style={styles.digitalScore}>{setsWonA}</Text>
-            <Text style={styles.scoreSeparator}>-</Text>
-            <Text style={styles.digitalScore}>{setsWonB}</Text>
-          </View>
-          {isLive && (
-            <Text style={styles.gamePointsText}>
-              Set {sets.length + 1}: {currentPoints[0]} - {currentPoints[1]}
-            </Text>
-          )}
-        </View>
-      );
-    }
-
-    if (match.sport_type === "Basketball") {
-      const totalA = scores.basketball?.total_points?.[0] ?? scores.total_points?.[0] ?? 0;
-      const totalB = scores.basketball?.total_points?.[1] ?? scores.total_points?.[1] ?? 0;
-      return (
-        <View style={styles.scoreRow}>
-          <Text style={styles.digitalScore}>{totalA}</Text>
-          <Text style={styles.scoreSeparator}>-</Text>
-          <Text style={styles.digitalScore}>{totalB}</Text>
-        </View>
-      );
-    }
-
-    return null;
+    return match.scores?.current?.[idx === 0 ? "home" : "away"] ?? 0;
   };
+
+  const getMainScore = (idx: number) => {
+    if (match.sport_type === "Football") {
+      return (
+        match.scores?.football?.goals?.[idx] ??
+        match.scores?.goals?.[idx] ??
+        match.scores?.current?.[idx === 0 ? "home" : "away"] ??
+        0
+      );
+    }
+    if (match.sport_type === "Basketball") {
+      return (
+        match.scores?.basketball?.total_points?.[idx] ??
+        match.scores?.total_points?.[idx] ??
+        match.scores?.current?.[idx === 0 ? "home" : "away"] ??
+        0
+      );
+    }
+    return setsWon[idx];
+  };
+
+  const tournamentOrSport =
+    match.tournaments?.name || getSportTranslation(match.sport_type, t);
 
   return (
     <TouchableOpacity
@@ -127,64 +87,132 @@ export function MatchCard({ match }: MatchCardProps) {
       onPress={() => router.push(`/match/${match.id}` as any)}
       activeOpacity={0.85}
     >
-      {/* Top Meta Header */}
-      <View style={styles.topMeta}>
-        <View style={styles.sportBadge}>
-          <Text style={styles.sportText}>{match.sport_type}</Text>
+      {/* Top Header */}
+      <View style={styles.header}>
+        <View style={styles.sportHeaderLeft}>
+          <SportIcon sport={match.sport_type} size={15} color="#c3c0ff" />
+          <Text style={styles.sportTag} numberOfLines={1}>
+            {tournamentOrSport}
+          </Text>
         </View>
 
-        {match.tournaments?.name && (
-          <Text style={styles.tournamentName} numberOfLines={1}>
-            {match.tournaments.name}
-          </Text>
-        )}
-
-        <View style={styles.rightMeta}>
-          {isLive ? (
-            <View style={styles.liveBadge}>
+        <View style={styles.headerRight}>
+          {isOngoingDisplay ? (
+            <View style={styles.livePill}>
               <View style={styles.liveDot} />
-              <Text style={styles.liveText}>{t("status.live") || "EM DIRETO"}</Text>
+              <Text style={styles.livePillText}>
+                {match.sport_type === "Basketball"
+                  ? match.scores?.basketball?.period || t("status.live")
+                  : match.sport_type !== "Football"
+                  ? `Set ${currentSetNum}`
+                  : t("status.live")}
+              </Text>
             </View>
           ) : (
-            <Text style={styles.statusLabel}>
-              {isCompleted ? t("status.final") || "TERMINADO" : t("status.scheduled") || "AGENDADO"}
+            <Text style={styles.statusMutedText}>
+              {match.status === "completed" || isMatchFinished
+                ? t("status.final")
+                : match.status === "scheduled"
+                ? t("status.scheduled")
+                : match.status}
             </Text>
           )}
 
-          {/* Follow Toggle */}
-          <TouchableOpacity
-            style={styles.followBtn}
-            onPress={() => toggleFollow(match.id, "match")}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons
-              name={following ? "heart" : "heart-outline"}
-              size={18}
-              color={following ? "#ef4444" : "#64748b"}
-            />
-          </TouchableOpacity>
+          <FollowButton
+            entityId={match.id}
+            entityType="match"
+            size={16}
+            onAuthRequired={onAuthRequired}
+          />
         </View>
       </View>
 
-      {/* Main Teams & Score Section */}
-      <View style={styles.mainContent}>
-        <View style={styles.teamsCol}>
-          <Text style={styles.teamName} numberOfLines={1}>
-            {teamAName}
-          </Text>
-          <Text style={styles.vsText}>vs</Text>
-          <Text style={styles.teamName} numberOfLines={1}>
-            {teamBName}
-          </Text>
-        </View>
+      {/* Participants Rows */}
+      <View style={styles.participantsContainer}>
+        {[0, 1].map((i) => {
+          const participantName = match.participants?.[i]?.name;
+          const formattedName =
+            formatTeamOrPlayerName(participantName) ||
+            t("common.teamDefault", { num: i === 0 ? "A" : "B" });
+          const initials = getInitials(participantName);
+          const isServing =
+            isOngoingDisplay && !isPointsBased && match.scores?.serving_index === i;
+          const mainScore = getMainScore(i);
 
-        <View style={styles.scoreCol}>
-          {renderScore() || (
-            <Text style={styles.timePlaceholder}>
-              {isCompleted ? "Final" : "00:00"}
-            </Text>
-          )}
-        </View>
+          return (
+            <View key={i} style={styles.participantRow}>
+              {/* Left: Avatar + Names + Sets */}
+              <View style={styles.participantLeft}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{initials}</Text>
+                  {isServing && <View style={styles.serverIndicator} />}
+                </View>
+
+                <View style={styles.nameBlock}>
+                  <Text style={styles.teamName} numberOfLines={1}>
+                    {formattedName}
+                  </Text>
+
+                  {/* Sub-scores (sets / quarters) */}
+                  {match.sport_type === "Basketball" ? (
+                    match.scores?.basketball?.quarters?.length > 0 && (
+                      <View style={styles.subScoresRow}>
+                        {match.scores.basketball.quarters.map((q: any, qIdx: number) => {
+                          const pScore = i === 0 ? q.home ?? 0 : q.away ?? 0;
+                          const oScore = i === 0 ? q.away ?? 0 : q.home ?? 0;
+                          return (
+                            <Text
+                              key={qIdx}
+                              style={[
+                                styles.subScoreDigit,
+                                pScore > oScore && styles.subScoreWinning,
+                              ]}
+                            >
+                              {pScore}
+                            </Text>
+                          );
+                        })}
+                      </View>
+                    )
+                  ) : match.sport_type !== "Football" ? (
+                    <View style={styles.subScoresRow}>
+                      {setScores.length > 0 &&
+                        setScores.map((set: any, sIdx: number) => {
+                          const pScore = i === 0 ? set.t1 : set.t2;
+                          const oScore = i === 0 ? set.t2 : set.t1;
+                          return (
+                            <Text
+                              key={sIdx}
+                              style={[
+                                styles.subScoreDigit,
+                                pScore > oScore && styles.subScoreWinning,
+                              ]}
+                            >
+                              {pScore}
+                            </Text>
+                          );
+                        })}
+
+                      {isOngoingDisplay && (
+                        <Text style={styles.liveGamePoints}>
+                          {setScores.length > 0 && " • "}
+                          {isRacketSport
+                            ? `${currentGames[i]} (${renderPoints(i)})`
+                            : renderPoints(i)}
+                        </Text>
+                      )}
+                    </View>
+                  ) : null}
+                </View>
+              </View>
+
+              {/* Right: Big Bold Score */}
+              <View style={styles.scoreBox}>
+                <Text style={styles.mainScoreNumber}>{mainScore}</Text>
+              </View>
+            </View>
+          );
+        })}
       </View>
     </TouchableOpacity>
   );
@@ -192,140 +220,157 @@ export function MatchCard({ match }: MatchCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#232d4b",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
+    borderColor: ScoreBoardTheme.borderGhost,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  topMeta: {
+  header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 14,
     gap: 8,
   },
-  sportBadge: {
+  sportHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    flex: 1,
+    minWidth: 0,
+  },
+  sportTag: {
+    fontSize: 10,
+    fontWeight: "900",
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    color: "rgba(195, 192, 255, 0.75)",
+    flexShrink: 1,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  livePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
     backgroundColor: "rgba(79, 70, 229, 0.15)",
     borderWidth: 1,
-    borderColor: "rgba(79, 70, 229, 0.3)",
+    borderColor: "rgba(79, 70, 229, 0.35)",
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
-  },
-  sportText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#a5b4fc",
-    textTransform: "uppercase",
-  },
-  tournamentName: {
-    flex: 1,
-    fontSize: 11,
-    color: "#94a3b8",
-    fontWeight: "500",
-  },
-  rightMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  liveBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(78, 222, 163, 0.15)",
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-    gap: 4,
+    borderRadius: 9999,
   },
   liveDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#4edea3",
+    backgroundColor: ScoreBoardTheme.secondary,
   },
-  liveText: {
+  livePillText: {
+    fontSize: 10,
+    fontWeight: "900",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    color: ScoreBoardTheme.primary,
+  },
+  statusMutedText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#4edea3",
-  },
-  statusLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#64748b",
     textTransform: "uppercase",
+    letterSpacing: 0.8,
+    color: "rgba(220, 225, 251, 0.45)",
   },
-  followBtn: {
-    padding: 2,
+  participantsContainer: {
+    gap: 12,
   },
-  mainContent: {
+  participantRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  teamsCol: {
+  participantLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
     flex: 1,
-    paddingRight: 12,
+    minWidth: 0,
+    paddingRight: 10,
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "rgba(35, 41, 60, 0.7)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+  },
+  avatarText: {
+    fontSize: 11,
+    fontWeight: "900",
+    color: "rgba(220, 225, 251, 0.85)",
+  },
+  serverIndicator: {
+    position: "absolute",
+    bottom: -3,
+    width: 12,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: "#fbbf24",
+  },
+  nameBlock: {
+    flex: 1,
+    justifyContent: "center",
   },
   teamName: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#f8fafc",
-    lineHeight: 22,
-  },
-  vsText: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: "#64748b",
+    fontSize: 12,
+    fontWeight: "900",
     textTransform: "uppercase",
-    marginVertical: 1,
+    letterSpacing: 0.6,
+    color: ScoreBoardTheme.onSurface,
   },
-  scoreCol: {
+  subScoresRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 2,
+  },
+  subScoreDigit: {
+    fontFamily: "Courier",
+    fontSize: 10,
+    color: "rgba(220, 225, 251, 0.45)",
+  },
+  subScoreWinning: {
+    color: ScoreBoardTheme.onSurface,
+    fontWeight: "800",
+  },
+  liveGamePoints: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: ScoreBoardTheme.primary,
+  },
+  scoreBox: {
+    minWidth: 28,
     alignItems: "flex-end",
     justifyContent: "center",
   },
-  scoreRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  digitalScore: {
-    fontFamily: "Digital7",
-    fontSize: 32,
-    color: "#4edea3",
-    lineHeight: 34,
-  },
-  digitalScoreSmall: {
-    fontFamily: "Digital7",
-    fontSize: 26,
-    color: "#4edea3",
-    lineHeight: 28,
-  },
-  scoreSeparator: {
-    fontFamily: "Digital7",
+  mainScoreNumber: {
     fontSize: 22,
-    color: "#64748b",
-  },
-  tennisScoreContainer: {
-    alignItems: "flex-end",
-    gap: 2,
-  },
-  setsText: {
-    fontSize: 11,
-    color: "#94a3b8",
-    fontFamily: "monospace",
-  },
-  gamePointsText: {
-    fontSize: 11,
-    color: "#fbbf24",
-    fontWeight: "700",
-    marginLeft: 4,
-  },
-  timePlaceholder: {
-    fontSize: 14,
-    color: "#64748b",
-    fontFamily: "monospace",
+    fontWeight: "900",
+    color: ScoreBoardTheme.onSurface,
+    fontFamily: "Digital7",
+    letterSpacing: 0.5,
   },
 });
