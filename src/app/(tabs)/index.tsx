@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -14,7 +14,9 @@ import { TopBar } from "@/components/TopBar";
 import { SportFilterBar } from "@/components/SportFilterBar";
 import { SearchBar } from "@/components/SearchBar";
 import { MatchCard } from "@/components/MatchCard";
+import { MatchListItem } from "@/components/MatchListItem";
 import { TournamentCard } from "@/components/TournamentCard";
+import { Pagination } from "@/components/Pagination";
 import { AuthModal } from "@/components/AuthModal";
 import { useAuth } from "@/components/AuthProvider";
 import { useTranslation } from "@/lib/i18n";
@@ -22,15 +24,21 @@ import { useFollow } from "@/lib/hooks/useFollow";
 import { supabase } from "@/lib/supabase/client";
 import { ScoreBoardTheme } from "@/constants/theme";
 
+const MATCHES_PER_PAGE = 12;
+const TOURNAMENTS_PER_PAGE = 8;
+
 export default function FeedScreen() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { followedMatchIds, followedTournamentIds } = useFollow();
+  const flatListRef = useRef<FlatList>(null);
 
   const [activeSegment, setActiveSegment] = useState<"matches" | "tournaments" | "following">("matches");
+  const [viewMode, setViewMode] = useState<"list" | "cards">("list");
   const [selectedSport, setSelectedSport] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [authModalVisible, setAuthModalVisible] = useState(false);
 
   const [matches, setMatches] = useState<any[]>([]);
@@ -46,7 +54,7 @@ export default function FeedScreen() {
           .from("matches")
           .select("*, tournaments(name)")
           .order("created_at", { ascending: false })
-          .limit(100),
+          .limit(300),
         supabase
           .from("tournaments")
           .select("*")
@@ -102,6 +110,33 @@ export default function FeedScreen() {
     setSelectedSport("all");
     setStatusFilter("all");
     setSearchQuery("");
+    setCurrentPage(1);
+  };
+
+  const handleTabChange = (tab: "matches" | "tournaments" | "following") => {
+    setActiveSegment(tab);
+    setCurrentPage(1);
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  };
+
+  const handleSportChange = (sport: string) => {
+    setSelectedSport(sport);
+    setCurrentPage(1);
+  };
+
+  const handleStatusChange = (status: string) => {
+    setStatusFilter(status);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (q: string) => {
+    setSearchQuery(q);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
   };
 
   // Filtered Matches
@@ -158,6 +193,18 @@ export default function FeedScreen() {
   const totalTournamentsCount = tournaments.length;
   const totalFollowedCount = followedMatchIds.size + followedTournamentIds.size;
 
+  const isTournaments = activeSegment === "tournaments";
+  const displayData = isTournaments ? filteredTournaments : filteredMatches;
+  const itemsPerPage = isTournaments ? TOURNAMENTS_PER_PAGE : MATCHES_PER_PAGE;
+  const totalPages = Math.max(1, Math.ceil(displayData.length / itemsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+
+  // Paginate items for the current page
+  const paginatedData = useMemo(() => {
+    const start = (safePage - 1) * itemsPerPage;
+    return displayData.slice(start, start + itemsPerPage);
+  }, [displayData, safePage, itemsPerPage]);
+
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       {/* Hero Command Center Card matching Web */}
@@ -201,7 +248,7 @@ export default function FeedScreen() {
       <View style={styles.segmentContainer}>
         <TouchableOpacity
           style={[styles.segmentBtn, activeSegment === "matches" && styles.segmentBtnActive]}
-          onPress={() => setActiveSegment("matches")}
+          onPress={() => handleTabChange("matches")}
           activeOpacity={0.8}
         >
           <Text
@@ -216,7 +263,7 @@ export default function FeedScreen() {
 
         <TouchableOpacity
           style={[styles.segmentBtn, activeSegment === "tournaments" && styles.segmentBtnActive]}
-          onPress={() => setActiveSegment("tournaments")}
+          onPress={() => handleTabChange("tournaments")}
           activeOpacity={0.8}
         >
           <Text
@@ -231,7 +278,7 @@ export default function FeedScreen() {
 
         <TouchableOpacity
           style={[styles.segmentBtn, activeSegment === "following" && styles.segmentBtnActive]}
-          onPress={() => setActiveSegment("following")}
+          onPress={() => handleTabChange("following")}
           activeOpacity={0.8}
         >
           <Text
@@ -246,16 +293,74 @@ export default function FeedScreen() {
       </View>
 
       {/* Sport Filter Bar */}
-      <SportFilterBar selectedSport={selectedSport} onSelectSport={setSelectedSport} />
+      <SportFilterBar selectedSport={selectedSport} onSelectSport={handleSportChange} />
 
       {/* Search Bar & Status Filter */}
       <SearchBar
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
         statusFilter={statusFilter}
-        onStatusChange={setStatusFilter}
+        onStatusChange={handleStatusChange}
       />
+
+      {/* View Mode & Count Bar (matching web controls) */}
+      <View style={styles.viewModeBar}>
+        <Text style={styles.resultCountText}>
+          {displayData.length}{" "}
+          {isTournaments ? t("nav.tournaments") : t("nav.matches")}
+        </Text>
+
+        <View style={styles.viewModeToggle}>
+          <TouchableOpacity
+            style={[styles.toggleBtn, viewMode === "list" && styles.toggleBtnActive]}
+            onPress={() => setViewMode("list")}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="reorder-four"
+              size={16}
+              color={viewMode === "list" ? "#ffffff" : "rgba(220, 225, 251, 0.4)"}
+            />
+            <Text
+              style={[
+                styles.toggleBtnText,
+                viewMode === "list" && styles.toggleBtnTextActive,
+              ]}
+            >
+              {t("common.viewList") || "List"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.toggleBtn, viewMode === "cards" && styles.toggleBtnActive]}
+            onPress={() => setViewMode("cards")}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="grid-outline"
+              size={14}
+              color={viewMode === "cards" ? "#ffffff" : "rgba(220, 225, 251, 0.4)"}
+            />
+            <Text
+              style={[
+                styles.toggleBtnText,
+                viewMode === "cards" && styles.toggleBtnTextActive,
+              ]}
+            >
+              {t("common.viewCards") || "Cards"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
+  );
+
+  const renderFooter = () => (
+    <Pagination
+      currentPage={safePage}
+      totalPages={totalPages}
+      onPageChange={handlePageChange}
+    />
   );
 
   const renderEmpty = () => {
@@ -295,9 +400,6 @@ export default function FeedScreen() {
     );
   };
 
-  const isTournaments = activeSegment === "tournaments";
-  const displayData = isTournaments ? filteredTournaments : filteredMatches;
-
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       {/* Top Application Bar */}
@@ -305,7 +407,8 @@ export default function FeedScreen() {
 
       {/* Feed List */}
       <FlatList
-        data={displayData}
+        ref={flatListRef}
+        data={paginatedData}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) =>
           isTournaments ? (
@@ -313,11 +416,17 @@ export default function FeedScreen() {
               tournament={item}
               onAuthRequired={() => setAuthModalVisible(true)}
             />
+          ) : viewMode === "list" ? (
+            <MatchListItem
+              match={item}
+              onAuthRequired={() => setAuthModalVisible(true)}
+            />
           ) : (
             <MatchCard match={item} onAuthRequired={() => setAuthModalVisible(true)} />
           )
         }
         ListHeaderComponent={renderHeader}
+        ListFooterComponent={displayData.length > 0 ? renderFooter : undefined}
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         refreshControl={
@@ -466,6 +575,50 @@ const styles = StyleSheet.create({
   segmentTextActive: {
     color: "#ffffff",
     fontWeight: "900",
+  },
+  viewModeBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 4,
+    marginTop: 8,
+    marginBottom: 6,
+  },
+  resultCountText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "rgba(220, 225, 251, 0.5)",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  viewModeToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
+    borderRadius: 10,
+    padding: 2,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderGhost,
+  },
+  toggleBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  toggleBtnActive: {
+    backgroundColor: ScoreBoardTheme.primaryContainer,
+  },
+  toggleBtnText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "rgba(220, 225, 251, 0.5)",
+  },
+  toggleBtnTextActive: {
+    color: "#ffffff",
+    fontWeight: "800",
   },
   emptyContainer: {
     paddingVertical: 40,
