@@ -69,11 +69,8 @@ export default function ProfileScreen() {
             style={[styles.rowItem, locale === "pt" && styles.rowItemActive]}
             onPress={() => setLocale("pt")}
           >
-            <View style={styles.rowLeft}>
-              <Text style={styles.emoji}>🇵🇹</Text>
-              <Text style={styles.rowLabel}>Português</Text>
-            </View>
-            {locale === "pt" && <Ionicons name="checkmark-circle" size={20} color="#4edea3" />}
+            <Text style={styles.rowLabel}>Português</Text>
+            <Text style={[styles.codeBadge, locale === "pt" && styles.codeBadgeActive]}>PT</Text>
           </TouchableOpacity>
 
           <View style={styles.rowDivider} />
@@ -82,11 +79,8 @@ export default function ProfileScreen() {
             style={[styles.rowItem, locale === "en" && styles.rowItemActive]}
             onPress={() => setLocale("en")}
           >
-            <View style={styles.rowLeft}>
-              <Text style={styles.emoji}>🇬🇧</Text>
-              <Text style={styles.rowLabel}>English</Text>
-            </View>
-            {locale === "en" && <Ionicons name="checkmark-circle" size={20} color="#4edea3" />}
+            <Text style={styles.rowLabel}>English</Text>
+            <Text style={[styles.codeBadge, locale === "en" && styles.codeBadgeActive]}>EN</Text>
           </TouchableOpacity>
         </View>
 
@@ -222,8 +216,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  emoji: {
-    fontSize: 18,
+  codeBadge: {
+    fontSize: 11,
+    fontWeight: "900",
+    color: "rgba(220, 225, 251, 0.4)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 6,
+  },
+  codeBadgeActive: {
+    color: ScoreBoardTheme.secondary,
+    backgroundColor: "rgba(78, 222, 163, 0.15)",
   },
   rowLabel: {
     fontSize: 14,

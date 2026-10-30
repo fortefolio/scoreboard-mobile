@@ -86,7 +86,7 @@ export function TopBar({ onSearchPress }: TopBarProps) {
             onPress={() => setLangModalVisible(true)}
             activeOpacity={0.7}
           >
-            <Text style={styles.langBadge}>{locale === "pt" ? "🇵🇹 PT" : "🇬🇧 EN"}</Text>
+            <Text style={styles.langBadge}>{locale === "pt" ? "PT" : "EN"}</Text>
           </TouchableOpacity>
 
           {/* Notifications Bell */}
@@ -155,9 +155,15 @@ export function TopBar({ onSearchPress }: TopBarProps) {
                 setLangModalVisible(false);
               }}
             >
-              <Text style={styles.langOptionEmoji}>🇵🇹</Text>
               <Text style={styles.langOptionLabel}>Português</Text>
-              {locale === "pt" && <Ionicons name="checkmark-sharp" size={18} color="#4edea3" />}
+              <Text
+                style={[
+                  styles.langOptionCode,
+                  locale === "pt" && styles.langOptionCodeActive,
+                ]}
+              >
+                PT
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -167,9 +173,15 @@ export function TopBar({ onSearchPress }: TopBarProps) {
                 setLangModalVisible(false);
               }}
             >
-              <Text style={styles.langOptionEmoji}>🇬🇧</Text>
               <Text style={styles.langOptionLabel}>English</Text>
-              {locale === "en" && <Ionicons name="checkmark-sharp" size={18} color="#4edea3" />}
+              <Text
+                style={[
+                  styles.langOptionCode,
+                  locale === "en" && styles.langOptionCodeActive,
+                ]}
+              >
+                EN
+              </Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -386,8 +398,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(78, 222, 163, 0.5)",
   },
-  langOptionEmoji: {
-    fontSize: 18,
+  langOptionCode: {
+    fontSize: 11,
+    fontWeight: "900",
+    color: "rgba(220, 225, 251, 0.4)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 6,
+  },
+  langOptionCodeActive: {
+    color: ScoreBoardTheme.secondary,
+    backgroundColor: "rgba(78, 222, 163, 0.15)",
   },
   langOptionLabel: {
     fontSize: 14,
