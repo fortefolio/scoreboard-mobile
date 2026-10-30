@@ -10,6 +10,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { TopBar } from "@/components/TopBar";
 import { supabase } from "@/lib/supabase/client";
 
 export default function TournamentTeamsScreen() {
@@ -60,6 +61,9 @@ export default function TournamentTeamsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      {/* Main Global TopBar */}
+      <TopBar />
+
       {/* Top Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>

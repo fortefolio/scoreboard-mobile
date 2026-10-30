@@ -15,6 +15,8 @@ import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/lib/i18n";
 import { useFollow } from "@/lib/hooks/useFollow";
 import { MatchCard } from "@/components/MatchCard";
+import { TopBar } from "@/components/TopBar";
+import { FollowButton } from "@/components/FollowButton";
 import { GroupStandingsView } from "@/components/tournament/GroupStandingsView";
 import { TournamentBracketView } from "@/components/tournament/TournamentBracketView";
 import { calculateStandings, Standing } from "@/lib/standings/groups";
@@ -155,10 +157,13 @@ export default function TournamentDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      {/* Main Global TopBar */}
+      <TopBar />
+
       {/* Top Navigation */}
       <View style={styles.topNav}>
         <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#f8fafc" />
+          <Ionicons name="arrow-back" size={22} color="#dce1fb" />
         </TouchableOpacity>
 
         <Text style={styles.navTitle} numberOfLines={1}>
@@ -166,19 +171,14 @@ export default function TournamentDetailScreen() {
         </Text>
 
         <View style={styles.navActions}>
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => toggleFollow(tournamentId, "tournament")}
-          >
-            <Ionicons
-              name={following ? "heart" : "heart-outline"}
-              size={22}
-              color={following ? "#ef4444" : "#94a3b8"}
-            />
-          </TouchableOpacity>
+          <FollowButton
+            entityId={tournamentId}
+            entityType="tournament"
+            size={16}
+          />
 
           <TouchableOpacity style={styles.iconBtn} onPress={handleShare}>
-            <Ionicons name="share-social-outline" size={22} color="#f8fafc" />
+            <Ionicons name="share-social-outline" size={20} color="#dce1fb" />
           </TouchableOpacity>
         </View>
       </View>

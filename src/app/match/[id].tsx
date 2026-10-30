@@ -16,6 +16,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/lib/i18n";
 import { useFollow } from "@/lib/hooks/useFollow";
+import { TopBar } from "@/components/TopBar";
+import { FollowButton } from "@/components/FollowButton";
 import { RuleModal } from "@/components/RuleModal";
 import { supabase } from "@/lib/supabase/client";
 import { Colors, Spacing } from "@/constants/theme";
@@ -323,10 +325,13 @@ export default function MatchDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      {/* Main Global TopBar */}
+      <TopBar />
+
       {/* Top Header Bar */}
       <View style={styles.topNav}>
         <TouchableOpacity style={styles.navIconBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color="#f8fafc" />
+          <Ionicons name="arrow-back" size={20} color="#dce1fb" />
         </TouchableOpacity>
 
         <Text style={styles.navTitle} numberOfLines={1}>
@@ -334,19 +339,14 @@ export default function MatchDetailScreen() {
         </Text>
 
         <View style={styles.navActions}>
-          <TouchableOpacity
-            style={styles.navIconBtn}
-            onPress={() => toggleFollow(matchIdStr, "match")}
-          >
-            <Ionicons
-              name={following ? "heart" : "heart-outline"}
-              size={22}
-              color={following ? "#ef4444" : "#94a3b8"}
-            />
-          </TouchableOpacity>
+          <FollowButton
+            entityId={matchIdStr}
+            entityType="match"
+            size={16}
+          />
 
           <TouchableOpacity style={styles.navIconBtn} onPress={handleShare}>
-            <Ionicons name="share-social-outline" size={22} color="#f8fafc" />
+            <Ionicons name="share-social-outline" size={20} color="#dce1fb" />
           </TouchableOpacity>
         </View>
       </View>
