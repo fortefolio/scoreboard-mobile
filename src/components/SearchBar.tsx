@@ -38,7 +38,9 @@ export function SearchBar({
           value={searchQuery}
           onChangeText={onSearchChange}
           returnKeyType="search"
-          clearButtonMode="while-editing"
+          clearButtonMode="never"
+          autoCapitalize="none"
+          autoCorrect={false}
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => onSearchChange("")} style={styles.clearBtn}>
