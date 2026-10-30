@@ -27,6 +27,200 @@ import { ScoreBoardTheme } from "@/constants/theme";
 const MATCHES_PER_PAGE = 12;
 const TOURNAMENTS_PER_PAGE = 8;
 
+interface FeedHeaderProps {
+  totalMatchesCount: number;
+  totalTournamentsCount: number;
+  totalFollowedCount: number;
+  user: any;
+  activeSegment: "matches" | "tournaments" | "following";
+  filteredMatchesCount: number;
+  filteredTournamentsCount: number;
+  onTabChange: (tab: "matches" | "tournaments" | "following") => void;
+  selectedSport: string;
+  onSportChange: (sport: string) => void;
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
+  statusFilter: string;
+  onStatusChange: (status: string) => void;
+  displayCount: number;
+  isTournaments: boolean;
+  viewMode: "list" | "cards";
+  onViewModeChange: (mode: "list" | "cards") => void;
+  t: (key: string) => string;
+}
+
+const FeedHeader = React.memo(function FeedHeader({
+  totalMatchesCount,
+  totalTournamentsCount,
+  totalFollowedCount,
+  user,
+  activeSegment,
+  filteredMatchesCount,
+  filteredTournamentsCount,
+  onTabChange,
+  selectedSport,
+  onSportChange,
+  searchQuery,
+  onSearchChange,
+  statusFilter,
+  onStatusChange,
+  displayCount,
+  isTournaments,
+  viewMode,
+  onViewModeChange,
+  t,
+}: FeedHeaderProps) {
+  return (
+    <View style={styles.headerContainer}>
+      {/* Hero Command Center Card matching Web */}
+      <View style={styles.heroCard}>
+        <View style={styles.heroTopRow}>
+          <View style={styles.liveBadge}>
+            <View style={styles.livePulseDot} />
+            <Text style={styles.liveBadgeText}>{t("home.liveBadge") || "LIVE ARENA"}</Text>
+          </View>
+
+          {/* Quick Stat Counters */}
+          <View style={styles.statsPill}>
+            <View style={styles.statCol}>
+              <Text style={styles.statNumPrimary}>{totalMatchesCount}</Text>
+              <Text style={styles.statLabel}>{t("nav.matches") || "Matches"}</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statCol}>
+              <Text style={styles.statNumSecondary}>{totalTournamentsCount}</Text>
+              <Text style={styles.statLabel}>{t("nav.tournaments") || "Tourn."}</Text>
+            </View>
+            {user && (
+              <>
+                <View style={styles.statDivider} />
+                <View style={styles.statCol}>
+                  <Text style={styles.statNumAmber}>{totalFollowedCount}</Text>
+                  <Text style={styles.statLabel}>{t("common.following") || "Favs"}</Text>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+
+        <Text style={styles.heroTitle}>{t("home.heroTitle") || "Multi-Sport Command"}</Text>
+        <Text style={styles.heroSubtitle}>
+          {t("home.heroSubtitle") || "Real-time scores, tournament brackets & referee controls."}
+        </Text>
+      </View>
+
+      {/* Main Segment Switcher: Matches / Tournaments / Following */}
+      <View style={styles.segmentContainer}>
+        <TouchableOpacity
+          style={[styles.segmentBtn, activeSegment === "matches" && styles.segmentBtnActive]}
+          onPress={() => onTabChange("matches")}
+          activeOpacity={0.8}
+        >
+          <Text
+            style={[
+              styles.segmentText,
+              activeSegment === "matches" && styles.segmentTextActive,
+            ]}
+          >
+            {t("nav.matches") || "Matches"} ({filteredMatchesCount})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.segmentBtn, activeSegment === "tournaments" && styles.segmentBtnActive]}
+          onPress={() => onTabChange("tournaments")}
+          activeOpacity={0.8}
+        >
+          <Text
+            style={[
+              styles.segmentText,
+              activeSegment === "tournaments" && styles.segmentTextActive,
+            ]}
+          >
+            {t("nav.tournaments") || "Tournaments"} ({filteredTournamentsCount})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.segmentBtn, activeSegment === "following" && styles.segmentBtnActive]}
+          onPress={() => onTabChange("following")}
+          activeOpacity={0.8}
+        >
+          <Text
+            style={[
+              styles.segmentText,
+              activeSegment === "following" && styles.segmentTextActive,
+            ]}
+          >
+            {t("common.following") || "Following"} ({totalFollowedCount})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Sport Filter Bar */}
+      <SportFilterBar selectedSport={selectedSport} onSelectSport={onSportChange} />
+
+      {/* Search Bar & Status Filter */}
+      <SearchBar
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        statusFilter={statusFilter}
+        onStatusChange={onStatusChange}
+      />
+
+      {/* View Mode & Count Bar (matching web controls) */}
+      <View style={styles.viewModeBar}>
+        <Text style={styles.resultCountText}>
+          {displayCount}{" "}
+          {isTournaments ? t("nav.tournaments") : t("nav.matches")}
+        </Text>
+
+        <View style={styles.viewModeToggle}>
+          <TouchableOpacity
+            style={[styles.toggleBtn, viewMode === "list" && styles.toggleBtnActive]}
+            onPress={() => onViewModeChange("list")}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="reorder-four"
+              size={16}
+              color={viewMode === "list" ? "#ffffff" : "rgba(220, 225, 251, 0.4)"}
+            />
+            <Text
+              style={[
+                styles.toggleBtnText,
+                viewMode === "list" && styles.toggleBtnTextActive,
+              ]}
+            >
+              {t("common.viewList") || "List"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.toggleBtn, viewMode === "cards" && styles.toggleBtnActive]}
+            onPress={() => onViewModeChange("cards")}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="grid-outline"
+              size={14}
+              color={viewMode === "cards" ? "#ffffff" : "rgba(220, 225, 251, 0.4)"}
+            />
+            <Text
+              style={[
+                styles.toggleBtnText,
+                viewMode === "cards" && styles.toggleBtnTextActive,
+              ]}
+            >
+              {t("common.viewCards") || "Cards"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+});
+
 export default function FeedScreen() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -205,164 +399,6 @@ export default function FeedScreen() {
     return displayData.slice(start, start + itemsPerPage);
   }, [displayData, safePage, itemsPerPage]);
 
-  const renderHeader = () => (
-    <View style={styles.headerContainer}>
-      {/* Hero Command Center Card matching Web */}
-      <View style={styles.heroCard}>
-        <View style={styles.heroTopRow}>
-          <View style={styles.liveBadge}>
-            <View style={styles.livePulseDot} />
-            <Text style={styles.liveBadgeText}>{t("home.liveBadge") || "LIVE ARENA"}</Text>
-          </View>
-
-          {/* Quick Stat Counters */}
-          <View style={styles.statsPill}>
-            <View style={styles.statCol}>
-              <Text style={styles.statNumPrimary}>{totalMatchesCount}</Text>
-              <Text style={styles.statLabel}>{t("nav.matches") || "Matches"}</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statCol}>
-              <Text style={styles.statNumSecondary}>{totalTournamentsCount}</Text>
-              <Text style={styles.statLabel}>{t("nav.tournaments") || "Tourn."}</Text>
-            </View>
-            {user && (
-              <>
-                <View style={styles.statDivider} />
-                <View style={styles.statCol}>
-                  <Text style={styles.statNumAmber}>{totalFollowedCount}</Text>
-                  <Text style={styles.statLabel}>{t("common.following") || "Favs"}</Text>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-
-        <Text style={styles.heroTitle}>{t("home.heroTitle") || "Multi-Sport Command"}</Text>
-        <Text style={styles.heroSubtitle}>
-          {t("home.heroSubtitle") || "Real-time scores, tournament brackets & referee controls."}
-        </Text>
-      </View>
-
-      {/* Main Segment Switcher: Matches / Tournaments / Following */}
-      <View style={styles.segmentContainer}>
-        <TouchableOpacity
-          style={[styles.segmentBtn, activeSegment === "matches" && styles.segmentBtnActive]}
-          onPress={() => handleTabChange("matches")}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[
-              styles.segmentText,
-              activeSegment === "matches" && styles.segmentTextActive,
-            ]}
-          >
-            {t("nav.matches") || "Matches"} ({filteredMatches.length})
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.segmentBtn, activeSegment === "tournaments" && styles.segmentBtnActive]}
-          onPress={() => handleTabChange("tournaments")}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[
-              styles.segmentText,
-              activeSegment === "tournaments" && styles.segmentTextActive,
-            ]}
-          >
-            {t("nav.tournaments") || "Tournaments"} ({filteredTournaments.length})
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.segmentBtn, activeSegment === "following" && styles.segmentBtnActive]}
-          onPress={() => handleTabChange("following")}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[
-              styles.segmentText,
-              activeSegment === "following" && styles.segmentTextActive,
-            ]}
-          >
-            {t("common.following") || "Following"} ({totalFollowedCount})
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Sport Filter Bar */}
-      <SportFilterBar selectedSport={selectedSport} onSelectSport={handleSportChange} />
-
-      {/* Search Bar & Status Filter */}
-      <SearchBar
-        searchQuery={searchQuery}
-        onSearchChange={handleSearchChange}
-        statusFilter={statusFilter}
-        onStatusChange={handleStatusChange}
-      />
-
-      {/* View Mode & Count Bar (matching web controls) */}
-      <View style={styles.viewModeBar}>
-        <Text style={styles.resultCountText}>
-          {displayData.length}{" "}
-          {isTournaments ? t("nav.tournaments") : t("nav.matches")}
-        </Text>
-
-        <View style={styles.viewModeToggle}>
-          <TouchableOpacity
-            style={[styles.toggleBtn, viewMode === "list" && styles.toggleBtnActive]}
-            onPress={() => setViewMode("list")}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="reorder-four"
-              size={16}
-              color={viewMode === "list" ? "#ffffff" : "rgba(220, 225, 251, 0.4)"}
-            />
-            <Text
-              style={[
-                styles.toggleBtnText,
-                viewMode === "list" && styles.toggleBtnTextActive,
-              ]}
-            >
-              {t("common.viewList") || "List"}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.toggleBtn, viewMode === "cards" && styles.toggleBtnActive]}
-            onPress={() => setViewMode("cards")}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="grid-outline"
-              size={14}
-              color={viewMode === "cards" ? "#ffffff" : "rgba(220, 225, 251, 0.4)"}
-            />
-            <Text
-              style={[
-                styles.toggleBtnText,
-                viewMode === "cards" && styles.toggleBtnTextActive,
-              ]}
-            >
-              {t("common.viewCards") || "Cards"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-
-  const renderFooter = () => (
-    <Pagination
-      currentPage={safePage}
-      totalPages={totalPages}
-      onPageChange={handlePageChange}
-    />
-  );
-
   const renderEmpty = () => {
     if (loading) {
       return (
@@ -410,6 +446,7 @@ export default function FeedScreen() {
         ref={flatListRef}
         data={paginatedData}
         keyExtractor={(item) => item.id}
+        keyboardShouldPersistTaps="handled"
         renderItem={({ item }) =>
           isTournaments ? (
             <TournamentCard
@@ -425,9 +462,39 @@ export default function FeedScreen() {
             <MatchCard match={item} onAuthRequired={() => setAuthModalVisible(true)} />
           )
         }
-        ListHeaderComponent={renderHeader}
-        ListFooterComponent={displayData.length > 0 ? renderFooter : undefined}
-        ListEmptyComponent={renderEmpty}
+        ListHeaderComponent={
+          <FeedHeader
+            totalMatchesCount={totalMatchesCount}
+            totalTournamentsCount={totalTournamentsCount}
+            totalFollowedCount={totalFollowedCount}
+            user={user}
+            activeSegment={activeSegment}
+            filteredMatchesCount={filteredMatches.length}
+            filteredTournamentsCount={filteredTournaments.length}
+            onTabChange={handleTabChange}
+            selectedSport={selectedSport}
+            onSportChange={handleSportChange}
+            searchQuery={searchQuery}
+            onSearchChange={handleSearchChange}
+            statusFilter={statusFilter}
+            onStatusChange={handleStatusChange}
+            displayCount={displayData.length}
+            isTournaments={isTournaments}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            t={t}
+          />
+        }
+        ListFooterComponent={
+          displayData.length > 0 ? (
+            <Pagination
+              currentPage={safePage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          ) : undefined
+        }
+        ListEmptyComponent={renderEmpty()}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
