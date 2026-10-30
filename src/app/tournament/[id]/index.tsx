@@ -97,8 +97,9 @@ export default function TournamentDetailScreen() {
   useEffect(() => {
     fetchTournamentData();
 
+    const channelId = `tournament-hub-${tournamentId}-${Math.random().toString(36).slice(2, 9)}`;
     const channel = supabase
-      .channel(`tournament-hub-${tournamentId}`)
+      .channel(channelId)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "matches", filter: `tournament_id=eq.${tournamentId}` },

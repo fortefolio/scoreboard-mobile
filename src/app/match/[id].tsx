@@ -80,8 +80,9 @@ export default function MatchDetailScreen() {
     fetchMatch();
 
     // Subscribe to match & match_events realtime
+    const channelId = `match-${matchIdStr}-${Math.random().toString(36).slice(2, 9)}`;
     const matchChannel = supabase
-      .channel(`match-${matchIdStr}`)
+      .channel(channelId)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "matches", filter: `id=eq.${matchIdStr}` },

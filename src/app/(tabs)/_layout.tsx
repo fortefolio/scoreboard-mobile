@@ -29,8 +29,9 @@ export default function TabLayout() {
 
     checkUnread();
 
+    const channelId = `tab-notifications-badge-${user.id}-${Math.random().toString(36).slice(2, 9)}`;
     const channel = supabase
-      .channel("tab-notifications-badge")
+      .channel(channelId)
       .on(
         "postgres_changes",
         {
