@@ -44,8 +44,9 @@ export function TopBar({ onSearchPress }: TopBarProps) {
 
     fetchUnread();
 
+    const channelId = `user-notifications-count-${user.id}-${Math.random().toString(36).slice(2, 9)}`;
     const channel = supabase
-      .channel("user-notifications-count")
+      .channel(channelId)
       .on(
         "postgres_changes",
         {

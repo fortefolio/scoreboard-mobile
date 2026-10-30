@@ -79,8 +79,9 @@ export default function RefereeScoreboardScreen() {
 
     fetchMatch();
 
+    const channelId = `scoreboard-live-${matchIdStr}-${Math.random().toString(36).slice(2, 9)}`;
     const channel = supabase
-      .channel(`scoreboard-live-${matchIdStr}`)
+      .channel(channelId)
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${matchIdStr}` },

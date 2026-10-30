@@ -68,8 +68,9 @@ export default function FeedScreen() {
     fetchData();
 
     // Realtime channel for live match score updates
+    const channelId = `feed-live-${Math.random().toString(36).slice(2, 9)}`;
     const channel = supabase
-      .channel("feed-live-updates")
+      .channel(channelId)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "matches" },

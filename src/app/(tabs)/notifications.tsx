@@ -46,8 +46,9 @@ export default function NotificationsScreen() {
 
     if (!user) return;
 
+    const channelId = `notifications-tab-${user.id}-${Math.random().toString(36).slice(2, 9)}`;
     const channel = supabase
-      .channel("notifications-tab-updates")
+      .channel(channelId)
       .on(
         "postgres_changes",
         {
