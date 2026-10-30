@@ -200,11 +200,11 @@ This document outlines the end-to-end phased implementation roadmap to achieve c
 
 ## Deliverables & Milestones Summary
 
-| Milestone | Deliverables | Target Completion |
-| :--- | :--- | :--- |
-| **M1: Core Shell** | Expo project init, NativeWind styling, Supabase Auth via SecureStore, Base Navigation | Week 1 |
-| **M2: Home & Explore** | Matches, Tournaments & Following feeds, Filter bar, i18n support, Follow system | Week 2 |
-| **M3: Match Details** | Match detail view, set/quarter breakdowns, rules & umpire management | Week 3 |
-| **M4: Live Scoreboards** | 5 sport consoles (Tennis, Padel, Volleyball, Basketball, Football), Haptics, KeepAwake, Offline sync queue | Week 4–5 |
-| **M5: Tournaments & Brackets** | Group standings, group matches, pannable visual bracket trees, dynamic signup | Week 6 |
-| **M6: Push & Polish** | Push notifications (FCM/APNs), deep linking, EAS build setup & App Store readiness | Week 7 |
+| Milestone | Deliverables | Target Completion | Status |
+| :--- | :--- | :--- | :--- |
+| **M1: Core Shell** | Expo project init, NativeWind styling, Supabase Auth via SecureStore, Base Navigation | Week 1 | ✅ Completed |
+| **M2: Home & Explore** | Matches, Tournaments & Following feeds, Filter bar, i18n support, Follow system | Week 2 | ✅ Completed |
+| **M3: Match Details** | Match detail view, set/quarter breakdowns, rules & umpire management | Week 3 | ✅ Completed |
+| **M4: Live Scoreboards** | 5 sport consoles (Tennis, Padel, Volleyball, Basketball, Football), Haptics, KeepAwake, Offline sync queue | Week 4–5 | ✅ Completed |
+| **M5: Tournaments & Brackets** | Group standings, group matches, pannable visual bracket trees, dynamic signup | Week 6 | ✅ Completed |
+| **M6: Push & Polish** | Push notifications (FCM/APNs), deep linking, EAS build setup & App Store readiness | Week 7 | ✅ Completed |
