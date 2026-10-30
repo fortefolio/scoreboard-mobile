@@ -113,7 +113,18 @@ The mobile app supports complete dual-language translation:
 * Selections persist across sessions (`AsyncStorage` on Native, `localStorage` on Web).
 
 ### Shared Translations Architecture:
-Both `scoreboard-web` and `scoreboard-mobile` share identical translation dictionaries located in their respective `lib/i18n/locales/` directories (`en.ts` and `pt.ts`).
+Both `scoreboard-web` and `scoreboard-mobile` share identical translation dictionaries (`types.ts`, `locales/en.ts`, and `locales/pt.ts`).
+
+To keep them synchronized without managing external registry packages or tokens:
+```bash
+# Verify that translations are 100% in sync
+npm run check:i18n
+
+# Synchronize translations from canonical web source into mobile
+npm run sync:i18n
+```
+
+Automated Vitest regression tests (`lib/i18n/__tests__/drift.test.ts`) guard against translation drift in CI.
 
 ---
 
