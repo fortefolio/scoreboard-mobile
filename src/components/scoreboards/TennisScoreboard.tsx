@@ -5,11 +5,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  ScrollView,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase/client";
+
+const TENNIS_PTS = ["0", "15", "30", "40"];
 
 interface TennisScoreboardProps {
   matchData: any;
@@ -19,15 +20,22 @@ interface TennisScoreboardProps {
 
 export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboardProps) {
   const isPadel = matchData.sport_type === "Padel";
+  const defaultMaxSets = rules?.max_sets || 3;
   const noAd = rules?.no_ad ?? (isPadel ? true : false);
 
-  const [points, setPoints] = useState(matchData.scores?.tennis?.points || [0, 0]);
-  const [games, setGames] = useState(matchData.scores?.tennis?.games || [0, 0]);
+  const [points, setPoints] = useState<[number, number]>(
+    matchData.scores?.tennis?.points || [0, 0]
+  );
+  const [games, setGames] = useState<[number, number]>(
+    matchData.scores?.tennis?.games || [0, 0]
+  );
   const [sets, setSets] = useState<any[]>(matchData.scores?.tennis?.sets || []);
   const [serverIdx, setServerIdx] = useState<number | null>(
     matchData.scores?.serving_index ?? null
   );
   const [tossing, setTossing] = useState(false);
+  const [aces, setAces] = useState({ home: 0, away: 0 });
+  const [doubleFaults, setDoubleFaults] = useState({ home: 0, away: 0 });
 
   useEffect(() => {
     if (matchData.scores?.tennis) {
@@ -35,22 +43,52 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
       setGames(matchData.scores.tennis.games || [0, 0]);
       setSets(matchData.scores.tennis.sets || []);
       setServerIdx(matchData.scores.serving_index ?? null);
+      if (matchData.scores.tennis.stats) {
+        setAces(matchData.scores.tennis.stats.aces || { home: 0, away: 0 });
+        setDoubleFaults(matchData.scores.tennis.stats.double_faults || { home: 0, away: 0 });
+      }
     }
   }, [matchData.scores]);
 
   const teamA = matchData.participants?.[0]?.name || "Jogador / Dupla A";
   const teamB = matchData.participants?.[1]?.name || "Jogador / Dupla B";
 
+  const setsWonA = sets.filter((s: any) =>
+    Array.isArray(s) ? s[0] > s[1] : (s.team1 ?? s.home ?? 0) > (s.team2 ?? s.away ?? 0)
+  ).length;
+  const setsWonB = sets.filter((s: any) =>
+    Array.isArray(s) ? s[1] > s[0] : (s.team2 ?? s.away ?? 0) > (s.team1 ?? s.home ?? 0)
+  ).length;
+
+  const isTiebreak = games[0] === 6 && games[1] === 6;
+
   const formatPoints = (pts: number, oppPts: number) => {
-    const TENNIS_PTS = ["0", "15", "30", "40"];
+    if (isTiebreak) return String(pts);
     if (pts >= 3 && oppPts >= 3) {
-      if (noAd) return pts === 3 && oppPts === 3 ? "40 (Ponto de Ouro)" : "40";
-      if (pts === oppPts) return "40 (Deuce)";
-      if (pts > oppPts) return "AD";
-      return "40";
+      if (noAd) return "40";
+      if (pts === oppPts) return "40";
+      return pts > oppPts ? "AD" : "40";
     }
     return TENNIS_PTS[pts] || String(pts);
   };
+
+  const totalPointsInGame = points[0] + points[1];
+  const isDeuceCourt = totalPointsInGame % 2 === 0;
+
+  // Alerts
+  const isDeuceAlert = !isTiebreak && points[0] >= 3 && points[1] >= 3 && points[0] === points[1];
+  const isAdvantageA = !isTiebreak && points[0] >= 3 && points[1] >= 3 && points[0] - points[1] === 1;
+  const isAdvantageB = !isTiebreak && points[0] >= 3 && points[1] >= 3 && points[1] - points[0] === 1;
+  const isBreakPoint =
+    !isTiebreak &&
+    ((serverIdx === 0 && (points[1] === 3 && points[0] < 3 || isAdvantageB)) ||
+     (serverIdx === 1 && (points[0] === 3 && points[1] < 3 || isAdvantageA)));
+
+  const totalGamesInSet = games[0] + games[1];
+  const isChangeOfEnds =
+    !isTiebreak
+      ? totalGamesInSet > 0 && totalGamesInSet % 2 === 1 && points[0] === 0 && points[1] === 0
+      : totalPointsInGame > 0 && totalPointsInGame % 6 === 0;
 
   const handleToss = async (selectedIdx: number) => {
     if (!canEdit) return;
@@ -79,8 +117,7 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-    // Optimistic UI update
-    const newPoints = [...points];
+    const newPoints: [number, number] = [...points];
     newPoints[winnerIdx]++;
     setPoints(newPoints);
 
@@ -89,7 +126,8 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
         {
           match_id: matchData.id,
           event_data: {
-            type: "point",
+            type: "point_won",
+            side: winnerIdx === 0 ? "home" : "away",
             winner_index: winnerIdx,
             scoring_side: winnerIdx,
             description: `Ponto ganho por ${winnerIdx === 0 ? teamA : teamB}`,
@@ -102,30 +140,106 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
     }
   };
 
-  const handleFault = async () => {
+  const handleCorrectPoint = async (idx: number) => {
+    if (!canEdit || points[idx] <= 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    const newPoints: [number, number] = [...points];
+    newPoints[idx] = Math.max(0, newPoints[idx] - 1);
+    setPoints(newPoints);
+
+    const currentScores = matchData?.scores || {};
+    const updated = {
+      ...currentScores,
+      tennis: {
+        ...(currentScores.tennis || {}),
+        points: newPoints,
+      },
+    };
+
+    await supabase
+      .from("matches")
+      .update({ scores: updated, updated_at: new Date().toISOString() })
+      .eq("id", matchData.id);
+  };
+
+  const handleAce = async (idx: number) => {
+    if (!canEdit) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const side = idx === 0 ? "home" : "away";
+    const updated = { ...aces, [side]: aces[side] + 1 };
+    setAces(updated);
+
+    await handlePoint(idx);
+
+    await supabase.from("match_events").insert([
+      {
+        match_id: matchData.id,
+        event_data: { type: "tennis_stat", stat: "ace", side },
+      },
+    ]);
+  };
+
+  const handleDoubleFault = async (serverPlayerIdx: number) => {
     if (!canEdit) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    try {
-      await supabase.from("match_events").insert([
+    const side = serverPlayerIdx === 0 ? "home" : "away";
+    const oppIdx = serverPlayerIdx === 0 ? 1 : 0;
+    const updated = { ...doubleFaults, [side]: doubleFaults[side] + 1 };
+    setDoubleFaults(updated);
+
+    await handlePoint(oppIdx);
+
+    await supabase.from("match_events").insert([
+      {
+        match_id: matchData.id,
+        event_data: { type: "tennis_stat", stat: "double_fault", side },
+      },
+    ]);
+  };
+
+  const toggleServer = async () => {
+    if (!canEdit) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const nextIdx = serverIdx === 0 ? 1 : 0;
+    setServerIdx(nextIdx);
+
+    const currentScores = matchData?.scores || {};
+    await supabase
+      .from("matches")
+      .update({
+        scores: { ...currentScores, serving_index: nextIdx },
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", matchData.id);
+  };
+
+  const handleFinalizeMatch = () => {
+    if (!canEdit) return;
+    Alert.alert(
+      "Terminar Jogo",
+      `Tens a certeza que queres terminar este jogo de ${isPadel ? "Padel" : "Ténis"}?`,
+      [
+        { text: "Cancelar", style: "cancel" },
         {
-          match_id: matchData.id,
-          event_data: {
-            type: "fault",
-            server_index: serverIdx,
-            description: `Falta de serviço de ${serverIdx === 0 ? teamA : teamB}`,
+          text: "Terminar",
+          style: "destructive",
+          onPress: async () => {
+            await supabase
+              .from("matches")
+              .update({ status: "completed", updated_at: new Date().toISOString() })
+              .eq("id", matchData.id);
           },
         },
-      ]);
-    } catch (e: any) {
-      console.warn("Fault event error:", e);
-    }
+      ]
+    );
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {/* Coin Toss / Server Selection */}
-      {serverIdx === null ? (
-        <View style={styles.tossBox}>
+    <View style={styles.landscapeContainer}>
+      {/* Coin Toss / Server Selection Overlay */}
+      {serverIdx === null && (
+        <View style={styles.tossOverlay}>
           <Text style={styles.tossTitle}>SELECIONE QUEM SERVE PRIMEIRO</Text>
           <View style={styles.tossButtonsRow}>
             <TouchableOpacity
@@ -135,7 +249,6 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
             >
               <Text style={styles.tossBtnText}>{teamA}</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               style={styles.tossBtn}
               onPress={() => handleToss(1)}
@@ -145,311 +258,513 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
             </TouchableOpacity>
           </View>
         </View>
-      ) : (
-        <View style={styles.serverInfo}>
-          <Ionicons name="tennisball" size={16} color="#fbbf24" />
-          <Text style={styles.serverText}>
-            A Servir: <Text style={styles.serverHighlight}>{serverIdx === 0 ? teamA : teamB}</Text>
-          </Text>
-          {noAd && <Text style={styles.noAdBadge}>GOLDEN POINT ATIVO</Text>}
-        </View>
       )}
 
-      {/* Main Scoreboard Display */}
-      <View style={styles.displayCard}>
-        {/* Sets History Header */}
-        {sets.length > 0 && (
-          <View style={styles.setsHistoryRow}>
-            <Text style={styles.setsHistoryLabel}>SETS ANTERIORES:</Text>
-            <Text style={styles.setsHistoryText}>
-              {sets.map((s: any) => `${s[0]}-${s[1]}`).join("   ")}
+      {/* Column 1: Team Home */}
+      <View style={styles.teamColumn}>
+        <View style={styles.teamHeaderRow}>
+          <View style={[styles.teamDot, { backgroundColor: "#818cf8" }]} />
+          <Text style={styles.teamName} numberOfLines={1}>
+            {teamA}
+          </Text>
+          {serverIdx === 0 && (
+            <View style={styles.servingBadge}>
+              <Text style={styles.servingText}>A SERVIR</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Stats Badges */}
+        <View style={styles.statsBadgesRow}>
+          <View style={styles.badgePill}>
+            <Text style={styles.badgeText}>
+              Sets: <Text style={styles.digitalBadgeNum}>{setsWonA}</Text>
+            </Text>
+          </View>
+          <View style={styles.badgePill}>
+            <Text style={styles.badgeText}>
+              Jogos: <Text style={styles.digitalBadgeNum}>{games[0]}</Text>
+            </Text>
+          </View>
+        </View>
+
+        {/* Big Home Point in Digital Font */}
+        <Text style={[styles.scoreDigital, { color: "#818cf8" }]}>
+          {formatPoints(points[0], points[1])}
+        </Text>
+
+        {/* Home Controls */}
+        {canEdit && (
+          <View style={styles.controlsBlock}>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.btn, styles.btnPoint]}
+                onPress={() => handlePoint(0)}
+              >
+                <Ionicons name="add" size={15} color="#ffffff" />
+                <Text style={styles.btnPointText}>PONTO</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btn, styles.btnUndo]}
+                onPress={() => handleCorrectPoint(0)}
+              >
+                <Ionicons name="arrow-undo" size={13} color="#94a3b8" />
+                <Text style={styles.btnUndoText}>-1</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.btn, styles.btnSubAction]}
+                onPress={() => handleAce(0)}
+                disabled={serverIdx !== 0}
+              >
+                <Text style={styles.btnSubText}>Ás (Ace)</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btn, styles.btnSubAction]}
+                onPress={() => handleDoubleFault(0)}
+                disabled={serverIdx !== 0}
+              >
+                <Text style={styles.btnSubText}>Falta Dupla</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+
+      {/* Column 2: Center Info, Games Board, Server Side & Technical Alerts */}
+      <View style={styles.centerColumn}>
+        <View style={styles.periodPill}>
+          <Text style={styles.periodPillText}>
+            {isTiebreak ? "TIE-BREAK" : `SET ${sets.length + 1}`}
+          </Text>
+        </View>
+
+        {/* Games Board in Digital Font */}
+        <View style={styles.gamesBox}>
+          <Text style={styles.gamesLabel}>JOGOS</Text>
+          <Text style={styles.gamesDigital}>
+            {games[0]} - {games[1]}
+          </Text>
+        </View>
+
+        {/* Court Side */}
+        <View style={styles.courtSideRow}>
+          <Ionicons name="swap-horizontal" size={11} color="#60a5fa" />
+          <Text style={styles.courtSideText}>
+            {isDeuceCourt ? "Lado Direito" : "Lado Esquerdo"}
+          </Text>
+        </View>
+
+        {/* Context Alerts */}
+        {isBreakPoint && (
+          <View style={styles.alertPillBreak}>
+            <Text style={styles.alertTextBreak}>BREAK POINT</Text>
+          </View>
+        )}
+        {isDeuceAlert && (
+          <View style={styles.alertPillDeuce}>
+            <Text style={styles.alertTextDeuce}>
+              {noAd ? "PONTO DE OURO" : "DEUCE"}
             </Text>
           </View>
         )}
-
-        {/* Current Set Games */}
-        <View style={styles.gamesRow}>
-          <View style={styles.playerCol}>
-            <Text style={styles.playerName} numberOfLines={1}>
-              {teamA}
-            </Text>
-            <Text style={styles.gamesDigital}>{games[0]}</Text>
+        {isChangeOfEnds && (
+          <View style={styles.alertPillSwitch}>
+            <Text style={styles.alertTextSwitch}>TROCA DE CAMPO</Text>
           </View>
+        )}
 
-          <View style={styles.gamesDividerCol}>
-            <Text style={styles.gamesDivider}>JOGOS</Text>
-          </View>
+        {/* Toggle Server */}
+        {canEdit && (
+          <TouchableOpacity style={styles.serverToggleBtn} onPress={toggleServer}>
+            <Ionicons name="sync" size={11} color="#60a5fa" />
+            <Text style={styles.serverToggleText}>Alternar Servidor</Text>
+          </TouchableOpacity>
+        )}
 
-          <View style={styles.playerCol}>
-            <Text style={styles.playerName} numberOfLines={1}>
-              {teamB}
-            </Text>
-            <Text style={styles.gamesDigital}>{games[1]}</Text>
-          </View>
-        </View>
-
-        {/* Current Game Points LED */}
-        <View style={styles.pointsCard}>
-          <Text style={styles.pointsLabel}>PONTOS NO JOGO</Text>
-          <View style={styles.pointsRow}>
-            <Text style={styles.pointDigit}>{formatPoints(points[0], points[1])}</Text>
-            <Text style={styles.pointColon}>-</Text>
-            <Text style={styles.pointDigit}>{formatPoints(points[1], points[0])}</Text>
-          </View>
-        </View>
+        {/* Finalize Match */}
+        {canEdit && (
+          <TouchableOpacity style={styles.endMatchBtn} onPress={handleFinalizeMatch}>
+            <Ionicons name="checkmark-circle-outline" size={13} color="#f87171" />
+            <Text style={styles.endMatchText}>Terminar</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* Action Buttons for Referee */}
-      {canEdit && (
-        <View style={styles.actionsSection}>
-          <View style={styles.pointButtonsRow}>
-            <TouchableOpacity
-              style={[styles.bigPointBtn, styles.pointBtnA]}
-              onPress={() => handlePoint(0)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.pointBtnLabel}>+1 PONTO</Text>
-              <Text style={styles.pointBtnTeam} numberOfLines={1}>
-                {teamA}
-              </Text>
-            </TouchableOpacity>
+      {/* Column 3: Team Away */}
+      <View style={styles.teamColumn}>
+        <View style={styles.teamHeaderRow}>
+          {serverIdx === 1 && (
+            <View style={styles.servingBadgeAway}>
+              <Text style={styles.servingTextAway}>A SERVIR</Text>
+            </View>
+          )}
+          <Text style={styles.teamName} numberOfLines={1}>
+            {teamB}
+          </Text>
+          <View style={[styles.teamDot, { backgroundColor: "#4edea3" }]} />
+        </View>
 
-            <TouchableOpacity
-              style={[styles.bigPointBtn, styles.pointBtnB]}
-              onPress={() => handlePoint(1)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.pointBtnLabel}>+1 PONTO</Text>
-              <Text style={styles.pointBtnTeam} numberOfLines={1}>
-                {teamB}
-              </Text>
-            </TouchableOpacity>
+        {/* Stats Badges */}
+        <View style={styles.statsBadgesRow}>
+          <View style={styles.badgePill}>
+            <Text style={styles.badgeText}>
+              Jogos: <Text style={styles.digitalBadgeNum}>{games[1]}</Text>
+            </Text>
           </View>
-
-          {/* Fault / Secondary Controls */}
-          <View style={styles.faultRow}>
-            <TouchableOpacity style={styles.faultBtn} onPress={handleFault} activeOpacity={0.8}>
-              <Ionicons name="warning-outline" size={16} color="#fbbf24" />
-              <Text style={styles.faultBtnText}>Registar Falta de Serviço</Text>
-            </TouchableOpacity>
+          <View style={styles.badgePill}>
+            <Text style={styles.badgeText}>
+              Sets: <Text style={styles.digitalBadgeNum}>{setsWonB}</Text>
+            </Text>
           </View>
         </View>
-      )}
-    </ScrollView>
+
+        {/* Big Away Point in Digital Font */}
+        <Text style={[styles.scoreDigital, { color: "#4edea3" }]}>
+          {formatPoints(points[1], points[0])}
+        </Text>
+
+        {/* Away Controls */}
+        {canEdit && (
+          <View style={styles.controlsBlock}>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.btn, styles.btnUndo]}
+                onPress={() => handleCorrectPoint(1)}
+              >
+                <Ionicons name="arrow-undo" size={13} color="#94a3b8" />
+                <Text style={styles.btnUndoText}>-1</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btn, styles.btnPoint, styles.btnPointAway]}
+                onPress={() => handlePoint(1)}
+              >
+                <Ionicons name="add" size={15} color="#ffffff" />
+                <Text style={styles.btnPointText}>PONTO</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.btn, styles.btnSubAction]}
+                onPress={() => handleDoubleFault(1)}
+                disabled={serverIdx !== 1}
+              >
+                <Text style={styles.btnSubText}>Falta Dupla</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btn, styles.btnSubAction]}
+                onPress={() => handleAce(1)}
+                disabled={serverIdx !== 1}
+              >
+                <Text style={styles.btnSubText}>Ás (Ace)</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    paddingBottom: 40,
+  landscapeContainer: {
+    flex: 1,
+    flexDirection: "row",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: "#080c14",
+    alignItems: "stretch",
+    gap: 8,
+    position: "relative",
   },
-  tossBox: {
-    backgroundColor: "rgba(251, 191, 36, 0.12)",
+  tossOverlay: {
+    position: "absolute",
+    top: 6,
+    left: 12,
+    right: 12,
+    zIndex: 20,
+    backgroundColor: "#101626",
     borderWidth: 1,
-    borderColor: "#fbbf24",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    borderColor: "#4f46e5",
+    borderRadius: 12,
+    padding: 10,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 8,
   },
   tossTitle: {
-    color: "#fbbf24",
-    fontSize: 12,
-    fontWeight: "800",
+    fontSize: 10,
+    fontWeight: "900",
+    color: "#818cf8",
     letterSpacing: 1,
-    marginBottom: 12,
+    marginBottom: 6,
   },
   tossButtonsRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 8,
     width: "100%",
+    maxWidth: 320,
   },
   tossBtn: {
     flex: 1,
-    backgroundColor: "#151b2d",
-    borderWidth: 1,
-    borderColor: "#232d4b",
-    paddingVertical: 12,
-    borderRadius: 12,
+    backgroundColor: "#4f46e5",
+    paddingVertical: 7,
+    borderRadius: 8,
     alignItems: "center",
   },
   tossBtnText: {
-    color: "#f8fafc",
-    fontSize: 13,
-    fontWeight: "700",
+    color: "#ffffff",
+    fontSize: 11,
+    fontWeight: "800",
   },
-  serverInfo: {
+  teamColumn: {
+    flex: 1,
+    backgroundColor: "#0d1322",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#1e293b",
+    padding: 10,
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  teamHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#151b2d",
-    borderWidth: 1,
-    borderColor: "#232d4b",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    marginBottom: 16,
-    gap: 8,
+    gap: 6,
   },
-  serverText: {
+  teamDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  teamName: {
     fontSize: 13,
-    color: "#94a3b8",
-    flex: 1,
-  },
-  serverHighlight: {
+    fontWeight: "800",
     color: "#f8fafc",
+    maxWidth: 110,
+  },
+  servingBadge: {
+    backgroundColor: "rgba(129, 140, 248, 0.2)",
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  servingText: {
+    fontSize: 8,
+    fontWeight: "900",
+    color: "#818cf8",
+  },
+  servingBadgeAway: {
+    backgroundColor: "rgba(78, 222, 163, 0.2)",
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  servingTextAway: {
+    fontSize: 8,
+    fontWeight: "900",
+    color: "#4edea3",
+  },
+  statsBadgesRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginVertical: 2,
+  },
+  badgePill: {
+    backgroundColor: "#151e33",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: "#1e293b",
+  },
+  badgeText: {
+    fontSize: 9,
+    color: "#94a3b8",
     fontWeight: "700",
   },
-  noAdBadge: {
-    fontSize: 10,
+  digitalBadgeNum: {
+    fontFamily: "Digital7",
+    fontSize: 12,
+    color: "#f8fafc",
+  },
+  scoreDigital: {
+    fontFamily: "Digital7",
+    fontSize: 52,
+    lineHeight: 56,
+  },
+  controlsBlock: {
+    width: "100%",
+    gap: 5,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: 5,
+    width: "100%",
+  },
+  btn: {
+    flex: 1,
+    paddingVertical: 7,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  btnPoint: {
+    flex: 2,
+    flexDirection: "row",
+    backgroundColor: "#4f46e5",
+    gap: 4,
+  },
+  btnPointAway: {
+    backgroundColor: "#059669",
+  },
+  btnPointText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  btnUndo: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: "#1e293b",
+    borderWidth: 1,
+    borderColor: "#334155",
+    gap: 2,
+  },
+  btnUndoText: {
+    color: "#94a3b8",
+    fontSize: 11,
     fontWeight: "800",
-    color: "#fbbf24",
+  },
+  btnSubAction: {
+    backgroundColor: "#161f36",
+    borderWidth: 1,
+    borderColor: "#222f50",
+    paddingVertical: 5,
+  },
+  btnSubText: {
+    color: "#cbd5e1",
+    fontSize: 9,
+    fontWeight: "700",
+  },
+  centerColumn: {
+    width: 140,
+    backgroundColor: "#0b101c",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#1e293b",
+    padding: 8,
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  periodPill: {
     backgroundColor: "rgba(251, 191, 36, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(251, 191, 36, 0.3)",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  periodPillText: {
+    fontSize: 10,
+    fontWeight: "900",
+    color: "#fbbf24",
+  },
+  gamesBox: {
+    alignItems: "center",
+    backgroundColor: "#141c2e",
+    borderWidth: 1,
+    borderColor: "#222f50",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  gamesLabel: {
+    fontSize: 8,
+    color: "#94a3b8",
+    fontWeight: "700",
+  },
+  gamesDigital: {
+    fontFamily: "Digital7",
+    fontSize: 22,
+    color: "#ffffff",
+  },
+  courtSideRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  courtSideText: {
+    fontSize: 9,
+    color: "#94a3b8",
+    fontWeight: "700",
+  },
+  alertPillBreak: {
+    backgroundColor: "rgba(244, 63, 94, 0.2)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  alertTextBreak: {
+    fontSize: 8,
+    fontWeight: "900",
+    color: "#f43f5e",
+  },
+  alertPillDeuce: {
+    backgroundColor: "rgba(251, 191, 36, 0.2)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  alertTextDeuce: {
+    fontSize: 9,
+    fontWeight: "900",
+    color: "#fbbf24",
+  },
+  alertPillSwitch: {
+    backgroundColor: "rgba(96, 165, 250, 0.2)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  alertTextSwitch: {
+    fontSize: 9,
+    fontWeight: "900",
+    color: "#60a5fa",
+  },
+  serverToggleBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#141c2e",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  serverToggleText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: "#94a3b8",
+  },
+  endMatchBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(244, 63, 94, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(244, 63, 94, 0.25)",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
-  displayCard: {
-    backgroundColor: "#101626",
-    borderWidth: 1,
-    borderColor: "#232d4b",
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
-  },
-  setsHistoryRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
-    paddingBottom: 10,
-    marginBottom: 14,
-  },
-  setsHistoryLabel: {
-    fontSize: 11,
-    color: "#64748b",
-    fontWeight: "700",
-  },
-  setsHistoryText: {
-    fontSize: 13,
-    color: "#4edea3",
-    fontFamily: "monospace",
-    fontWeight: "700",
-  },
-  gamesRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  playerCol: {
-    flex: 1,
-    alignItems: "center",
-  },
-  playerName: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#f8fafc",
-    marginBottom: 4,
-    textAlign: "center",
-  },
-  gamesDigital: {
-    fontFamily: "Digital7",
-    fontSize: 52,
-    color: "#4edea3",
-  },
-  gamesDividerCol: {
-    paddingHorizontal: 10,
-    alignItems: "center",
-  },
-  gamesDivider: {
-    fontSize: 11,
+  endMatchText: {
+    fontSize: 9,
     fontWeight: "800",
-    color: "#64748b",
-    letterSpacing: 2,
-  },
-  pointsCard: {
-    backgroundColor: "#080c14",
-    borderRadius: 14,
-    padding: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#1e293b",
-  },
-  pointsLabel: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: "#64748b",
-    letterSpacing: 1.5,
-    marginBottom: 4,
-  },
-  pointsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  pointDigit: {
-    fontFamily: "Digital7",
-    fontSize: 44,
-    color: "#fbbf24",
-  },
-  pointColon: {
-    fontFamily: "Digital7",
-    fontSize: 32,
-    color: "#64748b",
-  },
-  actionsSection: {
-    gap: 12,
-  },
-  pointButtonsRow: {
-    flexDirection: "row",
-    gap: 14,
-  },
-  bigPointBtn: {
-    flex: 1,
-    paddingVertical: 24,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 3,
-  },
-  pointBtnA: {
-    backgroundColor: "#4f46e5",
-  },
-  pointBtnB: {
-    backgroundColor: "#0284c7",
-  },
-  pointBtnLabel: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "900",
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  pointBtnTeam: {
-    color: "rgba(255, 255, 255, 0.8)",
-    fontSize: 12,
-    fontWeight: "600",
-    paddingHorizontal: 12,
-  },
-  faultRow: {
-    marginTop: 6,
-  },
-  faultBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#151b2d",
-    borderWidth: 1,
-    borderColor: "#232d4b",
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
-  },
-  faultBtnText: {
-    color: "#fbbf24",
-    fontSize: 13,
-    fontWeight: "700",
+    color: "#f87171",
   },
 });
