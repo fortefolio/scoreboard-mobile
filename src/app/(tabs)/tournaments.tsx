@@ -180,6 +180,19 @@ export default function TournamentsFeedScreen() {
       {/* Top Application Bar */}
       <TopBar onSearchPress={() => {}} />
 
+      {/* Persistent Filters & Search (Placed outside FlatList to prevent focus loss) */}
+      <FeedHeader
+        selectedSport={selectedSport}
+        onSportChange={handleSportChange}
+        searchQuery={searchQuery}
+        onSearchChange={handleSearchChange}
+        statusFilter={statusFilter}
+        onStatusChange={handleStatusChange}
+        displayCount={filteredTournaments.length}
+        countLabel={t("nav.tournaments") || "Tournaments"}
+        showViewToggle={false}
+      />
+
       {/* Tournaments Feed List */}
       <FlatList
         ref={flatListRef}
@@ -192,19 +205,6 @@ export default function TournamentsFeedScreen() {
             onAuthRequired={() => setAuthModalVisible(true)}
           />
         )}
-        ListHeaderComponent={
-          <FeedHeader
-            selectedSport={selectedSport}
-            onSportChange={handleSportChange}
-            searchQuery={searchQuery}
-            onSearchChange={handleSearchChange}
-            statusFilter={statusFilter}
-            onStatusChange={handleStatusChange}
-            displayCount={filteredTournaments.length}
-            countLabel={t("nav.tournaments") || "Tournaments"}
-            showViewToggle={false}
-          />
-        }
         ListFooterComponent={
           filteredTournaments.length > 0 ? (
             <Pagination
