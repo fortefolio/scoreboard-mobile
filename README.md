@@ -1,200 +1,152 @@
-# ScoreBoard Mobile 📱
+# ScoreBoard Mobile
 
-Cross-platform mobile application for **ScoreBoard**, engineered with **React Native (Expo SDK 58)**, **Expo Router v4**, and **Supabase**. Built to deliver 1:1 design and functional parity with `scoreboard-web`, optimized with handheld referee ergonomics, tactile haptics, pinch-to-zoom tournament brackets, and live realtime score streaming.
-
----
-
-## 🎨 Design System Alignment
-
-ScoreBoard Mobile adheres strictly to the **Command Center** design specification defined in `DESIGN.md`:
-* **Chromatic Hierarchy**:
-  * **Base Canvas**: `#0c1324` (deep slate-black)
-  * **Surface Low (Cards/Containers)**: `#151b2d`
-  * **Surface Mid**: `#191f31`
-  * **Surface High (Modals/Popovers)**: `#23293c`
-  * **Primary Accent**: `#4f46e5` (Indigo powered buttons and active tabs)
-  * **Secondary Accent**: `#4edea3` (Emerald for live scores, set indicators, and winning paths)
-  * **Tertiary / Warning**: `#f59e0b` / `#fbbf24` (Amber for favorites, service indicator, and scheduled status)
-  * **Critical / Error**: `#ffb4ab` / `#93000a` (Soft red alerts)
-* **Typography**:
-  * **Digital-7 (`assets/fonts/digital-7.ttf`)**: Brand logo `SCORE:BOARD` and large digital scoreboards.
-  * **Space Grotesk / Monospace**: Performance statistics, set breakdowns, and game clocks.
-* **The No-Line Rule**: Section boundaries are defined via tonal contrast shifts rather than 1px solid borders.
+> **Social Live Scoring Platform — Mobile App (iOS / Android / Web)**  
+> Built with [Expo SDK 58](https://expo.dev), [React Native 0.88](https://reactnative.dev), and [Supabase](https://supabase.com).
 
 ---
 
-## 🚀 How to Run & Test the Mobile App
+## 📱 Visão Geral
 
-Ensure your local Supabase backend is running first:
-```bash
-docker ps | grep supabase_kong_backend
-# Should show port 0.0.0.0:54321->8000/tcp
-```
-
-### Option 1: iOS Simulator (macOS Xcode)
-> **Recommended for macOS.**
-
-1. **Pre-boot the simulator** (prevents cold boot timeout errors):
-   ```bash
-   open -a Simulator
-   ```
-2. Navigate to `scoreboard-mobile`:
-   ```bash
-   cd scoreboard-mobile
-   ```
-3. Start Expo targeting the iOS simulator:
-   ```bash
-   npm run ios
-   # Or with explicit localhost routing:
-   npx expo start --ios --localhost
-   ```
-4. Expo will automatically launch the app inside the active iPhone simulator.
+O **ScoreBoard Mobile** é a aplicação móvel multiplataforma do ecossistema ScoreBoard. Foi concebida tanto para adeptos e seguidores que acompanham jogos e torneios em tempo real, como para árbitros e organizadores que gerem a pontuação oficial através de consolas de arbitragem dedicadas.
 
 ---
 
-### Option 2: Web Browser (Chrome / Safari)
-> **Fastest for quick UI inspection and responsiveness testing.**
+## ✨ Funcionalidades Principais
 
-1. In the `scoreboard-mobile` directory, run:
-   ```bash
-   npm run web
-   ```
-2. Open [http://localhost:8081](http://localhost:8081) in Google Chrome or Safari.
-3. Open Developer Tools (`Cmd + Option + I`), click **Toggle Device Toolbar** (`Cmd + Shift + M`), and select **iPhone 16 Pro** or **Pixel 7** to preview the exact mobile viewport.
-4. *Note: Web mode is configured with `"output": "single"` (Single Page Application), eliminating SSR hydration mismatches.*
+### 1. Consola de Arbitragem em Modo Paisagem Forçado (*Landscape Lock*)
+Todos os marcadores de pontuação oficial bloqueiam automaticamente o ecrã em **modo horizontal (*landscape*)** via `expo-screen-orientation` para permitir uma operação ergonómica com ambos os polegares enquanto se acompanha a partida:
+- **Tipografia Digital (`fontFamily: "Digital7"`)**: Numeração de 7 segmentos para contadores de pontos, cronómetros e parciais.
+- **Layout Unificado em 3 Colunas**:
+  - **Coluna Esquerda (Casa)**: Indicador de serviço/posse, parciais/faltas/descontos, resultado digital gigante e ações rápidas com botão de correção (`-1`).
+  - **Coluna Central (Painel & Relógio)**: Período/Quarto/Set, relógio digital com controlos de tempo, alertas técnicos (*Deuce*, *Bónus*, *Break Point*, *Troca de Campo*) e botão para terminar partida.
+  - **Coluna Direita (Visitante)**: Controlos espelhados dedicados à equipa visitante.
+- **Manutenção de Ecrã Ativo**: Integração com `expo-keep-awake` para impedir que o dispositivo bloqueie durante a partida.
+- **Feedback Háptico**: Vibração tátil (`expo-haptics`) ao marcar pontos, faltas ou golos.
 
----
+### 2. Ações de Pontuação Específicas por Desporto
+- 🏀 **Basquetebol**: `+1` (Lance Livre), `+2` (Campo), `+3` (Triplo), `-1` (Corrigir), faltas com alerta automático de bónus à 5ª falta, descontos de tempo, posse de bola, relógio de quarto e shot clock (24s / 14s).
+- ⚽ **Futebol**: `+1 Golo`, `-1 Corrigir`, cartões amarelos e vermelhos, cantos, faltas, tempo de compensação (`+1m`), fases de jogo (1ª/2ª Parte, Intervalo, Prolongamento, Penáltis) e cronómetro.
+- 🏐 **Voleibol & Vólei de Praia**: Pontos de rally, sorteio inicial (*Toss*), rotação de serviço, descontos de tempo, regras de desempate (*Deuce* por 2 pontos), límite de set (25/21/15) e alerta de troca de campo (ao 8º ponto na negra ou múltiplos de 7 na praia).
+- 🎾 **Ténis & Padel**: Pontuação tradicional (`0, 15, 30, 40, AD`), *Ponto de Ouro* em Padel, ações de *Ás (Ace)* e *Falta Dupla*, lado do campo (*Deuce Court / Ad Court*), modo *Tie-break* e alertas de *Break Point* e troca de campo.
 
-### Option 3: Android Emulator (Android Studio)
-1. Start your Android Virtual Device (AVD) from Android Studio.
-2. In the `scoreboard-mobile` directory, run:
-   ```bash
-   npm run android
-   ```
-3. *Note: The Supabase client automatically resolves `localhost:54321` to `10.0.2.2:54321` when running on Android to communicate directly with your Mac's Docker container.*
+### 3. Feeds & Navegação Inferior
+- Barra de navegação inferior com abas nativas:
+  - **Matches**: Jogos em tempo real com resultados alinhados verticalmente com cada equipa.
+  - **Tournaments**: Lista de torneios organizados por modalidade.
+  - **Following**: Jogos e torneios subscritos pelo utilizador.
+  - **Alertas**: Notificações agregadas em tempo real com badge de contagem.
+  - **Perfil**: Definições de conta, idioma e autenticação.
+- **Pesquisa Sem Perda de Foco**: Barra de pesquisa estática com filtragem instantânea sem recriação de nós nativos.
 
----
-
-### Option 4: On Your Physical Phone (iOS / Android via Expo Go)
-> **Best for testing native haptics, KeepAwake screen retention, and referee consoles in hand.**
-
-1. Install the free **Expo Go** application:
-   * [Apple App Store (iOS)](https://apps.apple.com/app/expo-go/id982107779)
-   * [Google Play Store (Android)](https://play.google.com/store/apps/details?id=host.exp.exponent)
-2. Ensure your phone and your Mac are on the **same Wi-Fi network**.
-3. Obtain your Mac's local network IP address:
-   ```bash
-   ipconfig getifaddr en0
-   # Example output: 192.168.1.116
-   ```
-4. Open `scoreboard-mobile/.env` and update `EXPO_PUBLIC_SUPABASE_URL`:
-   ```env
-   EXPO_PUBLIC_SUPABASE_URL=http://<YOUR_MAC_IP>:54321
-   EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
-   ```
-5. Start the development server:
-   ```bash
-   npx expo start
-   ```
-6. Open your phone's **Camera** (iOS) or **Expo Go** (Android) and scan the QR code printed in the terminal.
+### 4. Internacionalização (i18n)
+- Suporte para Português (`pt`) e Inglês (`en`).
+- Seletor de idioma integrado e testes de regressão de sincronização (*drift test*).
 
 ---
 
-## 🌐 Internationalization (i18n)
+## 🛠️ Tecnologias Utilizadas
 
-The mobile app supports complete dual-language translation:
-* **English (`en`)**
-* **Portuguese (`pt`)**
-
-### How it works:
-* Uses the exact dictionary key structure as `scoreboard-web`.
-* Device locale is auto-detected on initial launch via `expo-localization`.
-* Users can toggle language at any time in the Top Navigation Bar or Profile screen.
-* Selections persist across sessions (`AsyncStorage` on Native, `localStorage` on Web).
-
-### Shared Translations Architecture:
-Both `scoreboard-web` and `scoreboard-mobile` share identical translation dictionaries (`types.ts`, `locales/en.ts`, and `locales/pt.ts`).
-
-To keep them synchronized without managing external registry packages or tokens:
-```bash
-# Verify that translations are 100% in sync
-npm run check:i18n
-
-# Synchronize translations from canonical web source into mobile
-npm run sync:i18n
-```
-
-Automated Vitest regression tests (`lib/i18n/__tests__/drift.test.ts`) guard against translation drift in CI.
+- **Framework**: [Expo SDK 58](https://expo.dev) com [React Native 0.88](https://reactnative.dev) e [React 19](https://react.dev)
+- **Navegação**: [Expo Router v58](https://docs.expo.dev/router/introduction/) (File-based Routing & Tabs)
+- **Base de Dados & Tempo Real**: [@supabase/supabase-js](https://supabase.com/docs/reference/javascript) (PostgreSQL, Realtime WebSockets, Auth)
+- **Módulos Nativos**:
+  - `expo-screen-orientation`: Bloqueio horizontal em marcadores
+  - `expo-keep-awake`: Prevenção de suspensão de ecrã
+  - `expo-haptics`: Feedback tátil para o árbitro
+  - `expo-font`: Carregamento da fonte `Digital7`
+- **Testes**: [Vitest](https://vitest.dev) (Testes unitários e de domínio de pontuação)
+- **Tipagem**: TypeScript strict mode
 
 ---
 
-## 🛠️ Troubleshooting & Known Errors
+## 📁 Estrutura de Pastas
 
-### 1. `Simulator device failed to open exp://... Operation timed out (domain=NSPOSIXErrorDomain, code=60)`
-* **Cause**: The iOS simulator was in a cold shutdown state, taking longer than the default 60s timeout for SpringBoard to boot and launch Expo Go.
-* **Fix**:
-  ```bash
-  # Boot the simulator prior to running expo:
-  open -a Simulator
-  # Then run:
-  npx expo start --ios --localhost
-  ```
-
-### 2. `A tree hydrated but some attributes of the server rendered HTML didn't match...`
-* **Cause**: Expo Router defaulted to server-side static rendering (`output: "server"`), causing React 19 hydration mismatches with client-side animation and layout components.
-* **Fix**: In `app.json`, set `"web": { "output": "single" }`. This sets Expo Web to client SPA mode, completely eliminating hydration discrepancies.
-
-### 3. `Network request failed` on physical device
-* **Cause**: The phone cannot reach `http://localhost:54321` (localhost on a phone refers to the phone itself).
-* **Fix**: Ensure your computer's LAN IP is set in `.env` (e.g. `http://192.168.1.x:54321`) and that macOS Firewall is not blocking incoming connections on port `54321`.
-
----
-
-## 📦 Project Structure
-
-```
+```text
 scoreboard-mobile/
-├── app.json                     # Expo configuration (SDK 58, dark theme, SPA output)
-├── eas.json                     # EAS build configurations (dev, preview, production)
+├── assets/
+│   ├── fonts/
+│   │   └── digital-7.ttf          # Fonte digital de 7 segmentos
+│   └── images/                    # Ícones e logótipo
 ├── src/
-│   ├── app/                     # Expo Router file-based routes
-│   │   ├── _layout.tsx          # Root theme, font, auth & language providers
-│   │   ├── (tabs)/              # Bottom tab navigation
-│   │   │   ├── index.tsx        # Feed & Command Center (Live Arena, filters, search)
-│   │   │   ├── my-matches.tsx   # User organized and refereed matches
-│   │   │   ├── my-tournaments.tsx # User tournaments & creation wizard
-│   │   │   ├── notifications.tsx # Live notifications center
-│   │   │   └── profile.tsx      # User profile, language toggle & settings
-│   │   ├── match/[id].tsx       # Match detail screen with sets breakdown & umpire tools
-│   │   ├── match/[id]/scoreboard.tsx # Fullscreen referee console (5 sports)
-│   │   ├── tournament/[id]/     # Tournament hub (standings, bracket tree, teams)
-│   │   └── user/[username].tsx  # Public athlete/organizer profile
-│   ├── components/              # Modular UI components
-│   │   ├── MatchCard.tsx        # Command Center match card matching web
-│   │   ├── TournamentCard.tsx   # Tournament card with format & dates
-│   │   ├── TopBar.tsx           # Digital-7 logo, language switcher, auth menu
-│   │   ├── SportFilterBar.tsx   # Scrollable sports pill selector
-│   │   ├── SportIcon.tsx        # Sport vector icons
-│   │   ├── FollowButton.tsx     # Star follow toggle
-│   │   └── tournament/          # Standings tables & interactive SVG brackets
-│   ├── lib/
-│   │   ├── i18n/                # Language context, translations (en/pt), types
-│   │   ├── supabase/            # Supabase client with SecureStore / localStorage
-│   │   ├── scoring/             # Multidisciplinary scoring engines
-│   │   └── notifications/       # Push notifications helper & deep links
-│   └── constants/
-│       └── theme.ts             # ScoreBoardTheme colors & spacing tokens
+│   ├── app/                       # Rotas da aplicação (Expo Router)
+│   │   ├── (tabs)/                # Abas principais (index, tournaments, following, notifications, profile)
+│   │   │   └── _layout.tsx        # Configuração da barra de navegação inferior
+│   │   ├── match/
+│   │   │   ├── [id].tsx           # Detalhe do jogo & acompanhamento
+│   │   │   └── [id]/scoreboard.tsx# Consola de arbitragem em modo paisagem
+│   │   ├── tournament/            # Detalhes, brackets, inscrições e equipas de torneio
+│   │   └── _layout.tsx            # Raiz com fontes, providers e temas
+│   ├── components/                # Componentes reutilizáveis
+│   │   ├── scoreboards/           # Marcadores dedicados (Basketball, Football, Volleyball, Tennis)
+│   │   ├── TopBar.tsx             # Barra superior global
+│   │   ├── FeedHeader.tsx         # Barra de pesquisa e filtros
+│   │   └── MatchListItem.tsx      # Linha de jogo com resultado vertical
+│   ├── constants/                 # Cores, espaçamentos e temas
+│   └── lib/                       # Motores de regras, i18n, Supabase e utilitários
+│       ├── scoring/               # Lógica de cálculo de sets, jogos e regras desportivas
+│       ├── standings/             # Classificações de grupos e desempates
+│       └── i18n/                  # Dicionários pt/en e context
+└── tests/                         # Testes automatizados do motor de jogo
 ```
 
 ---
 
-## 📜 Verification
+## 🚀 Como Executar
 
-Verify types and bundling:
+### Pré-requisitos
+- [Node.js](https://nodejs.org) (v20 ou superior)
+- `npm` ou `yarn`
+- [Expo Go](https://expo.dev/go) instalado no smartphone físico ou um emulador (Android Studio / Xcode).
+
+### 1. Clonar e Instalar Dependências
 ```bash
-# Typecheck
-npx tsc --noEmit
-
-# Test Web Export
-npx expo export --platform web
+cd scoreboard-mobile
+npm install
 ```
+
+### 2. Configurar Variáveis de Ambiente
+Cria um ficheiro `.env` na raiz do projeto com as credenciais do teu projeto Supabase:
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://teu-projeto.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=tua-chave-anonima
+```
+
+### 3. Iniciar a Aplicação
+```bash
+# Iniciar o servidor de desenvolvimento do Expo
+npm start
+
+# Ou abrir diretamente na plataforma desejada:
+npm run android   # Emulador Android
+npm run ios       # Simulador iOS
+npm run web       # Modo navegador web
+```
+
+---
+
+## 🧪 Testes Automatizados
+
+O projeto utiliza o **Vitest** para executar testes rápidos aos motores de regras, lógica de pontuação e sincronização de idiomas:
+
+```bash
+# Executar todos os testes
+npm run test:run
+
+# Executar testes em modo watch
+npm test
+
+# Verificar se existem chaves de tradução em falta entre PT e EN
+npm run check:i18n
+```
+
+### Testes Incluídos:
+- `tests/scoring/tennis.test.ts`: Simula sequências de pontos reais de ténis (holds, deuce, break points, tiebreak de 7 pontos por 2 de vantagem).
+- `tests/scoring/volleyball.test.ts`: Validação de regras de rotação, parciais e limites de sets de voleibol e vólei de praia.
+- `src/lib/scoring/sets.test.ts`: Extração e contagem de conjuntos e parciais.
+- `src/lib/standings/groups.test.ts`: Cálculo de tabelas classificativas em fase de grupos e regras de desempate.
+- `src/lib/i18n/__tests__/drift.test.ts`: Garante paridade total entre os ficheiros de tradução em Português e Inglês.
+
+---
+
+## 📄 Licença
+Propriedade do projeto ScoreBoard. Todos os direitos reservados.
