@@ -42,6 +42,7 @@
     "@testing-library/react-native": "^14.1.0",
     "@types/node": "^26.6.6",
     "@types/react": "~19.3.0",
+    "@vitest/ui": "^5.0.5",
     "fast-check": "^4.10.2",
     "happy-dom": "^21.0.4",
     "tsx": "^4.23.15",
@@ -57,6 +58,9 @@
     "lint": "expo lint",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:report": "vitest run --reporter=html",
+    "test:report:preview": "npx vite preview --outDir .vitest",
+    "test:ui": "vitest --ui",
     "sync:i18n": "node scripts/sync-i18n.js",
     "check:i18n": "node scripts/sync-i18n.js --check"
   },
