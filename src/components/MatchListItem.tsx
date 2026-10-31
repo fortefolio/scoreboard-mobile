@@ -60,28 +60,27 @@ export function MatchListItem({ match }: MatchListItemProps) {
         <SportIcon sport={match.sport_type} size={15} color="#c3c0ff" />
       </View>
 
-      {/* Teams Column */}
-      <View style={styles.teamsCol}>
-        <View style={styles.teamLine}>
-          <View style={[styles.teamDot, { backgroundColor: ScoreBoardTheme.primary }]} />
-          <Text style={styles.teamName} numberOfLines={1}>
-            {name0}
-          </Text>
+      {/* Teams & Vertically Aligned Scores */}
+      <View style={styles.contentCol}>
+        <View style={styles.teamRow}>
+          <View style={styles.teamLine}>
+            <View style={[styles.teamDot, { backgroundColor: ScoreBoardTheme.primary }]} />
+            <Text style={styles.teamName} numberOfLines={1}>
+              {name0}
+            </Text>
+          </View>
+          <Text style={styles.scoreText}>{score0}</Text>
         </View>
 
-        <View style={styles.teamLine}>
-          <View style={[styles.teamDot, { backgroundColor: ScoreBoardTheme.secondary }]} />
-          <Text style={styles.teamName} numberOfLines={1}>
-            {name1}
-          </Text>
+        <View style={styles.teamRow}>
+          <View style={styles.teamLine}>
+            <View style={[styles.teamDot, { backgroundColor: ScoreBoardTheme.secondary }]} />
+            <Text style={styles.teamName} numberOfLines={1}>
+              {name1}
+            </Text>
+          </View>
+          <Text style={styles.scoreText}>{score1}</Text>
         </View>
-      </View>
-
-      {/* Score */}
-      <View style={styles.scoreCol}>
-        <Text style={styles.scoreText}>
-          {score0} - {score1}
-        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -110,15 +109,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  teamsCol: {
+  contentCol: {
     flex: 1,
-    minWidth: 0,
-    gap: 4,
+    gap: 6,
+  },
+  teamRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
   },
   teamLine: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    minWidth: 0,
   },
   teamDot: {
     width: 5,
@@ -132,16 +138,13 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.3,
   },
-  scoreCol: {
-    alignItems: "flex-end",
-    justifyContent: "center",
-    paddingLeft: 8,
-  },
   scoreText: {
     fontFamily: "Digital7",
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "900",
     color: ScoreBoardTheme.secondary,
-    letterSpacing: 1,
+    textAlign: "right",
+    minWidth: 20,
+    letterSpacing: 0.5,
   },
 });
