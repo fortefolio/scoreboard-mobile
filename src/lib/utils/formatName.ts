@@ -4,6 +4,12 @@
  * first names are abbreviated to their initial (e.g. "Arturo Coello" -> "A. Coello").
  */
 
+/**
+ * Abbreviates the first name of a person to an initial.
+ * e.g. "Arturo Coello" -> "A. Coello"
+ * e.g. "Federico Chingotto" -> "F. Chingotto"
+ * Preserves team acronyms like "SL Benfica", "FC Porto", "VC Viana".
+ */
 export function formatSinglePlayerName(name: string): string {
   const trimmed = name.trim();
   if (!trimmed) return "";
@@ -35,23 +41,35 @@ export function formatSinglePlayerName(name: string): string {
   return `${initial}. ${rest}${suffix}`;
 }
 
-export function formatTeamOrPlayerName(name?: string, maxLength: number = 22): string {
+/**
+ * Formats a player or team name.
+ * If the name is a doubles pair (contains "/" or "&") or exceeds `maxLength`,
+ * the first name(s) are abbreviated:
+ * e.g. "Arturo Coello / Agustín Tapia" -> "A. Coello / A. Tapia"
+ * e.g. "Alejandro Galán / Federico Chingotto" -> "A. Galán / F. Chingotto"
+ * e.g. "Federico Chingotto" (if > maxLength) -> "F. Chingotto"
+ */
+export function formatTeamOrPlayerName(name?: string | null, maxLength = 16): string {
   if (!name) return "";
   const trimmed = name.trim();
+  if (!trimmed) return "";
 
-  // If it is a doubles pair separated by "/" or " / "
+  // Doubles / Pairs (separated by "/" or "&")
   if (trimmed.includes("/")) {
-    const parts = trimmed.split("/").map((p) => p.trim());
-    return parts.map((p) => formatSinglePlayerName(p)).join(" / ");
+    return trimmed
+      .split("/")
+      .map((part) => formatSinglePlayerName(part))
+      .join(" / ");
   }
 
-  // If it is a doubles pair separated by " & "
-  if (trimmed.includes(" & ")) {
-    const parts = trimmed.split("&").map((p) => p.trim());
-    return parts.map((p) => formatSinglePlayerName(p)).join(" & ");
+  if (trimmed.includes("&")) {
+    return trimmed
+      .split("&")
+      .map((part) => formatSinglePlayerName(part))
+      .join(" & ");
   }
 
-  // If the single name exceeds maxLength, abbreviate the first name
+  // Single player / team longer than threshold
   if (trimmed.length > maxLength) {
     return formatSinglePlayerName(trimmed);
   }
@@ -59,6 +77,32 @@ export function formatTeamOrPlayerName(name?: string, maxLength: number = 22): s
   return trimmed;
 }
 
+/**
+ * Formats a string containing " vs " or " vs. " or " VS ",
+ * abbreviating player names on both sides.
+ * e.g. "Arturo Coello / Agustín Tapia vs Alejandro Galán / Federico Chingotto"
+ *   -> "A. Coello / A. Tapia vs A. Galán / F. Chingotto"
+ */
+export function formatVersusTitle(title?: string | null): string {
+  if (!title) return "";
+  const trimmed = title.trim();
+  if (!trimmed) return "";
+
+  // Check if title has " vs " or " vs. " or " x " (case-insensitive)
+  const vsMatch = trimmed.match(/\s+(vs\.?|x)\s+/i);
+  if (vsMatch && vsMatch.index !== undefined) {
+    const separator = vsMatch[0];
+    const left = trimmed.slice(0, vsMatch.index);
+    const right = trimmed.slice(vsMatch.index + separator.length);
+    return `${formatTeamOrPlayerName(left)}${separator}${formatTeamOrPlayerName(right)}`;
+  }
+
+  return formatTeamOrPlayerName(trimmed);
+}
+
+/**
+ * Returns a 1-2 character initials badge for a player or team name.
+ */
 export const getInitials = (name?: string): string => {
   if (!name) return "?";
   const cleaned = name.replace(/\(.+?\)/g, "").trim();
