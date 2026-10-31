@@ -10,6 +10,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
+import * as ScreenOrientation from "expo-screen-orientation";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/lib/i18n";
@@ -32,11 +33,21 @@ export default function RefereeScoreboardScreen() {
 
   const matchIdStr = (Array.isArray(id) ? id[0] : id) || "";
 
-  // Screen keep awake management
+  // Screen keep awake management & Force Landscape on Scoreboard
   useEffect(() => {
     activateKeepAwakeAsync();
+    async function lockLandscape() {
+      try {
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+      } catch (e) {
+        console.warn("Could not lock orientation to landscape:", e);
+      }
+    }
+    lockLandscape();
+
     return () => {
       deactivateKeepAwake();
+      ScreenOrientation.unlockAsync().catch(() => {});
     };
   }, []);
 
@@ -216,39 +227,40 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   refereeHeader: {
-    height: 56,
+    height: 40,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#1e293b",
     backgroundColor: "#0d1322",
   },
   iconBtn: {
-    padding: 6,
+    padding: 4,
   },
   headerTitleBox: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 8,
   },
   refereeTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "800",
     color: "#4edea3",
-    letterSpacing: 1.5,
+    letterSpacing: 1.2,
   },
   headerSport: {
     fontSize: 11,
     color: "#94a3b8",
-    marginTop: 2,
   },
   wakeLockBadge: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(78, 222, 163, 0.12)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
     gap: 4,
   },
   wakeLockText: {
