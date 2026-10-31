@@ -5,11 +5,13 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
+      "react-native": "react-native-web",
     },
   },
   test: {
     globals: true,
-    environment: "node",
+    environment: "happy-dom",
+    setupFiles: ["./tests/setup.ts"],
     include: [
       "src/**/*.{test,spec}.{ts,tsx}",
       "tests/**/*.{test,spec}.{ts,tsx}",
