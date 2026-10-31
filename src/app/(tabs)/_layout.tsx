@@ -75,21 +75,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: t("nav.matches") || "Feed",
-          tabBarIcon: ({ size, focused }) => (
-            <Ionicons
-              name={focused ? "home" : "home-outline"}
-              size={22}
-              color={focused ? "#4edea3" : "#64748b"}
-            />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="my-matches"
-        options={{
-          title: t("nav.myMatches") || "Os Meus Jogos",
+          title: t("nav.matches") || "Matches",
           tabBarIcon: ({ size, focused }) => (
             <Ionicons
               name={focused ? "tennisball" : "tennisball-outline"}
@@ -101,12 +87,26 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="my-tournaments"
+        name="tournaments"
         options={{
-          title: t("nav.myTournaments") || "Torneios",
+          title: t("nav.tournaments") || "Tournaments",
           tabBarIcon: ({ size, focused }) => (
             <Ionicons
               name={focused ? "trophy" : "trophy-outline"}
+              size={22}
+              color={focused ? "#4edea3" : "#64748b"}
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="following"
+        options={{
+          title: t("common.following") || "Following",
+          tabBarIcon: ({ size, focused }) => (
+            <Ionicons
+              name={focused ? "star" : "star-outline"}
               size={22}
               color={focused ? "#4edea3" : "#64748b"}
             />
@@ -146,6 +146,20 @@ export default function TabLayout() {
               color={focused ? "#4edea3" : "#64748b"}
             />
           ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="my-matches"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="my-tournaments"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
