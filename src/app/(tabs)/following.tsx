@@ -198,6 +198,21 @@ export default function FollowingFeedScreen() {
       {/* Top Application Bar */}
       <TopBar onSearchPress={() => {}} />
 
+      {/* Persistent Filters & Search (Outside FlatList to prevent focus loss) */}
+      <FeedHeader
+        selectedSport={selectedSport}
+        onSportChange={handleSportChange}
+        searchQuery={searchQuery}
+        onSearchChange={handleSearchChange}
+        statusFilter={statusFilter}
+        onStatusChange={handleStatusChange}
+        displayCount={followedItems.length}
+        countLabel={t("common.following") || "Following"}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        showViewToggle={true}
+      />
+
       {/* Following Feed List */}
       <FlatList
         ref={flatListRef}
@@ -218,21 +233,6 @@ export default function FollowingFeedScreen() {
           ) : (
             <MatchCard match={item} onAuthRequired={() => setAuthModalVisible(true)} />
           )
-        }
-        ListHeaderComponent={
-          <FeedHeader
-            selectedSport={selectedSport}
-            onSportChange={handleSportChange}
-            searchQuery={searchQuery}
-            onSearchChange={handleSearchChange}
-            statusFilter={statusFilter}
-            onStatusChange={handleStatusChange}
-            displayCount={followedItems.length}
-            countLabel={t("common.following") || "Following"}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            showViewToggle={true}
-          />
         }
         ListFooterComponent={
           followedItems.length > 0 ? (

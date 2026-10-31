@@ -182,6 +182,21 @@ export default function MatchesFeedScreen() {
       {/* Top Application Bar */}
       <TopBar onSearchPress={() => {}} />
 
+      {/* Persistent Filters & Search (Placed outside FlatList so TextInput never loses focus) */}
+      <FeedHeader
+        selectedSport={selectedSport}
+        onSportChange={handleSportChange}
+        searchQuery={searchQuery}
+        onSearchChange={handleSearchChange}
+        statusFilter={statusFilter}
+        onStatusChange={handleStatusChange}
+        displayCount={filteredMatches.length}
+        countLabel={t("nav.matches") || "Matches"}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        showViewToggle={true}
+      />
+
       {/* Matches Feed List */}
       <FlatList
         ref={flatListRef}
@@ -197,21 +212,6 @@ export default function MatchesFeedScreen() {
           ) : (
             <MatchCard match={item} onAuthRequired={() => setAuthModalVisible(true)} />
           )
-        }
-        ListHeaderComponent={
-          <FeedHeader
-            selectedSport={selectedSport}
-            onSportChange={handleSportChange}
-            searchQuery={searchQuery}
-            onSearchChange={handleSearchChange}
-            statusFilter={statusFilter}
-            onStatusChange={handleStatusChange}
-            displayCount={filteredMatches.length}
-            countLabel={t("nav.matches") || "Matches"}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            showViewToggle={true}
-          />
         }
         ListFooterComponent={
           filteredMatches.length > 0 ? (
