@@ -126,7 +126,7 @@ npm run web       # Modo navegador web
 
 ## 🧪 Testes Automatizados
 
-O projeto utiliza o **Vitest** para executar testes rápidos aos motores de regras, lógica de pontuação e sincronização de idiomas:
+O projeto utiliza o **Vitest** em conjunto com `@testing-library/react` (com `react-native-web` e `happy-dom`) para validar tanto as regras de domínio como a experiência de utilizador (UX) nas consolas de arbitragem:
 
 ```bash
 # Executar todos os testes
@@ -135,11 +135,28 @@ npm run test:run
 # Executar testes em modo watch
 npm test
 
-# Verificar se existem chaves de tradução em falta entre PT e EN
+# Gerar relatório HTML dos testes
+npm run test:report
+
+# Visualizar o relatório HTML no browser (abre em http://localhost:4173)
+npm run test:report:preview
+
+# Abrir a dashboard gráfica interativa do Vitest em tempo real
+npm run test:ui
+
+# Verificar paridade entre ficheiros de tradução PT e EN
 npm run check:i18n
 ```
 
-### Testes Incluídos:
+### Testes de Interação de UI com Dados Reais (`tests/ui/`):
+Simulam cliques e fluxos reais de árbitros na consola móvel de arbitragem baseados em fichas e estatísticas oficiais:
+- `tests/ui/tennis-atp-wimbledon.ui.test.tsx`: Replay do 5º jogo do 3º set da Final de Wimbledon 2023 (Alcaraz vs Djokovic) — 13 igualdades (*deuces*), ases (`Ás (Ace)`), duplas-faltas (`Falta Dupla`), pontos de break e rotação de servidor.
+- `tests/ui/padel-madrid-p1.ui.test.tsx`: Final Masculina Madrid Premier Padel P1 2024 (Coello/Tapia vs Galán/Chingotto) — aplicação de *Ponto de Ouro* a 40-40, correção de pontos (`-1`) e encerramento de partida.
+- `tests/ui/basketball-fiba-liga.ui.test.tsx`: Jogo FIBA Liga Betclic (SL Benfica vs FC Porto) — cestos de `+1`, `+2` e `+3`, reposição de relógio de 24s, acumulação de faltas até alerta de bónus (5ª falta), descontos de tempo e transição de períodos (`Q2`).
+- `tests/ui/volleyball-liga-una.ui.test.tsx`: Ficha Oficial FPV Jogo nº 136 (Clube Kairós vs VC Viana) — sorteio de serviço (*toss*), rotação automática em *side-out* com badge `A SERVIR`, pedidos de desconto de tempo e 5º set decisivo a 15 pontos (`SET 5 (NEGRA)`).
+- `tests/ui/football-official-match.ui.test.tsx`: Jogo oficial Taça de Portugal (Sporting CP vs AC Viseu) — `+1 GOLO`, anulação por VAR (`-1`), cartões amarelos e vermelhos, estatísticas (`+Canto`/`+Falta`), minutos de compensação (`Comp: +1m`) e transição de partes.
+
+### Testes de Domínio e Motores de Regras:
 - `tests/scoring/tennis.test.ts`: Simula sequências de pontos reais de ténis (holds, deuce, break points, tiebreak de 7 pontos por 2 de vantagem).
 - `tests/scoring/volleyball.test.ts`: Validação de regras de rotação, parciais e limites de sets de voleibol e vólei de praia.
 - `src/lib/scoring/sets.test.ts`: Extração e contagem de conjuntos e parciais.
