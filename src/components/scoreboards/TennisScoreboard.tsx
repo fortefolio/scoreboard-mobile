@@ -9,6 +9,7 @@ import {
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase/client";
+import { useLanguage } from "@/lib/i18n";
 
 const TENNIS_PTS = ["0", "15", "30", "40"];
 
@@ -19,6 +20,7 @@ interface TennisScoreboardProps {
 }
 
 export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboardProps) {
+  const { t } = useLanguage();
   const isPadel = matchData.sport_type === "Padel";
   const defaultMaxSets = rules?.max_sets || 3;
   const noAd = rules?.no_ad ?? (isPadel ? true : false);
@@ -217,12 +219,12 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
   const handleFinalizeMatch = () => {
     if (!canEdit) return;
     Alert.alert(
-      "Terminar Jogo",
-      `Tens a certeza que queres terminar este jogo de ${isPadel ? "Padel" : "Ténis"}?`,
+      t("scoreboard.endMatchTitle") || "Terminar Jogo",
+      t("scoreboard.endMatchConfirm", { sport: isPadel ? "Padel" : "Ténis" }) || `Tens a certeza que queres terminar este jogo de ${isPadel ? "Padel" : "Ténis"}?`,
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: t("common.cancel") || "Cancelar", style: "cancel" },
         {
-          text: "Terminar",
+          text: t("scoreboard.endMatch") || "Terminar",
           style: "destructive",
           onPress: async () => {
             await supabase
@@ -240,7 +242,7 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
       {/* Coin Toss / Server Selection Overlay */}
       {serverIdx === null && (
         <View style={styles.tossOverlay}>
-          <Text style={styles.tossTitle}>SELECIONE QUEM SERVE PRIMEIRO</Text>
+          <Text style={styles.tossTitle}>{t("scoreboard.tennis.selectFirstServer") || "SELECIONE QUEM SERVE PRIMEIRO"}</Text>
           <View style={styles.tossButtonsRow}>
             <TouchableOpacity
               style={styles.tossBtn}
@@ -269,7 +271,7 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
           </Text>
           {serverIdx === 0 && (
             <View style={styles.servingBadge}>
-              <Text style={styles.servingText}>A SERVIR</Text>
+              <Text style={styles.servingText}>{t("scoreboard.serving") || "A SERVIR"}</Text>
             </View>
           )}
         </View>
@@ -278,12 +280,12 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
         <View style={styles.statsBadgesRow}>
           <View style={styles.badgePill}>
             <Text style={styles.badgeText}>
-              Sets: <Text style={styles.digitalBadgeNum}>{setsWonA}</Text>
+              {t("scoreboard.setsShort") || "Sets:"} <Text style={styles.digitalBadgeNum}>{setsWonA}</Text>
             </Text>
           </View>
           <View style={styles.badgePill}>
             <Text style={styles.badgeText}>
-              Jogos: <Text style={styles.digitalBadgeNum}>{games[0]}</Text>
+              {t("scoreboard.gamesShort") || "Jogos:"} <Text style={styles.digitalBadgeNum}>{games[0]}</Text>
             </Text>
           </View>
         </View>
@@ -302,14 +304,14 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
                 onPress={() => handlePoint(0)}
               >
                 <Ionicons name="add" size={15} color="#ffffff" />
-                <Text style={styles.btnPointText}>PONTO</Text>
+                <Text style={styles.btnPointText}>{t("scoreboard.point") || "PONTO"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnUndo]}
                 onPress={() => handleCorrectPoint(0)}
               >
                 <Ionicons name="arrow-undo" size={13} color="#94a3b8" />
-                <Text style={styles.btnUndoText}>-1</Text>
+                <Text style={styles.btnUndoText}>{t("scoreboard.undo") || "-1"}</Text>
               </TouchableOpacity>
             </View>
 
@@ -319,14 +321,14 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
                 onPress={() => handleAce(0)}
                 disabled={serverIdx !== 0}
               >
-                <Text style={styles.btnSubText}>Ás (Ace)</Text>
+                <Text style={styles.btnSubText}>{t("scoreboard.tennis.ace") || "Ás (Ace)"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnSubAction]}
                 onPress={() => handleDoubleFault(0)}
                 disabled={serverIdx !== 0}
               >
-                <Text style={styles.btnSubText}>Falta Dupla</Text>
+                <Text style={styles.btnSubText}>{t("scoreboard.tennis.doubleFault") || "Falta Dupla"}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -343,7 +345,7 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
 
         {/* Games Board in Digital Font */}
         <View style={styles.gamesBox}>
-          <Text style={styles.gamesLabel}>JOGOS</Text>
+          <Text style={styles.gamesLabel}>{t("scoreboard.gamesUpper") || "JOGOS"}</Text>
           <Text style={styles.gamesDigital}>
             {games[0]} - {games[1]}
           </Text>
@@ -353,26 +355,26 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
         <View style={styles.courtSideRow}>
           <Ionicons name="swap-horizontal" size={11} color="#60a5fa" />
           <Text style={styles.courtSideText}>
-            {isDeuceCourt ? "Lado Direito" : "Lado Esquerdo"}
+            {isDeuceCourt ? (t("scoreboard.tennis.rightDeuceSide") || "Lado Direito") : (t("scoreboard.tennis.leftAdvantageSide") || "Lado Esquerdo")}
           </Text>
         </View>
 
         {/* Context Alerts */}
         {isBreakPoint && (
           <View style={styles.alertPillBreak}>
-            <Text style={styles.alertTextBreak}>BREAK POINT</Text>
+            <Text style={styles.alertTextBreak}>{t("scoreboard.tennis.breakPoint") || "BREAK POINT"}</Text>
           </View>
         )}
         {isDeuceAlert && (
           <View style={styles.alertPillDeuce}>
             <Text style={styles.alertTextDeuce}>
-              {noAd ? "PONTO DE OURO" : "DEUCE"}
+              {noAd ? (t("scoreboard.tennis.goldenPoint") || "PONTO DE OURO") : (t("scoreboard.tennis.deuce") || "DEUCE")}
             </Text>
           </View>
         )}
         {isChangeOfEnds && (
           <View style={styles.alertPillSwitch}>
-            <Text style={styles.alertTextSwitch}>TROCA DE CAMPO</Text>
+            <Text style={styles.alertTextSwitch}>{t("scoreboard.courtSwitch") || "TROCA DE CAMPO"}</Text>
           </View>
         )}
 
@@ -380,7 +382,7 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
         {canEdit && (
           <TouchableOpacity style={styles.serverToggleBtn} onPress={toggleServer}>
             <Ionicons name="sync" size={11} color="#60a5fa" />
-            <Text style={styles.serverToggleText}>Alternar Servidor</Text>
+            <Text style={styles.serverToggleText}>{t("scoreboard.tennis.toggleServer") || "Alternar Servidor"}</Text>
           </TouchableOpacity>
         )}
 
@@ -388,7 +390,7 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
         {canEdit && (
           <TouchableOpacity style={styles.endMatchBtn} onPress={handleFinalizeMatch}>
             <Ionicons name="checkmark-circle-outline" size={13} color="#f87171" />
-            <Text style={styles.endMatchText}>Terminar</Text>
+            <Text style={styles.endMatchText}>{t("scoreboard.endMatch") || "Terminar"}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -398,7 +400,7 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
         <View style={styles.teamHeaderRow}>
           {serverIdx === 1 && (
             <View style={styles.servingBadgeAway}>
-              <Text style={styles.servingTextAway}>A SERVIR</Text>
+              <Text style={styles.servingTextAway}>{t("scoreboard.serving") || "A SERVIR"}</Text>
             </View>
           )}
           <Text style={styles.teamName} numberOfLines={1}>
@@ -411,12 +413,12 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
         <View style={styles.statsBadgesRow}>
           <View style={styles.badgePill}>
             <Text style={styles.badgeText}>
-              Jogos: <Text style={styles.digitalBadgeNum}>{games[1]}</Text>
+              {t("scoreboard.gamesShort") || "Jogos:"} <Text style={styles.digitalBadgeNum}>{games[1]}</Text>
             </Text>
           </View>
           <View style={styles.badgePill}>
             <Text style={styles.badgeText}>
-              Sets: <Text style={styles.digitalBadgeNum}>{setsWonB}</Text>
+              {t("scoreboard.setsShort") || "Sets:"} <Text style={styles.digitalBadgeNum}>{setsWonB}</Text>
             </Text>
           </View>
         </View>
@@ -435,14 +437,14 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
                 onPress={() => handleCorrectPoint(1)}
               >
                 <Ionicons name="arrow-undo" size={13} color="#94a3b8" />
-                <Text style={styles.btnUndoText}>-1</Text>
+                <Text style={styles.btnUndoText}>{t("scoreboard.undo") || "-1"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnPoint, styles.btnPointAway]}
                 onPress={() => handlePoint(1)}
               >
                 <Ionicons name="add" size={15} color="#ffffff" />
-                <Text style={styles.btnPointText}>PONTO</Text>
+                <Text style={styles.btnPointText}>{t("scoreboard.point") || "PONTO"}</Text>
               </TouchableOpacity>
             </View>
 
@@ -452,14 +454,14 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
                 onPress={() => handleDoubleFault(1)}
                 disabled={serverIdx !== 1}
               >
-                <Text style={styles.btnSubText}>Falta Dupla</Text>
+                <Text style={styles.btnSubText}>{t("scoreboard.tennis.doubleFault") || "Falta Dupla"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnSubAction]}
                 onPress={() => handleAce(1)}
                 disabled={serverIdx !== 1}
               >
-                <Text style={styles.btnSubText}>Ás (Ace)</Text>
+                <Text style={styles.btnSubText}>{t("scoreboard.tennis.ace") || "Ás (Ace)"}</Text>
               </TouchableOpacity>
             </View>
           </View>

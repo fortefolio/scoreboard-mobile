@@ -224,9 +224,9 @@ export default function MatchDetailScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centered}>
           <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
-          <Text style={styles.errorTitle}>Jogo não encontrado</Text>
+          <Text style={styles.errorTitle}>{t("match.notFound") || "Jogo não encontrado"}</Text>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={styles.backBtnText}>Voltar</Text>
+            <Text style={styles.backBtnText}>{t("common.back") || "Voltar"}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -422,8 +422,8 @@ export default function MatchDetailScreen() {
                 <Ionicons name="play-circle" size={24} color="#ffffff" />
                 <Text style={styles.startScoreboardText}>
                   {match.status === "scheduled"
-                    ? t("match.startScoreboard") || "INICIAR MARCADOR"
-                    : "ABRIR CONSOLA DE ÁRBITRO"}
+                    ? t("match.startScoreboardUpper") || "INICIAR MARCADOR"
+                    : t("match.openScoreboardUpper") || "ABRIR CONSOLA DE ÁRBITRO"}
                 </Text>
               </>
             )}
@@ -464,13 +464,13 @@ export default function MatchDetailScreen() {
         {activeTab === "progress" && (
           <View style={styles.tabContent}>
             <Text style={styles.sectionTitle}>
-              {t("match.scoreProgress") || "Histórico de Pontos & Eventos"}
+              {t("match.pointHistoryEvents") || t("match.scoreProgress")}
             </Text>
 
             {events.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Ionicons name="analytics-outline" size={36} color="#475569" />
-                <Text style={styles.emptyText}>Ainda não foram registados pontos neste jogo.</Text>
+                <Text style={styles.emptyText}>{t("match.noPointsRecorded")}</Text>
               </View>
             ) : (
               events.map((ev, idx) => {
@@ -482,9 +482,9 @@ export default function MatchDetailScreen() {
                     <View style={styles.eventBody}>
                       <Text style={styles.eventText}>
                         {data.description ||
-                          `Ponto registado para ${
-                            data.scoring_side === 0 ? teamAName : teamBName
-                          }`}
+                          t("match.pointRecordedFor", {
+                            team: data.scoring_side === 0 ? teamAName : teamBName,
+                          })}
                       </Text>
                       <Text style={styles.eventTime}>
                         {new Date(ev.created_at).toLocaleTimeString([], {
@@ -520,28 +520,28 @@ export default function MatchDetailScreen() {
 
             <View style={styles.infoCard}>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Recinto / Campo</Text>
-                <Text style={styles.infoVal}>{match.court || "Não definido"}</Text>
+                <Text style={styles.infoLabel}>{t("match.venueCourt")}</Text>
+                <Text style={styles.infoVal}>{match.court || t("match.notDefined")}</Text>
               </View>
               <View style={styles.infoDivider} />
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Formato</Text>
+                <Text style={styles.infoLabel}>{t("common.format")}</Text>
                 <Text style={styles.infoVal}>
                   {match.settings?.max_sets
                     ? `${match.settings.max_sets} Sets`
                     : match.settings?.quarter_minutes
                     ? `4x ${match.settings.quarter_minutes} min`
-                    : "Padrão Oficial"}
+                    : t("match.officialDefault")}
                 </Text>
               </View>
               <View style={styles.infoDivider} />
 
               {match.sport_type === "Padel" && (
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Vantagens</Text>
+                  <Text style={styles.infoLabel}>{t("match.advantageRule")}</Text>
                   <Text style={styles.infoVal}>
-                    {match.settings?.no_ad ? "Golden Point (No-Ad)" : "Vantagem Standard"}
+                    {match.settings?.no_ad ? "Golden Point (No-Ad)" : t("match.standardAdvantage")}
                   </Text>
                 </View>
               )}
@@ -567,14 +567,14 @@ export default function MatchDetailScreen() {
                   <Text style={styles.umpireName}>
                     {match.umpire_id
                       ? match.umpire_invite_status === "accepted"
-                        ? "Árbitro Confirmado"
-                        : "Convite Enviado (Pendente)"
-                      : "Nenhum árbitro designado"}
+                        ? t("match.umpireConfirmed")
+                        : t("match.inviteSentPending")
+                      : t("match.noUmpireAssigned")}
                   </Text>
                   <Text style={styles.umpireSub}>
                     {match.umpire_id
-                      ? "Acesso concedido à consola de arbitragem móvel"
-                      : "O organizador do jogo é o árbitro padrão"}
+                      ? t("match.accessGrantedMobile")
+                      : t("match.organizerDefaultReferee")}
                   </Text>
                 </View>
               </View>
@@ -583,10 +583,12 @@ export default function MatchDetailScreen() {
             {/* Organizer Tool: Search & Appoint Umpire */}
             {isOrganizer && (
               <View style={styles.appointSection}>
-                <Text style={styles.subSectionTitle}>Designar Outro Árbitro</Text>
+                <Text style={styles.subSectionTitle}>
+                  {t("match.appointOtherRefereeUpper") || t("match.appointOtherReferee")}
+                </Text>
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Pesquisar utilizador por nome ou email..."
+                  placeholder={t("match.searchUmpirePlaceholder")}
                   placeholderTextColor="#64748b"
                   value={umpireSearch}
                   onChangeText={searchUmpires}
@@ -601,7 +603,7 @@ export default function MatchDetailScreen() {
                     onPress={() => assignUmpire(u.id)}
                   >
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.searchUserName}>{u.username || "Sem Nome"}</Text>
+                      <Text style={styles.searchUserName}>{u.username || t("match.noName")}</Text>
                       <Text style={styles.searchUserEmail}>{u.email}</Text>
                     </View>
                     <Ionicons name="person-add-outline" size={18} color="#4edea3" />

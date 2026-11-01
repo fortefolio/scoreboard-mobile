@@ -9,6 +9,7 @@ import {
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase/client";
+import { useLanguage } from "@/lib/i18n";
 
 interface BasketballScoreboardProps {
   matchData: any;
@@ -17,6 +18,7 @@ interface BasketballScoreboardProps {
 }
 
 export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballScoreboardProps) {
+  const { t } = useLanguage();
   const defaultQuarterMinutes = rules?.quarter_minutes || 10;
   const defaultShotClock = rules?.shot_clock_seconds || 24;
 
@@ -273,12 +275,12 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
   const handleFinalizeMatch = () => {
     if (!canEdit) return;
     Alert.alert(
-      "Terminar Jogo",
-      "Tens a certeza que queres terminar este jogo de Basquetebol?",
+      t("scoreboard.endMatchTitle") || "Terminar Jogo",
+      t("scoreboard.endMatchConfirm", { sport: "Basquetebol" }) || "Tens a certeza que queres terminar este jogo de Basquetebol?",
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: t("common.cancel") || "Cancelar", style: "cancel" },
         {
-          text: "Terminar",
+          text: t("scoreboard.endMatch") || "Terminar",
           style: "destructive",
           onPress: async () => {
             setIsClockRunning(false);
@@ -303,7 +305,7 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
           </Text>
           {possession === "home" && (
             <View style={styles.possessionBadge}>
-              <Text style={styles.possessionText}>POSSE</Text>
+              <Text style={styles.possessionText}>{t("scoreboard.basketball.possession") || "POSSE"}</Text>
             </View>
           )}
         </View>
@@ -311,13 +313,13 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
         <View style={styles.statsBadgesRow}>
           <View style={[styles.badgePill, teamFouls.home >= 5 && styles.bonusPill]}>
             <Text style={[styles.badgeText, teamFouls.home >= 5 && styles.bonusText]}>
-              Faltas: <Text style={styles.digitalBadgeNum}>{teamFouls.home}</Text>
-              {teamFouls.home >= 5 ? " (BÓNUS)" : ""}
+              {t("scoreboard.foulsShort") || "Faltas:"} <Text style={styles.digitalBadgeNum}>{teamFouls.home}</Text>
+              {teamFouls.home >= 5 ? ` ${t("scoreboard.basketball.bonus") || "(BÓNUS)"}` : ""}
             </Text>
           </View>
           <View style={styles.badgePill}>
             <Text style={styles.badgeText}>
-              Desc: <Text style={styles.digitalBadgeNum}>{timeouts.home}</Text>
+              {t("scoreboard.timeoutShort") || "Desc:"} <Text style={styles.digitalBadgeNum}>{timeouts.home}</Text>
             </Text>
           </View>
         </View>
@@ -352,7 +354,7 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
                 onPress={() => handleCorrectScore("home")}
               >
                 <Ionicons name="arrow-undo" size={14} color="#94a3b8" />
-                <Text style={styles.btnUndoText}>-1</Text>
+                <Text style={styles.btnUndoText}>{t("scoreboard.undo") || "-1"}</Text>
               </TouchableOpacity>
             </View>
 
@@ -361,14 +363,14 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
                 style={[styles.btn, styles.btnSubAction]}
                 onPress={() => handleFoul("home")}
               >
-                <Text style={styles.btnSubText}>+ Falta</Text>
+                <Text style={styles.btnSubText}>{t("scoreboard.basketball.plusFoul") || "+ Falta"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnSubAction]}
                 onPress={() => handleTimeout("home")}
                 disabled={timeouts.home <= 0}
               >
-                <Text style={styles.btnSubText}>Desconto</Text>
+                <Text style={styles.btnSubText}>{t("scoreboard.timeout") || "Desconto"}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -440,7 +442,7 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
             onPress={handleFinalizeMatch}
           >
             <Ionicons name="checkmark-circle-outline" size={13} color="#f87171" />
-            <Text style={styles.endMatchText}>Terminar</Text>
+            <Text style={styles.endMatchText}>{t("scoreboard.endMatch") || "Terminar"}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -450,7 +452,7 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
         <View style={styles.teamHeaderRow}>
           {possession === "away" && (
             <View style={styles.possessionBadge}>
-              <Text style={styles.possessionText}>POSSE</Text>
+              <Text style={styles.possessionText}>{t("scoreboard.basketball.possession") || "POSSE"}</Text>
             </View>
           )}
           <Text style={styles.teamName} numberOfLines={1}>
@@ -462,13 +464,13 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
         <View style={styles.statsBadgesRow}>
           <View style={styles.badgePill}>
             <Text style={styles.badgeText}>
-              Desc: <Text style={styles.digitalBadgeNum}>{timeouts.away}</Text>
+              {t("scoreboard.timeoutShort") || "Desc:"} <Text style={styles.digitalBadgeNum}>{timeouts.away}</Text>
             </Text>
           </View>
           <View style={[styles.badgePill, teamFouls.away >= 5 && styles.bonusPill]}>
             <Text style={[styles.badgeText, teamFouls.away >= 5 && styles.bonusText]}>
-              Faltas: <Text style={styles.digitalBadgeNum}>{teamFouls.away}</Text>
-              {teamFouls.away >= 5 ? " (BÓNUS)" : ""}
+              {t("scoreboard.foulsShort") || "Faltas:"} <Text style={styles.digitalBadgeNum}>{teamFouls.away}</Text>
+              {teamFouls.away >= 5 ? ` ${t("scoreboard.basketball.bonus") || "(BÓNUS)"}` : ""}
             </Text>
           </View>
         </View>
@@ -485,7 +487,7 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
                 onPress={() => handleCorrectScore("away")}
               >
                 <Ionicons name="arrow-undo" size={14} color="#94a3b8" />
-                <Text style={styles.btnUndoText}>-1</Text>
+                <Text style={styles.btnUndoText}>{t("scoreboard.undo") || "-1"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnPoint]}
@@ -513,13 +515,13 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
                 onPress={() => handleTimeout("away")}
                 disabled={timeouts.away <= 0}
               >
-                <Text style={styles.btnSubText}>Desconto</Text>
+                <Text style={styles.btnSubText}>{t("scoreboard.timeout") || "Desconto"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnSubAction]}
                 onPress={() => handleFoul("away")}
               >
-                <Text style={styles.btnSubText}>+ Falta</Text>
+                <Text style={styles.btnSubText}>{t("scoreboard.basketball.plusFoul") || "+ Falta"}</Text>
               </TouchableOpacity>
             </View>
           </View>
