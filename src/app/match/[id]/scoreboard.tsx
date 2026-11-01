@@ -120,7 +120,7 @@ export default function RefereeScoreboardScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#4edea3" />
-          <Text style={styles.loadingText}>A preparar consola de arbitragem...</Text>
+          <Text style={styles.loadingText}>{t("scoreboard.preparingConsole") || "A preparar consola de arbitragem..."}</Text>
         </View>
       </SafeAreaView>
     );
@@ -131,9 +131,9 @@ export default function RefereeScoreboardScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centered}>
           <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
-          <Text style={styles.errorTitle}>Jogo não encontrado</Text>
+          <Text style={styles.errorTitle}>{t("match.notFound") || "Jogo não encontrado"}</Text>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={styles.backBtnText}>Voltar</Text>
+            <Text style={styles.backBtnText}>{t("common.back") || "Voltar"}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -167,15 +167,15 @@ export default function RefereeScoreboardScreen() {
         </TouchableOpacity>
 
         <View style={styles.headerTitleBox}>
-          <Text style={styles.refereeTitle}>CONSOLA DE ÁRBITRO</Text>
+          <Text style={styles.refereeTitle}>{t("scoreboard.refereeConsole") || "CONSOLA DE ÁRBITRO"}</Text>
           <Text style={styles.headerSport} numberOfLines={1}>
-            {match.sport_type} • {match.court || "Campo Principal"}
+            {match.sport_type} • {match.court || t("scoreboard.mainCourt") || "Campo Principal"}
           </Text>
         </View>
 
         <View style={styles.wakeLockBadge}>
           <Ionicons name="flash" size={14} color="#4edea3" />
-          <Text style={styles.wakeLockText}>ECRÃ ATIVO</Text>
+          <Text style={styles.wakeLockText}>{t("scoreboard.screenActive") || "ECRÃ ATIVO"}</Text>
         </View>
       </View>
 
@@ -183,7 +183,7 @@ export default function RefereeScoreboardScreen() {
         <View style={styles.spectatorBanner}>
           <Ionicons name="eye-outline" size={18} color="#fbbf24" />
           <Text style={styles.spectatorBannerText}>
-            Modo Visualização: Apenas o árbitro designado ou o organizador podem registar pontos.
+            {t("scoreboard.spectatorModeNotice") || "Modo Visualização: Apenas o árbitro designado ou o organizador podem registar pontos."}
           </Text>
         </View>
       )}

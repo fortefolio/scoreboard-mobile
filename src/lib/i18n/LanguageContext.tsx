@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getLocales } from "expo-localization";
 import { Platform } from "react-native";
 import { Locale, Translations } from "./types";
 import { en } from "./locales/en";
@@ -60,6 +59,23 @@ async function setStoredLocale(loc: string): Promise<void> {
   }
 }
 
+function getDeviceLocaleCode(): string {
+  try {
+    if (Platform.OS === "web") {
+      return typeof navigator !== "undefined" && navigator.language
+        ? navigator.language.toLowerCase()
+        : "";
+    }
+    const { getLocales } = require("expo-localization");
+    return getLocales()[0]?.languageCode?.toLowerCase() || "";
+  } catch {
+    if (typeof navigator !== "undefined" && navigator.language) {
+      return navigator.language.toLowerCase();
+    }
+    return "";
+  }
+}
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("en");
   const [isReady, setIsReady] = useState(false);
@@ -72,8 +88,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
           setLocaleState(saved as Locale);
         } else {
           // Detect device locale
-          const deviceLocales = getLocales();
-          const primaryLanguage = deviceLocales[0]?.languageCode?.toLowerCase() || "";
+          const primaryLanguage = getDeviceLocaleCode();
           if (primaryLanguage.startsWith("pt")) {
             setLocaleState("pt");
           }
@@ -129,10 +144,29 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+const defaultT = (path: string, params?: Record<string, string | number>): string => {
+  let text = getNestedValue(pt, path);
+  if (text === undefined) {
+    text = getNestedValue(en, path);
+  }
+  if (text === undefined) return path;
+  if (params) {
+    Object.entries(params).forEach(([key, val]) => {
+      text = (text as string).replace(new RegExp(`\\{${key}\\}`, "g"), String(val));
+    });
+  }
+  return text;
+};
+
+const defaultContextValue: LanguageContextType = {
+  locale: "pt",
+  setLocale: async () => {},
+  t: defaultT,
+  translations: pt,
+  isReady: true,
+};
+
 export function useLanguage() {
   const context = useContext(LanguageContext);
-  if (!context) {
-    throw new Error("useLanguage must be used within a LanguageProvider");
-  }
-  return context;
+  return context || defaultContextValue;
 }

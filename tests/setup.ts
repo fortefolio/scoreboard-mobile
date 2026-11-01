@@ -26,3 +26,17 @@ vi.mock("expo-screen-orientation", () => ({
 vi.mock("@expo/vector-icons", () => ({
   Ionicons: (props: any) => React.createElement("span", { "data-testid": `icon-${props.name}` }),
 }));
+
+vi.mock("@/lib/supabase/client", () => ({
+  supabase: {
+    from: () => ({
+      select: () => ({ eq: () => ({ single: vi.fn().mockResolvedValue({ data: null, error: null }) }) }),
+      insert: vi.fn().mockResolvedValue({ error: null }),
+      update: () => ({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+    }),
+    channel: () => ({
+      on: () => ({ subscribe: vi.fn() }),
+    }),
+    removeChannel: vi.fn(),
+  },
+}));

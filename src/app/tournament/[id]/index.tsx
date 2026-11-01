@@ -143,9 +143,9 @@ export default function TournamentDetailScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centered}>
           <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
-          <Text style={styles.emptyTitle}>Torneio não encontrado</Text>
+          <Text style={styles.emptyTitle}>{t("tournament.notFound") || "Torneio não encontrado"}</Text>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={styles.backBtnText}>Voltar</Text>
+            <Text style={styles.backBtnText}>{t("common.back") || "Voltar"}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -215,7 +215,7 @@ export default function TournamentDetailScreen() {
                 onPress={() => router.push(`/tournament/${tournamentId}/signup` as any)}
               >
                 <Ionicons name="person-add" size={16} color="#ffffff" />
-                <Text style={styles.signupActionText}>Inscrever Equipa</Text>
+                <Text style={styles.signupActionText}>{t("tournament.registerTeam") || "Inscrever Equipa"}</Text>
               </TouchableOpacity>
             )}
 
@@ -267,7 +267,7 @@ export default function TournamentDetailScreen() {
             {matches.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Ionicons name="tennisball-outline" size={40} color="#475569" />
-                <Text style={styles.emptyTitle}>Nenhum jogo agendado</Text>
+                <Text style={styles.emptyTitle}>{t("tournament.noScheduledMatches") || "Nenhum jogo agendado"}</Text>
                 <Text style={styles.emptySubtitle}>
                   O calendário de jogos deste torneio ainda não foi publicado.
                 </Text>

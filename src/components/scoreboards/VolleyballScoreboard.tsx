@@ -9,6 +9,7 @@ import {
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase/client";
+import { useLanguage } from "@/lib/i18n";
 
 interface VolleyballScoreboardProps {
   matchData: any;
@@ -17,6 +18,7 @@ interface VolleyballScoreboardProps {
 }
 
 export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballScoreboardProps) {
+  const { t } = useLanguage();
   const isBeachVolleyball = matchData.sport_type === "Beach Volleyball";
   const defaultMaxSets = rules?.max_sets || (isBeachVolleyball ? 3 : 5);
   const defaultPointsPerSet = rules?.points_per_set || (isBeachVolleyball ? 21 : 25);
@@ -207,12 +209,13 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
   const handleFinalizeMatch = () => {
     if (!canEdit) return;
     Alert.alert(
-      "Terminar Jogo",
-      `Tens a certeza que queres terminar este jogo de ${isBeachVolleyball ? "Vólei de Praia" : "Voleibol"}?`,
+      t("scoreboard.endMatchTitle") || "Terminar Jogo",
+      t("scoreboard.endMatchConfirm", { sport: isBeachVolleyball ? "Vólei de Praia" : "Voleibol" }) ||
+        `Tens a certeza que queres terminar este jogo de ${isBeachVolleyball ? "Vólei de Praia" : "Voleibol"}?`,
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: t("common.cancel") || "Cancelar", style: "cancel" },
         {
-          text: "Terminar",
+          text: t("scoreboard.endMatch") || "Terminar",
           style: "destructive",
           onPress: async () => {
             await supabase
@@ -230,7 +233,7 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
       {/* Toss Server Banner overlay if serverIdx is null */}
       {serverIdx === null && (
         <View style={styles.tossOverlay}>
-          <Text style={styles.tossTitle}>QUEM EFETUA O PRIMEIRO SERVIÇO?</Text>
+          <Text style={styles.tossTitle}>{t("scoreboard.volleyball.firstServePrompt") || "QUEM EFETUA O PRIMEIRO SERVIÇO?"}</Text>
           <View style={styles.tossButtonsRow}>
             <TouchableOpacity
               style={styles.tossBtn}
@@ -259,7 +262,7 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
           </Text>
           {serverIdx === 0 && (
             <View style={styles.servingBadge}>
-              <Text style={styles.servingText}>A SERVIR</Text>
+              <Text style={styles.servingText}>{t("scoreboard.serving") || "A SERVIR"}</Text>
             </View>
           )}
         </View>
@@ -268,12 +271,12 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
         <View style={styles.statsBadgesRow}>
           <View style={styles.badgePill}>
             <Text style={styles.badgeText}>
-              Sets: <Text style={styles.digitalBadgeNum}>{setsWonA}</Text>
+              {t("scoreboard.setsShort") || "Sets:"} <Text style={styles.digitalBadgeNum}>{setsWonA}</Text>
             </Text>
           </View>
           <View style={styles.badgePill}>
             <Text style={styles.badgeText}>
-              Desc: <Text style={styles.digitalBadgeNum}>{timeouts.home}</Text>
+              {t("scoreboard.timeoutShort") || "Desc:"} <Text style={styles.digitalBadgeNum}>{timeouts.home}</Text>
             </Text>
           </View>
         </View>
@@ -290,14 +293,14 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
                 onPress={() => handlePoint(0)}
               >
                 <Ionicons name="add" size={16} color="#ffffff" />
-                <Text style={styles.btnPointText}>PONTO</Text>
+                <Text style={styles.btnPointText}>{t("scoreboard.point") || "PONTO"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnUndo]}
                 onPress={() => handleCorrectPoint(0)}
               >
                 <Ionicons name="arrow-undo" size={13} color="#94a3b8" />
-                <Text style={styles.btnUndoText}>-1</Text>
+                <Text style={styles.btnUndoText}>{t("scoreboard.undo") || "-1"}</Text>
               </TouchableOpacity>
             </View>
 
@@ -307,7 +310,7 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
                 onPress={() => handleTimeout("home")}
                 disabled={timeouts.home <= 0}
               >
-                <Text style={styles.btnSubText}>Desconto</Text>
+                <Text style={styles.btnSubText}>{t("scoreboard.timeout") || "Desconto"}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -318,25 +321,27 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
       <View style={styles.centerColumn}>
         <View style={styles.periodPill}>
           <Text style={styles.periodPillText}>
-            SET {currentSetNum} {isDecidingSet ? "(NEGRA)" : ""}
+            {isDecidingSet
+              ? t("scoreboard.volleyball.setDecider", { set: currentSetNum }) || `SET ${currentSetNum} (NEGRA)`
+              : `SET ${currentSetNum}`}
           </Text>
         </View>
 
         {/* Target limit */}
         <View style={styles.targetBox}>
-          <Text style={styles.targetLabel}>LIMITE DO SET</Text>
+          <Text style={styles.targetLabel}>{t("scoreboard.volleyball.setLimit") || "LIMITE DO SET"}</Text>
           <Text style={styles.targetDigital}>{activeLimit}</Text>
         </View>
 
         {/* Technical Alerts */}
         {isDeuce && (
           <View style={styles.alertPillDeuce}>
-            <Text style={styles.alertTextDeuce}>DEUCE (Vant. 2)</Text>
+            <Text style={styles.alertTextDeuce}>{t("scoreboard.volleyball.deuceAdv2") || "DEUCE (Vant. 2)"}</Text>
           </View>
         )}
         {isCourtSwitch && (
           <View style={styles.alertPillSwitch}>
-            <Text style={styles.alertTextSwitch}>TROCA DE CAMPO</Text>
+            <Text style={styles.alertTextSwitch}>{t("scoreboard.courtSwitch") || "TROCA DE CAMPO"}</Text>
           </View>
         )}
 
@@ -344,7 +349,7 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
         {canEdit && (
           <TouchableOpacity style={styles.serverToggleBtn} onPress={toggleServer}>
             <Ionicons name="sync" size={11} color="#60a5fa" />
-            <Text style={styles.serverToggleText}>Alternar Saque</Text>
+            <Text style={styles.serverToggleText}>{t("scoreboard.volleyball.toggleServe") || "Alternar Saque"}</Text>
           </TouchableOpacity>
         )}
 
@@ -352,7 +357,7 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
         {canEdit && (
           <TouchableOpacity style={styles.endMatchBtn} onPress={handleFinalizeMatch}>
             <Ionicons name="checkmark-circle-outline" size={13} color="#f87171" />
-            <Text style={styles.endMatchText}>Terminar</Text>
+            <Text style={styles.endMatchText}>{t("scoreboard.endMatch") || "Terminar"}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -362,7 +367,7 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
         <View style={styles.teamHeaderRow}>
           {serverIdx === 1 && (
             <View style={styles.servingBadgeAway}>
-              <Text style={styles.servingTextAway}>A SERVIR</Text>
+              <Text style={styles.servingTextAway}>{t("scoreboard.serving") || "A SERVIR"}</Text>
             </View>
           )}
           <Text style={styles.teamName} numberOfLines={1}>
@@ -375,12 +380,12 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
         <View style={styles.statsBadgesRow}>
           <View style={styles.badgePill}>
             <Text style={styles.badgeText}>
-              Desc: <Text style={styles.digitalBadgeNum}>{timeouts.away}</Text>
+              {t("scoreboard.timeoutShort") || "Desc:"} <Text style={styles.digitalBadgeNum}>{timeouts.away}</Text>
             </Text>
           </View>
           <View style={styles.badgePill}>
             <Text style={styles.badgeText}>
-              Sets: <Text style={styles.digitalBadgeNum}>{setsWonB}</Text>
+              {t("scoreboard.setsShort") || "Sets:"} <Text style={styles.digitalBadgeNum}>{setsWonB}</Text>
             </Text>
           </View>
         </View>
@@ -397,14 +402,14 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
                 onPress={() => handleCorrectPoint(1)}
               >
                 <Ionicons name="arrow-undo" size={13} color="#94a3b8" />
-                <Text style={styles.btnUndoText}>-1</Text>
+                <Text style={styles.btnUndoText}>{t("scoreboard.undo") || "-1"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnPoint, styles.btnPointAway]}
                 onPress={() => handlePoint(1)}
               >
                 <Ionicons name="add" size={16} color="#ffffff" />
-                <Text style={styles.btnPointText}>PONTO</Text>
+                <Text style={styles.btnPointText}>{t("scoreboard.point") || "PONTO"}</Text>
               </TouchableOpacity>
             </View>
 
@@ -414,7 +419,7 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
                 onPress={() => handleTimeout("away")}
                 disabled={timeouts.away <= 0}
               >
-                <Text style={styles.btnSubText}>Desconto</Text>
+                <Text style={styles.btnSubText}>{t("scoreboard.timeout") || "Desconto"}</Text>
               </TouchableOpacity>
             </View>
           </View>

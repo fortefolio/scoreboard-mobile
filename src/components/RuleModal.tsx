@@ -142,7 +142,7 @@ export function RuleModal({
               {isBasketball && (
                 <>
                   <View style={styles.fieldGroup}>
-                    <Text style={styles.label}>Duração do Quarto (minutos)</Text>
+                    <Text style={styles.label}>{t("match.quarterDurationMinutes") || "Duração do Quarto (minutos)"}</Text>
                     <View style={styles.pillRow}>
                       {[8, 10, 12].map((mins) => (
                         <TouchableOpacity
@@ -164,7 +164,7 @@ export function RuleModal({
                   </View>
 
                   <View style={styles.fieldGroup}>
-                    <Text style={styles.label}>Shot Clock (segundos)</Text>
+                    <Text style={styles.label}>{t("match.shotClock") || "Shot Clock (segundos)"}</Text>
                     <View style={styles.pillRow}>
                       {[14, 24].map((secs) => (
                         <TouchableOpacity
@@ -190,7 +190,7 @@ export function RuleModal({
               {/* Football Options */}
               {isFootball && (
                 <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Duração de cada Parte (minutos)</Text>
+                  <Text style={styles.label}>{t("match.halfDurationMinutes") || "Duração de cada Parte (minutos)"}</Text>
                   <View style={styles.pillRow}>
                     {[20, 25, 45].map((mins) => (
                       <TouchableOpacity
@@ -213,7 +213,7 @@ export function RuleModal({
               {!isBasketball && !isFootball && (
                 <>
                   <View style={styles.fieldGroup}>
-                    <Text style={styles.label}>Máximo de Sets (À melhor de)</Text>
+                    <Text style={styles.label}>{t("match.maximumSets") || "Máximo de Sets (À melhor de)"}</Text>
                     <View style={styles.pillRow}>
                       {[1, 3, 5].map((s) => (
                         <TouchableOpacity
@@ -231,7 +231,7 @@ export function RuleModal({
 
                   {isPadel && (
                     <View style={styles.fieldGroup}>
-                      <Text style={styles.label}>Vantagem / Ponto de Ouro (Golden Point)</Text>
+                      <Text style={styles.label}>{t("match.advantageRule") || "Vantagem / Ponto de Ouro (Golden Point)"}</Text>
                       <View style={styles.pillRow}>
                         <TouchableOpacity
                           style={[styles.pill, noAd && styles.pillActive]}

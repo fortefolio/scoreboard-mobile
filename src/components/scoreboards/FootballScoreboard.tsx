@@ -9,6 +9,7 @@ import {
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase/client";
+import { useLanguage } from "@/lib/i18n";
 
 interface FootballScoreboardProps {
   matchData: any;
@@ -17,6 +18,7 @@ interface FootballScoreboardProps {
 }
 
 export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreboardProps) {
+  const { t } = useLanguage();
   const [goals, setGoals] = useState({
     home: matchData.scores?.football?.goals?.[0] ?? matchData.scores?.current?.home ?? 0,
     away: matchData.scores?.football?.goals?.[1] ?? matchData.scores?.current?.away ?? 0,
@@ -253,12 +255,12 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
   const handleFinalizeMatch = () => {
     if (!canEdit) return;
     Alert.alert(
-      "Terminar Jogo",
-      "Tens a certeza que queres terminar este jogo de Futebol?",
+      t("scoreboard.endMatchTitle") || "Terminar Jogo",
+      t("scoreboard.endMatchConfirm", { sport: "Futebol" }) || "Tens a certeza que queres terminar este jogo de Futebol?",
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: t("common.cancel") || "Cancelar", style: "cancel" },
         {
-          text: "Terminar",
+          text: t("scoreboard.endMatch") || "Terminar",
           style: "destructive",
           onPress: async () => {
             setIsClockRunning(false);
@@ -319,14 +321,14 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
                 onPress={() => handleGoal("home")}
               >
                 <Ionicons name="football" size={13} color="#ffffff" />
-                <Text style={styles.btnGoalText}>+1 GOLO</Text>
+                <Text style={styles.btnGoalText}>{t("scoreboard.football.plusGoal") || "+1 GOLO"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnUndo]}
                 onPress={() => handleCorrectGoal("home")}
               >
                 <Ionicons name="arrow-undo" size={13} color="#94a3b8" />
-                <Text style={styles.btnUndoText}>-1</Text>
+                <Text style={styles.btnUndoText}>{t("scoreboard.undo") || "-1"}</Text>
               </TouchableOpacity>
             </View>
 
@@ -335,25 +337,25 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
                 style={[styles.btn, styles.btnCardYellow]}
                 onPress={() => handleCard("home", "yellow")}
               >
-                <Text style={styles.btnCardText}>Amarelo</Text>
+                <Text style={styles.btnCardText}>{t("scoreboard.football.yellowCard") || "Amarelo"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnCardRed]}
                 onPress={() => handleCard("home", "red")}
               >
-                <Text style={styles.btnCardText}>Vermelho</Text>
+                <Text style={styles.btnCardText}>{t("scoreboard.football.redCard") || "Vermelho"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnSubAction]}
                 onPress={() => handleStat("home", "corner")}
               >
-                <Text style={styles.btnSubText}>+Canto</Text>
+                <Text style={styles.btnSubText}>{t("scoreboard.football.plusCorner") || "+Canto"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnSubAction]}
                 onPress={() => handleStat("home", "foul")}
               >
-                <Text style={styles.btnSubText}>+Falta</Text>
+                <Text style={styles.btnSubText}>{t("scoreboard.football.plusFoul") || "+Falta"}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -389,7 +391,9 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
           disabled={!canEdit}
         >
           <Ionicons name="add" size={11} color="#fbbf24" />
-          <Text style={styles.stoppageText}>Comp: +{stoppageMinutes}m</Text>
+          <Text style={styles.stoppageText}>
+            {t("scoreboard.football.stoppageShort", { min: stoppageMinutes }) || `Comp: +${stoppageMinutes}m`}
+          </Text>
         </TouchableOpacity>
 
         {/* Finalize Match */}
@@ -399,7 +403,7 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
             onPress={handleFinalizeMatch}
           >
             <Ionicons name="checkmark-circle-outline" size={13} color="#f87171" />
-            <Text style={styles.endMatchText}>Terminar</Text>
+            <Text style={styles.endMatchText}>{t("scoreboard.endMatch") || "Terminar"}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -449,14 +453,14 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
                 onPress={() => handleCorrectGoal("away")}
               >
                 <Ionicons name="arrow-undo" size={13} color="#94a3b8" />
-                <Text style={styles.btnUndoText}>-1</Text>
+                <Text style={styles.btnUndoText}>{t("scoreboard.undo") || "-1"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnGoal, styles.btnGoalAway]}
                 onPress={() => handleGoal("away")}
               >
                 <Ionicons name="football" size={13} color="#ffffff" />
-                <Text style={styles.btnGoalText}>+1 GOLO</Text>
+                <Text style={styles.btnGoalText}>{t("scoreboard.football.plusGoal") || "+1 GOLO"}</Text>
               </TouchableOpacity>
             </View>
 
@@ -465,25 +469,25 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
                 style={[styles.btn, styles.btnSubAction]}
                 onPress={() => handleStat("away", "foul")}
               >
-                <Text style={styles.btnSubText}>+Falta</Text>
+                <Text style={styles.btnSubText}>{t("scoreboard.football.plusFoul") || "+Falta"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnSubAction]}
                 onPress={() => handleStat("away", "corner")}
               >
-                <Text style={styles.btnSubText}>+Canto</Text>
+                <Text style={styles.btnSubText}>{t("scoreboard.football.plusCorner") || "+Canto"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnCardYellow]}
                 onPress={() => handleCard("away", "yellow")}
               >
-                <Text style={styles.btnCardText}>Amarelo</Text>
+                <Text style={styles.btnCardText}>{t("scoreboard.football.yellowCard") || "Amarelo"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnCardRed]}
                 onPress={() => handleCard("away", "red")}
               >
-                <Text style={styles.btnCardText}>Vermelho</Text>
+                <Text style={styles.btnCardText}>{t("scoreboard.football.redCard") || "Vermelho"}</Text>
               </TouchableOpacity>
             </View>
           </View>

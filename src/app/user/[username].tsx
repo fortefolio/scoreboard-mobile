@@ -95,7 +95,7 @@ export default function PublicUserProfileScreen() {
           <Ionicons name="person-remove-outline" size={48} color="#ef4444" />
           <Text style={styles.emptyTitle}>Utilizador não encontrado</Text>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={styles.backBtnText}>Voltar</Text>
+            <Text style={styles.backBtnText}>{t("common.back") || "Voltar"}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
