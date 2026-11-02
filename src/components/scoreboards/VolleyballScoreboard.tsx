@@ -10,6 +10,7 @@ import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/lib/i18n";
+import { recordMatchEventAtomic } from "@/lib/scoring/atomicScoring";
 
 interface VolleyballScoreboardProps {
   matchData: any;
@@ -125,17 +126,15 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
     setServerIdx(newServer);
 
     try {
-      await supabase.from("match_events").insert([
-        {
-          match_id: matchData.id,
-          event_data: {
-            type: "point_won",
-            side: teamIdx === 0 ? "home" : "away",
-            scoring_side: teamIdx,
-            description: `Ponto ganho por ${teamIdx === 0 ? teamA : teamB}`,
-          },
+      await recordMatchEventAtomic(supabase, {
+        matchId: matchData.id,
+        eventData: {
+          type: "point_won",
+          side: teamIdx === 0 ? "home" : "away",
+          scoring_side: teamIdx,
+          description: `Ponto ganho por ${teamIdx === 0 ? teamA : teamB}`,
         },
-      ]);
+      });
     } catch (e: any) {
       Alert.alert("Erro", "Falha ao registar ponto: " + e.message);
     }
@@ -162,10 +161,15 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
       },
     };
 
-    await supabase
-      .from("matches")
-      .update({ scores: updated, updated_at: new Date().toISOString() })
-      .eq("id", matchData.id);
+    await recordMatchEventAtomic(supabase, {
+      matchId: matchData.id,
+      newScores: updated,
+      eventData: {
+        type: "correct_point",
+        side: teamIdx === 0 ? "home" : "away",
+        points: newPoints,
+      },
+    });
   };
 
   const handleTimeout = async (side: "home" | "away") => {
@@ -184,10 +188,15 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
       },
     };
 
-    await supabase
-      .from("matches")
-      .update({ scores: updated, updated_at: new Date().toISOString() })
-      .eq("id", matchData.id);
+    await recordMatchEventAtomic(supabase, {
+      matchId: matchData.id,
+      newScores: updated,
+      eventData: {
+        type: "timeout",
+        side,
+        timeouts: nextTimeouts,
+      },
+    });
   };
 
   const toggleServer = async () => {
@@ -197,13 +206,16 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
     setServerIdx(nextIdx);
 
     const currentScores = matchData?.scores || {};
-    await supabase
-      .from("matches")
-      .update({
-        scores: { ...currentScores, serving_index: nextIdx },
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", matchData.id);
+    const updated = { ...currentScores, serving_index: nextIdx };
+
+    await recordMatchEventAtomic(supabase, {
+      matchId: matchData.id,
+      newScores: updated,
+      eventData: {
+        type: "server_changed",
+        serving_index: nextIdx,
+      },
+    });
   };
 
   const handleFinalizeMatch = () => {
@@ -218,10 +230,13 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
           text: t("scoreboard.endMatch") || "Terminar",
           style: "destructive",
           onPress: async () => {
-            await supabase
-              .from("matches")
-              .update({ status: "completed", updated_at: new Date().toISOString() })
-              .eq("id", matchData.id);
+            await recordMatchEventAtomic(supabase, {
+              matchId: matchData.id,
+              newStatus: "completed",
+              eventData: {
+                type: "match_finished",
+              },
+            });
           },
         },
       ]
