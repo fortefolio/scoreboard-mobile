@@ -10,6 +10,7 @@ import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/lib/i18n";
+import { recordMatchEventAtomic } from "@/lib/scoring/atomicScoring";
 
 interface BasketballScoreboardProps {
   matchData: any;
@@ -108,17 +109,25 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
     setShotClock(defaultShotClock);
 
     try {
-      const { error } = await supabase.from("match_events").insert([
-        {
-          match_id: matchData.id,
-          event_data: {
-            type: "score",
-            side,
-            points: pointsToAdd,
-            description: `+${pointsToAdd} PTS (${side === "home" ? teamA : teamB})`,
-          },
+      const currentScores = matchData?.scores || {};
+      const newScores = {
+        ...currentScores,
+        current: {
+          ...(currentScores.current || {}),
+          [side]: (currentScores.current?.[side] ?? scores[side]) + pointsToAdd,
         },
-      ]);
+      };
+
+      const { error } = await recordMatchEventAtomic(supabase, {
+        matchId: matchData.id,
+        newScores,
+        eventData: {
+          type: "score",
+          side,
+          points: pointsToAdd,
+          description: `+${pointsToAdd} PTS (${side === "home" ? teamA : teamB})`,
+        },
+      });
       if (error) throw error;
     } catch (e: any) {
       Alert.alert("Erro", "Falha ao registar pontos: " + e.message);
@@ -141,10 +150,15 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
       },
     };
 
-    await supabase
-      .from("matches")
-      .update({ scores: updated, updated_at: new Date().toISOString() })
-      .eq("id", matchData.id);
+    await recordMatchEventAtomic(supabase, {
+      matchId: matchData.id,
+      newScores: updated,
+      eventData: {
+        type: "correct_score",
+        side,
+        current: updatedScore,
+      },
+    });
   };
 
   const handleFoul = async (side: "home" | "away") => {
@@ -163,10 +177,15 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
       },
     };
 
-    await supabase
-      .from("matches")
-      .update({ scores: updated, updated_at: new Date().toISOString() })
-      .eq("id", matchData.id);
+    await recordMatchEventAtomic(supabase, {
+      matchId: matchData.id,
+      newScores: updated,
+      eventData: {
+        type: "foul",
+        side,
+        fouls: nextFouls,
+      },
+    });
 
     if (nextFouls[side] >= 5) {
       Alert.alert("BÓNUS DE FALTAS", `${side === "home" ? teamA : teamB} atingiu o limite de faltas (5).`);
@@ -191,10 +210,15 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
       },
     };
 
-    await supabase
-      .from("matches")
-      .update({ scores: updated, updated_at: new Date().toISOString() })
-      .eq("id", matchData.id);
+    await recordMatchEventAtomic(supabase, {
+      matchId: matchData.id,
+      newScores: updated,
+      eventData: {
+        type: "timeout",
+        side,
+        timeouts: nextTimeouts,
+      },
+    });
   };
 
   const toggleClock = async () => {
@@ -232,16 +256,19 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
     setPossession(next);
 
     const currentScores = matchData?.scores || {};
-    await supabase
-      .from("matches")
-      .update({
-        scores: {
-          ...currentScores,
-          basketball: { ...(currentScores.basketball || {}), possession: next },
-        },
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", matchData.id);
+    const updated = {
+      ...currentScores,
+      basketball: { ...(currentScores.basketball || {}), possession: next },
+    };
+
+    await recordMatchEventAtomic(supabase, {
+      matchId: matchData.id,
+      newScores: updated,
+      eventData: {
+        type: "possession_toggle",
+        possession: next,
+      },
+    });
   };
 
   const handlePeriodCycle = async () => {
@@ -284,10 +311,13 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
           style: "destructive",
           onPress: async () => {
             setIsClockRunning(false);
-            await supabase
-              .from("matches")
-              .update({ status: "completed", updated_at: new Date().toISOString() })
-              .eq("id", matchData.id);
+            await recordMatchEventAtomic(supabase, {
+              matchId: matchData.id,
+              newStatus: "completed",
+              eventData: {
+                type: "match_finished",
+              },
+            });
           },
         },
       ]

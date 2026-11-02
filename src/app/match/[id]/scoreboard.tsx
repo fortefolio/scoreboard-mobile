@@ -15,6 +15,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
+import { OfflineSyncBadge } from "@/components/OfflineSyncBadge";
+import { initOfflineNetworkSync } from "@/lib/offline/offlineQueue";
 
 import { TennisScoreboard } from "@/components/scoreboards/TennisScoreboard";
 import { VolleyballScoreboard } from "@/components/scoreboards/VolleyballScoreboard";
@@ -54,6 +56,8 @@ export default function RefereeScoreboardScreen() {
   // Fetch match details and subscribe
   useEffect(() => {
     if (!matchIdStr) return;
+
+    const unsubSync = initOfflineNetworkSync(supabase);
 
     const fetchMatch = async () => {
       try {
@@ -105,6 +109,7 @@ export default function RefereeScoreboardScreen() {
       .subscribe();
 
     return () => {
+      unsubSync();
       supabase.removeChannel(channel);
     };
   }, [matchIdStr]);
@@ -173,9 +178,12 @@ export default function RefereeScoreboardScreen() {
           </Text>
         </View>
 
-        <View style={styles.wakeLockBadge}>
-          <Ionicons name="flash" size={14} color="#4edea3" />
-          <Text style={styles.wakeLockText}>{t("scoreboard.screenActive") || "ECRÃ ATIVO"}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <OfflineSyncBadge matchId={match.id} />
+          <View style={styles.wakeLockBadge}>
+            <Ionicons name="flash" size={14} color="#4edea3" />
+            <Text style={styles.wakeLockText}>{t("scoreboard.screenActive") || "ECRÃ ATIVO"}</Text>
+          </View>
         </View>
       </View>
 

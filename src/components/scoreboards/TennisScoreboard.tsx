@@ -10,6 +10,7 @@ import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/lib/i18n";
+import { recordMatchEventAtomic } from "@/lib/scoring/atomicScoring";
 
 const TENNIS_PTS = ["0", "15", "30", "40"];
 
@@ -124,18 +125,16 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
     setPoints(newPoints);
 
     try {
-      const { error } = await supabase.from("match_events").insert([
-        {
-          match_id: matchData.id,
-          event_data: {
-            type: "point_won",
-            side: winnerIdx === 0 ? "home" : "away",
-            winner_index: winnerIdx,
-            scoring_side: winnerIdx,
-            description: `Ponto ganho por ${winnerIdx === 0 ? teamA : teamB}`,
-          },
+      const { error } = await recordMatchEventAtomic(supabase, {
+        matchId: matchData.id,
+        eventData: {
+          type: "point_won",
+          side: winnerIdx === 0 ? "home" : "away",
+          winner_index: winnerIdx,
+          scoring_side: winnerIdx,
+          description: `Ponto ganho por ${winnerIdx === 0 ? teamA : teamB}`,
         },
-      ]);
+      });
       if (error) throw error;
     } catch (e: any) {
       Alert.alert("Erro", "Falha ao registar ponto: " + e.message);
@@ -159,10 +158,15 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
       },
     };
 
-    await supabase
-      .from("matches")
-      .update({ scores: updated, updated_at: new Date().toISOString() })
-      .eq("id", matchData.id);
+    await recordMatchEventAtomic(supabase, {
+      matchId: matchData.id,
+      newScores: updated,
+      eventData: {
+        type: "correct_point",
+        side: idx === 0 ? "home" : "away",
+        points: newPoints,
+      },
+    });
   };
 
   const handleAce = async (idx: number) => {
@@ -174,12 +178,10 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
 
     await handlePoint(idx);
 
-    await supabase.from("match_events").insert([
-      {
-        match_id: matchData.id,
-        event_data: { type: "tennis_stat", stat: "ace", side },
-      },
-    ]);
+    await recordMatchEventAtomic(supabase, {
+      matchId: matchData.id,
+      eventData: { type: "tennis_stat", stat: "ace", side },
+    });
   };
 
   const handleDoubleFault = async (serverPlayerIdx: number) => {
@@ -192,12 +194,10 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
 
     await handlePoint(oppIdx);
 
-    await supabase.from("match_events").insert([
-      {
-        match_id: matchData.id,
-        event_data: { type: "tennis_stat", stat: "double_fault", side },
-      },
-    ]);
+    await recordMatchEventAtomic(supabase, {
+      matchId: matchData.id,
+      eventData: { type: "tennis_stat", stat: "double_fault", side },
+    });
   };
 
   const toggleServer = async () => {
@@ -207,13 +207,16 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
     setServerIdx(nextIdx);
 
     const currentScores = matchData?.scores || {};
-    await supabase
-      .from("matches")
-      .update({
-        scores: { ...currentScores, serving_index: nextIdx },
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", matchData.id);
+    const updated = { ...currentScores, serving_index: nextIdx };
+
+    await recordMatchEventAtomic(supabase, {
+      matchId: matchData.id,
+      newScores: updated,
+      eventData: {
+        type: "server_changed",
+        serving_index: nextIdx,
+      },
+    });
   };
 
   const handleFinalizeMatch = () => {
@@ -227,10 +230,13 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
           text: t("scoreboard.endMatch") || "Terminar",
           style: "destructive",
           onPress: async () => {
-            await supabase
-              .from("matches")
-              .update({ status: "completed", updated_at: new Date().toISOString() })
-              .eq("id", matchData.id);
+            await recordMatchEventAtomic(supabase, {
+              matchId: matchData.id,
+              newStatus: "completed",
+              eventData: {
+                type: "match_finished",
+              },
+            });
           },
         },
       ]

@@ -81,10 +81,34 @@ export default function MatchDetailScreen() {
   useEffect(() => {
     fetchMatch();
 
-    // Subscribe to match & match_events realtime
-    const channelId = `match-${matchIdStr}-${Math.random().toString(36).slice(2, 9)}`;
+    // Subscribe to match broadcast & table events in realtime
     const matchChannel = supabase
-      .channel(channelId)
+      .channel(`match:${matchIdStr}`)
+      .on(
+        "broadcast",
+        { event: "score_update" },
+        (response: any) => {
+          const payload = response?.payload;
+          if (payload && payload.match_id === matchIdStr) {
+            setMatch((prev: any) => ({
+              ...prev,
+              scores: payload.scores ?? prev?.scores,
+              status: payload.status ?? prev?.status,
+            }));
+            if (payload.event_data) {
+              setEvents((prev) => [
+                {
+                  id: `broadcast-${Date.now()}-${Math.random()}`,
+                  match_id: payload.match_id,
+                  event_data: payload.event_data,
+                  created_at: new Date().toISOString(),
+                },
+                ...prev,
+              ]);
+            }
+          }
+        }
+      )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "matches", filter: `id=eq.${matchIdStr}` },
@@ -99,7 +123,13 @@ export default function MatchDetailScreen() {
         { event: "INSERT", schema: "public", table: "match_events", filter: `match_id=eq.${matchIdStr}` },
         (payload) => {
           if (payload.new) {
-            setEvents((prev) => [payload.new, ...prev]);
+            setEvents((prev) => {
+              const exists = prev.some(
+                (e) => e.id && payload.new.id && e.id === payload.new.id
+              );
+              if (exists) return prev;
+              return [payload.new, ...prev];
+            });
           }
         }
       )

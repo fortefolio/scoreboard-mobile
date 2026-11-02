@@ -10,6 +10,7 @@ import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/lib/i18n";
+import { recordMatchEventAtomic } from "@/lib/scoring/atomicScoring";
 
 interface FootballScoreboardProps {
   matchData: any;
@@ -95,7 +96,7 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const persistFootballState = async (updates: any) => {
+  const persistFootballState = async (updates: any, eventData?: Record<string, any>) => {
     const currentScores = matchData?.scores || {};
     const fb = currentScores.football || {};
     const updated = {
@@ -105,10 +106,18 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
         ...updates,
       },
     };
-    await supabase
-      .from("matches")
-      .update({ scores: updated, updated_at: new Date().toISOString() })
-      .eq("id", matchData.id);
+    if (eventData) {
+      await recordMatchEventAtomic(supabase, {
+        matchId: matchData.id,
+        newScores: updated,
+        eventData,
+      });
+    } else {
+      await supabase
+        .from("matches")
+        .update({ scores: updated, updated_at: new Date().toISOString() })
+        .eq("id", matchData.id);
+    }
   };
 
   const handleGoal = async (side: "home" | "away") => {
@@ -119,16 +128,14 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
     setGoals(updatedGoals);
 
     try {
-      await supabase.from("match_events").insert([
+      await persistFootballState(
+        { goals: [updatedGoals.home, updatedGoals.away] },
         {
-          match_id: matchData.id,
-          event_data: {
-            type: "goal",
-            side,
-            description: `Golo de ${side === "home" ? teamA : teamB}!`,
-          },
-        },
-      ]);
+          type: "goal",
+          side,
+          description: `Golo de ${side === "home" ? teamA : teamB}!`,
+        }
+      );
     } catch (e: any) {
       Alert.alert("Erro", "Falha ao registar golo: " + e.message);
     }
@@ -154,10 +161,15 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
         goals: [updatedGoals.home, updatedGoals.away],
       },
     };
-    await supabase
-      .from("matches")
-      .update({ scores: updated, updated_at: new Date().toISOString() })
-      .eq("id", matchData.id);
+    await recordMatchEventAtomic(supabase, {
+      matchId: matchData.id,
+      newScores: updated,
+      eventData: {
+        type: "correct_goal",
+        side,
+        goals: [updatedGoals.home, updatedGoals.away],
+      },
+    });
   };
 
   const handleCard = async (side: "home" | "away", cardType: "yellow" | "red") => {
@@ -264,10 +276,13 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
           style: "destructive",
           onPress: async () => {
             setIsClockRunning(false);
-            await supabase
-              .from("matches")
-              .update({ status: "completed", updated_at: new Date().toISOString() })
-              .eq("id", matchData.id);
+            await recordMatchEventAtomic(supabase, {
+              matchId: matchData.id,
+              newStatus: "completed",
+              eventData: {
+                type: "match_finished",
+              },
+            });
           },
         },
       ]
