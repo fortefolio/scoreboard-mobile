@@ -223,3 +223,7 @@ Referee consoles operate in noisy sporting environments with intermittent cellul
 3. **Performance Optimization:**
    - Use `FlatList` with `getItemLayout`, `maxToRenderPerBatch`, and `windowSize` for infinite feeds.
    - Use React Native Reanimated for smooth bracket panning/zooming and live score transition animations.
+
+4. **Secret Management & Push Protection:**
+   - NEVER hardcode Supabase Secret Keys or service role tokens (`sb_secret_*`) in any files.
+   - Always read keys exclusively through environment variables. Secrets belong strictly in gitignored `.env` files.
