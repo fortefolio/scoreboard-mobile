@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
+import { clearOfflineQueue } from "@/lib/offline/offlineQueue";
 
 interface AuthContextType {
   user: User | null;
@@ -29,9 +30,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 2. Subscribe to auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (event === "SIGNED_OUT") {
+        clearOfflineQueue().catch(() => {});
+      }
       setLoading(false);
     });
 
@@ -62,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    await clearOfflineQueue().catch(() => {});
     const { error } = await supabase.auth.signOut();
     return { error: error as Error | null };
   };
