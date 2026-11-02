@@ -32,7 +32,7 @@ export default function TournamentTeamsScreen() {
           supabase.from("tournaments").select("name, sport_type").eq("id", tournamentId).single(),
           supabase
             .from("tournament_participants")
-            .select("*")
+            .select("id, tournament_id, team_id, name, seed, created_at")
             .eq("tournament_id", tournamentId)
             .order("seed", { ascending: true, nullsFirst: false }),
         ]);

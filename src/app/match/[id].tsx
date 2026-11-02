@@ -192,12 +192,19 @@ export default function MatchDetailScreen() {
     }
     setSearchingUmpire(true);
     try {
-      const { data } = await supabase
-        .from("users")
-        .select("id, username, email")
-        .or(`username.ilike.%${query.trim()}%,email.ilike.%${query.trim()}%`)
-        .limit(5);
-      setUmpireSearchResults(data || []);
+      const trimmed = query.trim();
+      if (trimmed.length < 3) {
+        setUmpireSearchResults([]);
+        return;
+      }
+      const { data, error } = await supabase.rpc("search_umpires", {
+        p_query: trimmed,
+      });
+      if (!error && data) {
+        setUmpireSearchResults(data);
+      } else {
+        setUmpireSearchResults([]);
+      }
     } catch (e) {
       console.warn("Umpire search error:", e);
     } finally {
