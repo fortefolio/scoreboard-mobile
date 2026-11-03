@@ -213,22 +213,24 @@ export default function MatchDetailScreen() {
   };
 
   // Assign Umpire
-  const assignUmpire = async (umpireId: string) => {
+  const assignUmpire = async (umpireId: string | null) => {
     try {
-      const { error } = await supabase
-        .from("matches")
-        .update({
-          umpire_id: umpireId,
-          umpire_invite_status: "pending",
-        })
-        .eq("id", matchIdStr);
+      const { error } = await supabase.rpc("appoint_match_umpire", {
+        p_match_id: matchIdStr,
+        p_new_umpire_id: umpireId,
+      });
       if (error) throw error;
       setUmpireSearch("");
       setUmpireSearchResults([]);
       fetchMatch();
-      Alert.alert("Sucesso", "Convite de árbitro enviado com sucesso!");
+      Alert.alert(
+        locale === "pt" ? "Sucesso" : "Success",
+        umpireId
+          ? (locale === "pt" ? "Árbitro designado com sucesso!" : "Referee appointed successfully!")
+          : t("match.umpireUnassigned")
+      );
     } catch (e: any) {
-      Alert.alert("Erro", e.message);
+      Alert.alert(locale === "pt" ? "Erro" : "Error", e.message);
     }
   };
 
@@ -623,6 +625,20 @@ export default function MatchDetailScreen() {
                 <Text style={styles.subSectionTitle}>
                   {t("match.appointOtherRefereeUpper") || t("match.appointOtherReferee")}
                 </Text>
+
+                {/* Quick Action: Assign Myself as Referee */}
+                {user && match.umpire_id !== user.id && (
+                  <TouchableOpacity
+                    style={styles.selfAssignBtn}
+                    onPress={() => assignUmpire(user.id)}
+                  >
+                    <Ionicons name="person-circle-outline" size={18} color="#38bdf8" />
+                    <Text style={styles.selfAssignBtnText}>
+                      {t("match.assignMyselfAsReferee")}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
                 <TextInput
                   style={styles.searchInput}
                   placeholder={t("match.searchUmpirePlaceholder")}
@@ -646,6 +662,18 @@ export default function MatchDetailScreen() {
                     <Ionicons name="person-add-outline" size={18} color="#4edea3" />
                   </TouchableOpacity>
                 ))}
+
+                {match.umpire_id && (
+                  <TouchableOpacity
+                    style={styles.unassignBtn}
+                    onPress={() => assignUmpire(null)}
+                  >
+                    <Ionicons name="person-remove-outline" size={16} color="#f87171" />
+                    <Text style={styles.unassignBtnText}>
+                      {t("match.unassignUmpire")}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>
@@ -970,6 +998,39 @@ const styles = StyleSheet.create({
   },
   appointSection: {
     marginTop: 20,
+  },
+  selfAssignBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(56, 189, 248, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(56, 189, 248, 0.3)",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+    gap: 8,
+  },
+  selfAssignBtnText: {
+    color: "#38bdf8",
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  unassignBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  unassignBtnText: {
+    color: "#f87171",
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
   },
   subSectionTitle: {
     fontSize: 13,
