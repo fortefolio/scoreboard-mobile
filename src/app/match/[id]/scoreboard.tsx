@@ -94,9 +94,28 @@ export default function RefereeScoreboardScreen() {
 
     fetchMatch();
 
-    const channelId = `scoreboard-live-${matchIdStr}-${Math.random().toString(36).slice(2, 9)}`;
     const channel = supabase
-      .channel(channelId)
+      .channel(`match:${matchIdStr}`)
+      .on("broadcast", { event: "score_update" }, (response: any) => {
+        const payload = response?.payload;
+        if (payload?.match_id === matchIdStr && payload.scores) {
+          setMatch((prev: any) => ({
+            ...prev,
+            scores: payload.scores ?? prev?.scores,
+            status: payload.status ?? prev?.status,
+          }));
+        }
+      })
+      .on("broadcast", { event: "SCORE_UPDATED" }, (response: any) => {
+        const payload = response?.payload;
+        if (payload?.match_id === matchIdStr && payload.scores) {
+          setMatch((prev: any) => ({
+            ...prev,
+            scores: payload.scores ?? prev?.scores,
+            status: payload.status ?? prev?.status,
+          }));
+        }
+      })
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${matchIdStr}` },

@@ -34,7 +34,8 @@ sequenceDiagram
 
 ## 2. Realtime WebSocket Feeds
 
-For spectators viewing matches on the mobile app:
-- Subscribes via `@supabase/supabase-js` to channel `match-{matchId}`.
-- Listens to `postgres_changes` on `matches` where `id = matchId`.
+For spectators and cross-device official scoring:
+- Subscribes via `@supabase/supabase-js` to channel `match:${matchId}`.
+- Listens to in-database PostgreSQL `broadcast` events (`score_update` and `SCORE_UPDATED`) emitted directly from `record_match_event_atomic`.
+- Falls back to `postgres_changes` on `matches` table where `id = matchId`.
 - Updates React state without pulling entire lists, preserving mobile battery life and cellular data.
