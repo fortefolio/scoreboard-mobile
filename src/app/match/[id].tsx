@@ -25,7 +25,7 @@ import { Colors, Spacing } from "@/constants/theme";
 export default function MatchDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { user } = useAuth();
   const { isFollowing, toggleFollow } = useFollow();
 

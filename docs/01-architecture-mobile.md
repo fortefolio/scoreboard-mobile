@@ -23,7 +23,23 @@ Navigation is managed declaratively via file-based routing under `src/app/`:
 
 ---
 
-## 2. Packaging & Build Pipeline
+## 2. Packaging, Compiling & Build Pipeline
 
-- **EAS Build (Expo Application Services)**: Configured in `eas.json` for building Android `.aab` bundles and iOS `.ipa` archives.
-- **OTA Updates (Expo Updates)**: Deploys urgent JavaScript bug fixes directly to user devices without requiring App Store or Google Play re-reviews.
+The application supports both local compilation and cloud builds (EAS):
+
+- **Package & Bundle Identifiers**:
+  - Android Package: `com.fortefolio.scoreboard`
+  - iOS Bundle Identifier: `com.fortefolio.scoreboard`
+  - App Scheme: `scoreboard://`
+- **Android Compilation (Gradle)**:
+  - Local compilation via `./android/gradlew assembleDebug` (generates `android/app/build/outputs/apk/debug/app-debug.apk`).
+  - Production Google Play Store App Bundle via `./android/gradlew bundleRelease` or EAS.
+- **iOS Compilation (Xcode & CocoaPods)**:
+  - CocoaPods dependencies managed in `ios/Podfile` producing `ios/ScoreBoard.xcworkspace`.
+  - Can be built directly in Xcode or via `npx expo run:ios`.
+- **EAS Build (Expo Application Services)**:
+  - Configured in `eas.json` with profiles:
+    - `preview`: Internal distribution (standalone Android APK + iOS Simulator build).
+    - `production`: Store release (Google Play `.aab` + App Store `.ipa`).
+- **OTA Updates (Expo Updates)**:
+  - Deploys urgent JavaScript bug fixes directly to user devices without requiring App Store or Google Play re-reviews.

@@ -43,6 +43,7 @@
     "@types/node": "^26.6.6",
     "@types/react": "~19.3.0",
     "@vitest/ui": "^5.0.5",
+    "eas-cli": "^27.4.1",
     "fast-check": "^4.10.2",
     "happy-dom": "^21.0.4",
     "tsx": "^4.23.15",
@@ -52,8 +53,8 @@
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "vitest",
