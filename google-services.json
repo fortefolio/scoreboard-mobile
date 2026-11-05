@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "50686323426",
+    "project_id": "scoreboard-d44dc",
+    "storage_bucket": "scoreboard-d44dc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:50686323426:android:32a5c9ee4ecdad20de8cbb",
+        "android_client_info": {
+          "package_name": "dev.goncaloforte.scoreboard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDgfnWGnfwQKxo0WLWFP-Az0y2oGUjWn3A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -15,6 +15,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "./AuthProvider";
 import { useLanguage } from "@/lib/i18n";
+import { validatePassword } from "@/lib/auth/passwordValidation";
 import { Colors, Spacing } from "@/constants/theme";
 
 interface AuthModalProps {
@@ -38,6 +39,17 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
     if (!email.trim() || !password.trim()) {
       setErrorMsg("Por favor preencha todos os campos.");
       return;
+    }
+
+    if (mode === "signup") {
+      const validation = validatePassword(password);
+      if (!validation.isValid) {
+        setErrorMsg(
+          t("auth.passwordRequirements") ||
+            "A palavra-passe deve ter pelo menos 8 caracteres e incluir maiúsculas, minúsculas, números e símbolos."
+        );
+        return;
+      }
     }
 
     setLoading(true);
@@ -130,6 +142,12 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
                 onChangeText={setPassword}
                 secureTextEntry
               />
+              {mode === "signup" && (
+                <Text style={styles.helpText}>
+                  {t("auth.passwordRequirements") ||
+                    "Mínimo 8 caracteres com maiúsculas, minúsculas, números e símbolos."}
+                </Text>
+              )}
             </View>
 
             {/* Submit Button */}
@@ -250,6 +268,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     color: "#f8fafc",
     fontSize: 15,
+  },
+  helpText: {
+    fontSize: 11,
+    color: "#94a3b8",
+    marginTop: 6,
+    lineHeight: 15,
   },
   submitBtn: {
     backgroundColor: "#4f46e5",

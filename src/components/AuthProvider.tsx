@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 import { clearOfflineQueue } from "@/lib/offline/offlineQueue";
+import { registerForPushNotificationsAsync } from "@/lib/notifications/push";
 
 interface AuthContextType {
   user: User | null;
@@ -24,6 +25,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user) {
+        registerForPushNotificationsAsync(session.user.id).catch(() => {});
+      }
       setLoading(false);
     });
 
@@ -33,6 +37,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user && (event === "SIGNED_IN" || event === "USER_UPDATED")) {
+        registerForPushNotificationsAsync(session.user.id).catch(() => {});
+      }
       if (event === "SIGNED_OUT") {
         clearOfflineQueue().catch(() => {});
       }

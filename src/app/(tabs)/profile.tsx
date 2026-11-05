@@ -22,6 +22,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useTranslation, Locale } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
 import { ScoreBoardTheme } from "@/constants/theme";
+import { validatePassword } from "@/lib/auth/passwordValidation";
 
 const SPORTS_LIST = [
   { id: "all", labelEn: "All Sports", labelPt: "Todos os Desportos" },
@@ -237,7 +238,8 @@ export default function ProfileScreen() {
   const handleUpdatePassword = async () => {
     if (!user) return;
 
-    if (newPassword.length < 6) {
+    const validation = validatePassword(newPassword);
+    if (!validation.isValid) {
       Alert.alert(
         locale === "pt" ? "Aviso" : "Warning",
         t("settings.security.passwordLength")
