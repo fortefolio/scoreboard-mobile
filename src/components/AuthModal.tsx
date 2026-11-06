@@ -33,21 +33,28 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
   const [displayName, setDisplayName] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [signupSuccess, setSignupSuccess] = useState(false);
+
+  // Reset success state when modal visibility or initialMode changes
+  React.useEffect(() => {
+    if (visible) {
+      setMode(initialMode);
+      setErrorMsg(null);
+      setSignupSuccess(false);
+    }
+  }, [visible, initialMode]);
 
   const handleSubmit = async () => {
     setErrorMsg(null);
     if (!email.trim() || !password.trim()) {
-      setErrorMsg("Por favor preencha todos os campos.");
+      setErrorMsg(t("auth.fillAllFields"));
       return;
     }
 
     if (mode === "signup") {
       const validation = validatePassword(password);
       if (!validation.isValid) {
-        setErrorMsg(
-          t("auth.passwordRequirements") ||
-            "A palavra-passe deve ter pelo menos 8 caracteres e incluir maiúsculas, minúsculas, números e símbolos."
-        );
+        setErrorMsg(t("auth.passwordRequirements"));
         return;
       }
     }
@@ -66,11 +73,11 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
         if (error) {
           setErrorMsg(error.message);
         } else {
-          onClose();
+          setSignupSuccess(true);
         }
       }
     } catch (e: any) {
-      setErrorMsg(e.message || "Ocorreu um erro");
+      setErrorMsg(e.message || t("common.error"));
     } finally {
       setLoading(false);
     }
@@ -92,101 +99,120 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.title}>
-              {mode === "login" ? t("auth.signInTitle") || "Iniciar Sessão" : t("auth.signUpTitle") || "Criar Conta"}
-            </Text>
-
-            {/* Error Message */}
-            {errorMsg ? (
-              <View style={styles.errorBox}>
-                <Ionicons name="alert-circle" size={18} color="#ef4444" />
-                <Text style={styles.errorText}>{errorMsg}</Text>
+            {signupSuccess ? (
+              <View style={styles.successContainer}>
+                <View style={styles.successIconCircle}>
+                  <Ionicons name="mail-unread-outline" size={44} color="#22c55e" />
+                </View>
+                <Text style={styles.successTitle}>{t("auth.checkEmailTitle")}</Text>
+                <Text style={styles.successMessage}>
+                  {t("auth.checkEmailMessage").replace("{email}", email.trim())}
+                </Text>
+                <TouchableOpacity
+                  style={styles.submitBtn}
+                  onPress={() => {
+                    setSignupSuccess(false);
+                    onClose();
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.submitBtnText}>{t("auth.gotIt")}</Text>
+                </TouchableOpacity>
               </View>
-            ) : null}
+            ) : (
+              <>
+                <Text style={styles.title}>
+                  {mode === "login" ? t("auth.welcomeBack") : t("auth.createAccount")}
+                </Text>
 
-            {/* Form Fields */}
-            {mode === "signup" && (
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>{t("auth.nameLabel") || "Nome"}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Seu nome ou alcunha"
-                  placeholderTextColor="#64748b"
-                  value={displayName}
-                  onChangeText={setDisplayName}
-                  autoCapitalize="words"
-                />
-              </View>
+                {/* Error Message */}
+                {errorMsg ? (
+                  <View style={styles.errorBox}>
+                    <Ionicons name="alert-circle" size={18} color="#ef4444" />
+                    <Text style={styles.errorText}>{errorMsg}</Text>
+                  </View>
+                ) : null}
+
+                {/* Form Fields */}
+                {mode === "signup" && (
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>{t("auth.name")}</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder={t("auth.namePlaceholder")}
+                      placeholderTextColor="#64748b"
+                      value={displayName}
+                      onChangeText={setDisplayName}
+                      autoCapitalize="words"
+                    />
+                  </View>
+                )}
+
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>{t("auth.email")}</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={t("auth.emailPlaceholder")}
+                    placeholderTextColor="#64748b"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>{t("auth.password")}</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={t("auth.passwordPlaceholder")}
+                    placeholderTextColor="#64748b"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                  />
+                  {mode === "signup" && (
+                    <Text style={styles.helpText}>
+                      {t("auth.passwordRequirements")}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Submit Button */}
+                <TouchableOpacity
+                  style={styles.submitBtn}
+                  onPress={handleSubmit}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Text style={styles.submitBtnText}>
+                      {mode === "login" ? t("auth.signInBtn") : t("auth.signUpBtn")}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+
+                {/* Toggle Mode Footer */}
+                <TouchableOpacity
+                  style={styles.switchModeBtn}
+                  onPress={() => {
+                    setErrorMsg(null);
+                    setMode(mode === "login" ? "signup" : "login");
+                  }}
+                >
+                  <Text style={styles.switchModeText}>
+                    {mode === "login"
+                      ? `${t("auth.dontHaveAccount")} `
+                      : `${t("auth.alreadyHaveAccount")} `}
+                    <Text style={styles.switchModeAccent}>
+                      {mode === "login" ? t("auth.signUpBtn") : t("auth.signInBtn")}
+                    </Text>
+                  </Text>
+                </TouchableOpacity>
+              </>
             )}
-
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>{t("auth.emailLabel") || "Email"}</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="seu.email@exemplo.com"
-                placeholderTextColor="#64748b"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>{t("auth.passwordLabel") || "Palavra-passe"}</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••"
-                placeholderTextColor="#64748b"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-              />
-              {mode === "signup" && (
-                <Text style={styles.helpText}>
-                  {t("auth.passwordRequirements") ||
-                    "Mínimo 8 caracteres com maiúsculas, minúsculas, números e símbolos."}
-                </Text>
-              )}
-            </View>
-
-            {/* Submit Button */}
-            <TouchableOpacity
-              style={styles.submitBtn}
-              onPress={handleSubmit}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.submitBtnText}>
-                  {mode === "login"
-                    ? t("nav.signIn") || "Entrar"
-                    : t("nav.signUp") || "Registar"}
-                </Text>
-              )}
-            </TouchableOpacity>
-
-            {/* Toggle Mode Footer */}
-            <TouchableOpacity
-              style={styles.switchModeBtn}
-              onPress={() => {
-                setErrorMsg(null);
-                setMode(mode === "login" ? "signup" : "login");
-              }}
-            >
-              <Text style={styles.switchModeText}>
-                {mode === "login"
-                  ? `${t("auth.noAccount") || "Ainda não tem conta?"} `
-                  : `${t("auth.hasAccount") || "Já tem conta?"} `}
-                <Text style={styles.switchModeAccent}>
-                  {mode === "login"
-                    ? t("auth.signUpLink") || "Criar conta"
-                    : t("auth.signInLink") || "Entrar"}
-                </Text>
-              </Text>
-            </TouchableOpacity>
           </KeyboardAvoidingView>
         </View>
       </TouchableWithoutFeedback>
@@ -301,5 +327,33 @@ const styles = StyleSheet.create({
   switchModeAccent: {
     color: "#4f46e5",
     fontWeight: "700",
+  },
+  successContainer: {
+    alignItems: "center",
+    paddingVertical: Spacing.four,
+  },
+  successIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(34, 197, 94, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.three,
+  },
+  successTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#f8fafc",
+    marginBottom: Spacing.two,
+    textAlign: "center",
+  },
+  successMessage: {
+    fontSize: 14,
+    color: "#94a3b8",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: Spacing.four,
+    paddingHorizontal: Spacing.two,
   },
 });
