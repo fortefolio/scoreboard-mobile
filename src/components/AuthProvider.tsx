@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
+import * as Linking from "expo-linking";
 import { supabase } from "@/lib/supabase/client";
 import { clearOfflineQueue } from "@/lib/offline/offlineQueue";
 import { registerForPushNotificationsAsync } from "@/lib/notifications/push";
@@ -46,8 +47,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
+    // 3. Handle deep link auth callback (e.g. email verification redirect)
+    const handleAuthUrl = async (url: string | null) => {
+      if (!url) return;
+
+      try {
+        // Hash fragment tokens: #access_token=...&refresh_token=...
+        const hashIndex = url.indexOf("#");
+        if (hashIndex !== -1) {
+          const hash = url.substring(hashIndex + 1);
+          const params = new URLSearchParams(hash);
+          const access_token = params.get("access_token");
+          const refresh_token = params.get("refresh_token");
+
+          if (access_token && refresh_token) {
+            await supabase.auth.setSession({
+              access_token,
+              refresh_token,
+            });
+            return;
+          }
+        }
+
+        // Query parameters: ?code=...
+        const queryIndex = url.indexOf("?");
+        if (queryIndex !== -1) {
+          const query = url.substring(queryIndex + 1);
+          const params = new URLSearchParams(query);
+          const code = params.get("code");
+
+          if (code) {
+            await supabase.auth.exchangeCodeForSession(code);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("[AuthProvider] Failed to process auth deep link:", err);
+      }
+    };
+
+    // Check cold-start URL
+    Linking.getInitialURL().then((url) => {
+      if (url) handleAuthUrl(url);
+    });
+
+    // Listen for runtime incoming deep links
+    const linkSub = Linking.addEventListener("url", (event) => {
+      handleAuthUrl(event.url);
+    });
+
     return () => {
       subscription.unsubscribe();
+      linkSub.remove();
     };
   }, []);
 
@@ -67,6 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: {
           display_name: displayName,
         },
+        emailRedirectTo: "scoreboard://auth/callback",
       },
     });
     return { error: error as Error | null };
