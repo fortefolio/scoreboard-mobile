@@ -58,6 +58,7 @@ vi.mock("@/lib/supabase/client", () => ({
     rpc: (name: string, params: any) => mockRpc(name, params),
     auth: {
       updateUser: vi.fn().mockResolvedValue({ data: {}, error: null }),
+      signInWithPassword: vi.fn().mockResolvedValue({ data: {}, error: null }),
     },
     channel: () => ({
       on: () => ({

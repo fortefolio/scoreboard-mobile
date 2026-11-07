@@ -58,6 +58,7 @@ export default function ProfileScreen() {
 
   // Security & Password fields
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [updatingPassword, setUpdatingPassword] = useState(false);
@@ -238,30 +239,57 @@ export default function ProfileScreen() {
   const handleUpdatePassword = async () => {
     if (!user) return;
 
-    const validation = validatePassword(newPassword);
-    if (!validation.isValid) {
+    if (!currentPassword) {
       Alert.alert(
         locale === "pt" ? "Aviso" : "Warning",
-        t("settings.security.passwordLength")
-      );
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      Alert.alert(
-        locale === "pt" ? "Aviso" : "Warning",
-        t("settings.security.passwordMismatch")
+        t("settings.security.currentPasswordRequired")
       );
       return;
     }
 
     setUpdatingPassword(true);
     try {
+      if (user.email) {
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email: user.email,
+          password: currentPassword,
+        });
+
+        if (authError) {
+          Alert.alert(
+            locale === "pt" ? "Aviso" : "Warning",
+            t("settings.security.currentPasswordIncorrect")
+          );
+          setUpdatingPassword(false);
+          return;
+        }
+      }
+
+      const validation = validatePassword(newPassword);
+      if (!validation.isValid) {
+        Alert.alert(
+          locale === "pt" ? "Aviso" : "Warning",
+          t("settings.security.passwordLength")
+        );
+        setUpdatingPassword(false);
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        Alert.alert(
+          locale === "pt" ? "Aviso" : "Warning",
+          t("settings.security.passwordMismatch")
+        );
+        setUpdatingPassword(false);
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) {
         Alert.alert(locale === "pt" ? "Erro" : "Error", error.message);
       } else {
         setPasswordModalVisible(false);
+        setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
         Alert.alert(
@@ -737,6 +765,18 @@ export default function ProfileScreen() {
               <TouchableOpacity onPress={() => setPasswordModalVisible(false)}>
                 <Ionicons name="close" size={22} color="#94a3b8" />
               </TouchableOpacity>
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>{t("settings.security.currentPassword")}</Text>
+              <TextInput
+                style={styles.input}
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                secureTextEntry
+                placeholder="••••••••••••"
+                placeholderTextColor="#64748b"
+              />
             </View>
 
             <View style={styles.fieldGroup}>
