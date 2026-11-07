@@ -30,6 +30,9 @@ vi.mock("react-native-safe-area-context", () => ({
 
 vi.mock("@expo/vector-icons", () => ({
   Ionicons: (props: any) => React.createElement("span", { "data-testid": `icon-${props.name}` }),
+  MaterialCommunityIcons: (props: any) => React.createElement("span", { "data-testid": `icon-${props.name}` }),
+  FontAwesome: (props: any) => React.createElement("span", { "data-testid": `icon-${props.name}` }),
+  Feather: (props: any) => React.createElement("span", { "data-testid": `icon-${props.name}` }),
 }));
 
 vi.mock("@/lib/supabase/client", () => ({
