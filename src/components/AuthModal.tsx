@@ -11,6 +11,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "./AuthProvider";
@@ -88,7 +89,7 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.overlay}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
             style={styles.modalContent}
           >
             {/* Header */}
@@ -98,6 +99,12 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
                 <Ionicons name="close" size={24} color="#94a3b8" />
               </TouchableOpacity>
             </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.scrollContent}
+            >
 
             {signupSuccess ? (
               <View style={styles.successContainer}>
@@ -217,6 +224,7 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
                 </TouchableOpacity>
               </>
             )}
+            </ScrollView>
           </KeyboardAvoidingView>
         </View>
       </TouchableWithoutFeedback>
@@ -240,6 +248,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#232d4b",
     padding: Spacing.four,
+    maxHeight: "85%",
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   header: {
     flexDirection: "row",

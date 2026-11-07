@@ -52,6 +52,11 @@ import * as Device from "expo-device";
 function getSupabaseUrl(): string {
   const envUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "http://localhost:54321";
 
+  // Android Emulator (virtual): 10.0.2.2 points to host loopback (works in dev and release builds)
+  if (Platform.OS === "android" && !Device.isDevice && (envUrl.includes("localhost") || envUrl.includes("127.0.0.1"))) {
+    return envUrl.replace("localhost", "10.0.2.2").replace("127.0.0.1", "10.0.2.2");
+  }
+
   if (__DEV__) {
     // Extract bundler host IP (e.g. "192.168.1.116" when running via Expo on physical device)
     const hostUri = Constants.expoConfig?.hostUri || (Constants as any).manifest2?.extra?.expoClient?.hostUri;
@@ -60,11 +65,6 @@ function getSupabaseUrl(): string {
     // Physical device (iOS / Android): replace localhost with host computer's IP
     if (Device.isDevice && debuggerHost && (envUrl.includes("localhost") || envUrl.includes("127.0.0.1"))) {
       return envUrl.replace("localhost", debuggerHost).replace("127.0.0.1", debuggerHost);
-    }
-
-    // Android Emulator (virtual): 10.0.2.2 points to host loopback
-    if (Platform.OS === "android" && !Device.isDevice && (envUrl.includes("localhost") || envUrl.includes("127.0.0.1"))) {
-      return envUrl.replace("localhost", "10.0.2.2").replace("127.0.0.1", "10.0.2.2");
     }
   }
 

@@ -3,48 +3,47 @@ appId: dev.goncaloforte.scoreboard
 - launchApp:
     clearState: false
 
-# 1. Ensure TopBar is present
 - assertVisible: "SCORE:BOARD"
 
-# 2. Tap avatar button to open user menu (if logged in)
+# 1. Tap Avatar
 - tapOn:
     id: "topbar-avatar-btn"
+
+# 2. Tap "Os Meus Torneios"
+- assertVisible:
+    id: "menu-my-tournaments-btn"
+- tapOn:
+    id: "menu-my-tournaments-btn"
+
+# 3. Assert we navigated to My Tournaments (not redirected to Home)
+- assertVisible: "Os Meus Torneios"
+- assertVisible:
+    id: "header-create-tournament-btn"
+
+# 4. Tap Create Tournament Button
+- tapOn:
+    id: "header-create-tournament-btn"
+
+# 5. Assert Create Modal opened (PRO tier allows opening)
+- assertVisible:
+    id: "tournament-name-input"
+
+# 6. Fill tournament name
+- tapOn:
+    id: "tournament-name-input"
+- inputText: "Torneio Maestro E2E"
+- back
+
+# 7. Submit tournament creation
+- tapOn:
+    id: "submit-create-btn"
+
+# 8. Wait for creation to complete
+- extendedWaitUntil:
+    visible: "Torneio Maestro E2E"
+    timeout: 10000
+
+# 9. Return to home
+- tapOn:
+    id: "header-back-btn"
     optional: true
-
-# 3. If user menu opened, tap "Os Meus Torneios"
-- runFlow:
-    when:
-      visible:
-        id: "menu-my-tournaments-btn"
-    commands:
-      - tapOn:
-          id: "menu-my-tournaments-btn"
-
-      # 4. Verify we navigated to My Tournaments (NOT fallback to Home)
-      - assertVisible: "Os Meus Torneios"
-      - assertVisible: "Torneios organizados por si"
-
-      # 5. Verify creation buttons exist
-      - assertVisible:
-          id: "header-create-tournament-btn"
-
-      # 6. Tap create button
-      - tapOn:
-          id: "header-create-tournament-btn"
-
-      # 7. Verify tournament creation modal or pro-tier alert is shown
-      # If modal opened:
-      - runFlow:
-          when:
-            visible:
-              id: "close-create-tournament-modal"
-          commands:
-            - assertVisible:
-                id: "tournament-name-input"
-            - tapOn:
-                id: "close-create-tournament-modal"
-
-      # 8. Test back button returns to tabs
-      - tapOn:
-          id: "header-back-btn"
-          optional: true

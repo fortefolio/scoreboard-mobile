@@ -46,17 +46,17 @@ else
   echo "Android device/emulator is already active."
 fi
 
-# 4. Check if APK exists and install
-if [ -f "$APK_PATH" ]; then
-  echo "Installing APK: $APK_PATH"
-  adb install -r "$APK_PATH"
-else
-  echo "Building release APK..."
-  (cd "$ROOT_DIR/android" && ./gradlew assembleRelease)
-  adb install -r "$APK_PATH"
-fi
+# 4. Bring emulator window to front on macOS so you can see it
+osascript -e 'tell application "System Events" to set frontmost of first process whose name contains "qemu" to true' 2>/dev/null || true
 
-# 5. Run Maestro flows
+# 5. Build and install APK
+echo "Building release APK with local Supabase configuration..."
+(cd "$ROOT_DIR/android" && ./gradlew assembleRelease)
+
+echo "Installing APK: $APK_PATH"
+adb install -r "$APK_PATH"
+
+# 6. Run Maestro flows
 echo "Running Maestro E2E test flows..."
 cd "$ROOT_DIR"
 maestro test .maestro/

@@ -1,0 +1,30 @@
+appId: dev.goncaloforte.scoreboard
+---
+- launchApp:
+    clearState: false
+
+- assertVisible: "SCORE:BOARD"
+
+# If not logged in, perform login with local test credentials
+- runFlow:
+    when:
+      visible:
+        id: "topbar-signin-btn"
+    commands:
+      - tapOn:
+          id: "topbar-signin-btn"
+      - assertVisible:
+          id: "auth-email-input"
+      - tapOn:
+          id: "auth-email-input"
+      - inputText: "gmail@chucknorris.com"
+      - tapOn:
+          id: "auth-password-input"
+      - inputText: "123qwe"
+      - back
+      - tapOn:
+          id: "auth-submit-btn"
+
+# Assert login succeeded and avatar is visible
+- assertVisible:
+    id: "topbar-avatar-btn"

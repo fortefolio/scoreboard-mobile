@@ -3,46 +3,50 @@ appId: dev.goncaloforte.scoreboard
 - launchApp:
     clearState: false
 
-# 1. Ensure TopBar is present
 - assertVisible: "SCORE:BOARD"
 
-# 2. Tap avatar button to open user menu (if logged in)
+# 1. Tap Avatar
 - tapOn:
     id: "topbar-avatar-btn"
+
+# 2. Tap "Os Meus Jogos"
+- assertVisible:
+    id: "menu-my-matches-btn"
+- tapOn:
+    id: "menu-my-matches-btn"
+
+# 3. Assert we navigated to My Matches (not redirected to Home)
+- assertVisible: "Os Meus Jogos"
+- assertVisible:
+    id: "header-create-match-btn"
+
+# 4. Tap Create Match Button
+- tapOn:
+    id: "header-create-match-btn"
+
+# 5. Assert Create Modal opened
+- assertVisible:
+    id: "match-team1-input"
+
+# 6. Fill team names
+- tapOn:
+    id: "match-team1-input"
+- inputText: "Benfica E2E"
+- tapOn:
+    id: "match-team2-input"
+- inputText: "Porto E2E"
+- back
+
+# 7. Submit match creation
+- tapOn:
+    id: "submit-create-match-btn"
+
+# 8. Wait for match to appear
+- extendedWaitUntil:
+    visible: "Benfica E2E"
+    timeout: 10000
+
+# 9. Return to home
+- tapOn:
+    id: "header-back-btn"
     optional: true
-
-# 3. If user menu opened, tap "Os Meus Jogos"
-- runFlow:
-    when:
-      visible:
-        id: "menu-my-matches-btn"
-    commands:
-      - tapOn:
-          id: "menu-my-matches-btn"
-
-      # 4. Verify we navigated to My Matches (NOT fallback to Home)
-      - assertVisible: "Os Meus Jogos"
-      - assertVisible: "Jogos organizados ou arbitrados"
-
-      # 5. Verify creation buttons exist
-      - assertVisible:
-          id: "header-create-match-btn"
-
-      # 6. Tap create button
-      - tapOn:
-          id: "header-create-match-btn"
-
-      # 7. Verify match creation modal is opened
-      - runFlow:
-          when:
-            visible:
-              id: "cancel-create-match-btn"
-          commands:
-            - assertVisible: "Modalidade Desportiva"
-            - tapOn:
-                id: "cancel-create-match-btn"
-
-      # 8. Test back button returns to tabs
-      - tapOn:
-          id: "header-back-btn"
-          optional: true
