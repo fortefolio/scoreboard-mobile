@@ -21,10 +21,12 @@ appId: dev.goncaloforte.scoreboard
       - tapOn:
           id: "auth-password-input"
       - inputText: "123qwe"
-      - back
+      - tapOn: "SCORE:BOARD"
       - tapOn:
           id: "auth-submit-btn"
 
 # Assert login succeeded and avatar is visible
-- assertVisible:
-    id: "topbar-avatar-btn"
+- extendedWaitUntil:
+    visible:
+      id: "topbar-avatar-btn"
+    timeout: 10000

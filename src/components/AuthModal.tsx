@@ -179,6 +179,8 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry
+                    returnKeyType="done"
+                    onSubmitEditing={handleSubmit}
                   />
                   {mode === "signup" && (
                     <Text style={styles.helpText}>
