@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Share,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -19,15 +20,17 @@ import { TopBar } from "@/components/TopBar";
 import { FollowButton } from "@/components/FollowButton";
 import { GroupStandingsView } from "@/components/tournament/GroupStandingsView";
 import { TournamentBracketView } from "@/components/tournament/TournamentBracketView";
+import { TournamentSettingsModal } from "@/components/tournament/TournamentSettingsModal";
 import { calculateStandings, Standing } from "@/lib/standings/groups";
 import { supabase } from "@/lib/supabase/client";
 
 export default function TournamentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { user } = useAuth();
   const { isFollowing, toggleFollow } = useFollow();
+  const isPt = locale === "pt";
 
   const tournamentId = (Array.isArray(id) ? id[0] : id) || "";
   const following = isFollowing(tournamentId, "tournament");
@@ -38,6 +41,8 @@ export default function TournamentDetailScreen() {
   const [groups, setGroups] = useState<Record<string, Standing[]>>({});
   const [participantCount, setParticipantCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+  const [generatingBracket, setGeneratingBracket] = useState(false);
 
   // Tabs: matches, standings, bracket
   const [activeTab, setActiveTab] = useState<"matches" | "standings" | "bracket">("matches");
@@ -154,6 +159,73 @@ export default function TournamentDetailScreen() {
 
   const isPending = tournament.status === "pending";
   const isOngoing = tournament.status === "ongoing";
+  const isOrganizer = Boolean(user && tournament && user.id === tournament.organizer_id);
+
+  const handleGenerateBracket = async () => {
+    if (!tournament) return;
+
+    Alert.alert(
+      isPt ? "Gerar Competição" : "Generate Tournament",
+      isPt
+        ? "Deseja gerar a chave/fase de grupos com base nas equipas inscritas?"
+        : "Generate the bracket/group stage for all registered teams?",
+      [
+        { text: isPt ? "Cancelar" : "Cancel", style: "cancel" },
+        {
+          text: isPt ? "Gerar" : "Generate",
+          onPress: async () => {
+            setGeneratingBracket(true);
+            try {
+              const { data: partData, error: partError } = await supabase
+                .from("tournament_participants")
+                .select("name")
+                .eq("tournament_id", tournamentId)
+                .order("seed", { ascending: true, nullsFirst: false });
+
+              if (partError) throw partError;
+
+              const teamNames = partData?.map((p: any) => p.name) || [];
+              if (teamNames.length < 2) {
+                Alert.alert(
+                  isPt ? "Equipas Insuficientes" : "Insufficient Teams",
+                  isPt
+                    ? "É necessário ter pelo menos 2 equipas inscritas para gerar a competição."
+                    : "At least 2 teams are required to generate the tournament."
+                );
+                setGeneratingBracket(false);
+                return;
+              }
+
+              const { error: invokeError } = await supabase.functions.invoke("generate-tournament-bracket", {
+                body: {
+                  tournament_id: tournament.id,
+                  organizer_id: tournament.organizer_id,
+                  sport_type: tournament.sport_type,
+                  teams: teamNames,
+                  settings: tournament.settings,
+                },
+              });
+
+              if (invokeError) throw invokeError;
+
+              Alert.alert(
+                isPt ? "Sucesso" : "Success",
+                isPt ? "Chaveamento gerado com sucesso!" : "Bracket generated successfully!"
+              );
+              fetchTournamentData();
+            } catch (err: any) {
+              Alert.alert(
+                isPt ? "Erro ao Gerar" : "Generation Error",
+                err?.message || (isPt ? "Ocorreu um erro ao gerar a chave." : "Failed to generate bracket.")
+              );
+            } finally {
+              setGeneratingBracket(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -190,6 +262,15 @@ export default function TournamentDetailScreen() {
             <View style={styles.sportBadge}>
               <Text style={styles.sportBadgeText}>{tournament.sport_type}</Text>
             </View>
+
+            {isOrganizer && (
+              <View style={styles.organizerBadge}>
+                <Ionicons name="shield-checkmark" size={13} color="#818cf8" style={{ marginRight: 4 }} />
+                <Text style={styles.organizerBadgeText}>
+                  {isPt ? "ORGANIZADOR" : "ORGANIZER"}
+                </Text>
+              </View>
+            )}
 
             {isOngoing ? (
               <View style={styles.liveIndicator}>
@@ -229,6 +310,62 @@ export default function TournamentDetailScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Organizer Control Panel */}
+          {isOrganizer && (
+            <View style={styles.organizerPanel} testID="organizer-controls-section">
+              <View style={styles.organizerPanelHeader}>
+                <Ionicons name="construct-outline" size={15} color="#818cf8" />
+                <Text style={styles.organizerPanelTitle}>
+                  {isPt ? "Painel de Gestão do Organizador" : "Organizer Control Panel"}
+                </Text>
+              </View>
+
+              <View style={styles.organizerButtonsRow}>
+                <TouchableOpacity
+                  style={styles.organizerActionBtn}
+                  onPress={() => setSettingsModalVisible(true)}
+                  testID="organizer-settings-btn"
+                >
+                  <Ionicons name="settings-outline" size={16} color="#cbd5e1" />
+                  <Text style={styles.organizerActionBtnText}>
+                    {isPt ? "Definições" : "Settings"}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.organizerActionBtn}
+                  onPress={() => router.push(`/tournament/${tournamentId}/teams` as any)}
+                  testID="organizer-teams-btn"
+                >
+                  <Ionicons name="people-outline" size={16} color="#cbd5e1" />
+                  <Text style={styles.organizerActionBtnText}>
+                    {isPt ? "Equipas" : "Teams"}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.organizerGenerateBtn, generatingBracket && { opacity: 0.7 }]}
+                  onPress={handleGenerateBracket}
+                  disabled={generatingBracket}
+                  testID="organizer-generate-btn"
+                >
+                  {generatingBracket ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <>
+                      <Ionicons name="sparkles" size={15} color="#ffffff" style={{ marginRight: 4 }} />
+                      <Text style={styles.organizerGenerateBtnText}>
+                        {isPending
+                          ? isPt ? "Gerar Chave" : "Generate"
+                          : isPt ? "Regenerar" : "Regenerate"}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Navigation Tabs */}
@@ -292,6 +429,19 @@ export default function TournamentDetailScreen() {
           </View>
         )}
       </ScrollView>
+
+      {tournament && isOrganizer && (
+        <TournamentSettingsModal
+          visible={settingsModalVisible}
+          onClose={() => setSettingsModalVisible(false)}
+          tournament={tournament}
+          onUpdateSuccess={fetchTournamentData}
+          onDeleteSuccess={() => {
+            setSettingsModalVisible(false);
+            router.replace("/(tabs)/my-tournaments" as any);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -429,6 +579,79 @@ const styles = StyleSheet.create({
     color: "#f8fafc",
     fontSize: 13,
     fontWeight: "700",
+  },
+  organizerBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(99, 102, 241, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(99, 102, 241, 0.35)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  organizerBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#a5b4fc",
+    letterSpacing: 0.5,
+  },
+  organizerPanel: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255, 255, 255, 0.08)",
+  },
+  organizerPanelHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 10,
+  },
+  organizerPanelTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#a5b4fc",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  organizerButtonsRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  organizerActionBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#1e293b",
+    borderWidth: 1,
+    borderColor: "#334155",
+    paddingVertical: 9,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    gap: 6,
+  },
+  organizerActionBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#cbd5e1",
+  },
+  organizerGenerateBtn: {
+    flex: 1.2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#4f46e5",
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    gap: 4,
+  },
+  organizerGenerateBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#ffffff",
   },
   tabsRow: {
     flexDirection: "row",
