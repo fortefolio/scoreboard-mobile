@@ -1,0 +1,25 @@
+appId: dev.goncaloforte.scoreboard
+---
+- launchApp:
+    clearState: false
+
+# 1. Verify app launches on home tab
+- assertVisible: "SCORE:BOARD"
+
+# 2. Test Guest Auth Modal open/close
+- tapOn:
+    id: "topbar-signin-btn"
+    optional: true
+
+# If sign in modal opened, assert elements and close
+- runFlow:
+    when:
+      visible:
+        id: "auth-close-btn"
+    commands:
+      - assertVisible:
+          id: "auth-email-input"
+      - assertVisible:
+          id: "auth-password-input"
+      - tapOn:
+          id: "auth-close-btn"

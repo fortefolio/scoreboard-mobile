@@ -63,6 +63,8 @@
     "test:report": "vitest run --reporter=html",
     "test:report:preview": "npx vite preview --outDir .vitest",
     "test:ui": "vitest --ui",
+    "test:e2e": "maestro test .maestro/",
+    "test:e2e:android": "bash ./scripts/run-e2e-android.sh",
     "sync:i18n": "node scripts/sync-i18n.js",
     "check:i18n": "node scripts/sync-i18n.js --check"
   },

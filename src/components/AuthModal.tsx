@@ -94,7 +94,7 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
             {/* Header */}
             <View style={styles.header}>
               <Text style={styles.digitalTitle}>SCORE:BOARD</Text>
-              <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+              <TouchableOpacity testID="auth-close-btn" onPress={onClose} style={styles.closeBtn}>
                 <Ionicons name="close" size={24} color="#94a3b8" />
               </TouchableOpacity>
             </View>
@@ -151,6 +151,7 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
                 <View style={styles.fieldGroup}>
                   <Text style={styles.label}>{t("auth.email")}</Text>
                   <TextInput
+                    testID="auth-email-input"
                     style={styles.input}
                     placeholder={t("auth.emailPlaceholder")}
                     placeholderTextColor="#64748b"
@@ -164,6 +165,7 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
                 <View style={styles.fieldGroup}>
                   <Text style={styles.label}>{t("auth.password")}</Text>
                   <TextInput
+                    testID="auth-password-input"
                     style={styles.input}
                     placeholder={t("auth.passwordPlaceholder")}
                     placeholderTextColor="#64748b"
@@ -180,6 +182,7 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
 
                 {/* Submit Button */}
                 <TouchableOpacity
+                  testID="auth-submit-btn"
                   style={styles.submitBtn}
                   onPress={handleSubmit}
                   disabled={loading}
@@ -196,6 +199,7 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
 
                 {/* Toggle Mode Footer */}
                 <TouchableOpacity
+                  testID="auth-switch-mode-btn"
                   style={styles.switchModeBtn}
                   onPress={() => {
                     setErrorMsg(null);

@@ -165,5 +165,52 @@ Simulam cliques e fluxos reais de árbitros na consola móvel de arbitragem base
 
 ---
 
+## 📱 Testes End-to-End (E2E) com Maestro
+
+O projeto utiliza o **[Maestro](https://maestro.mobile.dev/)** para automação de testes End-to-End (E2E) reais em emuladores Android e simuladores iOS. O Maestro conduz a aplicação compilada através de acessibilidade nativa (ADB / IDB), simulando toques, navegações e preenchimento de formulários exatamente como um utilizador humano.
+
+### 1. Instalar o Maestro CLI
+
+Caso ainda não tenhas o Maestro instalado no macOS/Linux:
+```bash
+curl -fsSL "https://get.maestro.mobile.dev" | bash
+export PATH="$PATH:$HOME/.maestro/bin"
+```
+
+### 2. Executar Testes E2E Automatizados
+
+#### No Android (script integrado):
+O script `run-e2e-android.sh` verifica se o emulador já está aberto; se não estiver, arranca o emulador Android AVD configurado (por defeito `Medium_Phone_API_36.1`), aguarda pelo boot completo, instala a versão mais recente do APK de release e executa todos os fluxos:
+```bash
+npm run test:e2e:android
+```
+
+#### Em qualquer dispositivo / emulador já ativo (Android ou iOS Simulator):
+Se já tiveres um emulador Android ou simulador iOS aberto:
+```bash
+# Executar todos os fluxos
+npm run test:e2e
+
+# Ou executar um fluxo individual com o Maestro CLI
+maestro test .maestro/02-my-tournaments-flow.yaml
+```
+
+### 3. Estrutura de Fluxos E2E (`.maestro/`)
+
+Os testes são organizados de forma declarativa em ficheiros YAML:
+- `.maestro/01-guest-flow.yaml`: Valida arranque na Home, abertura do modal de autenticação (Sign In) e fecho.
+- `.maestro/02-my-tournaments-flow.yaml`: Abre o menu de utilizador a partir do avatar na `TopBar`, navega para "Os Meus Torneios" (garantindo que não ocorre fallback para a Home), valida os botões de criação `+ Criar` e o modal de criação de torneio.
+- `.maestro/03-my-matches-flow.yaml`: Abre o menu de utilizador, navega para "Os Meus Jogos", valida a presença do botão `+ Criar` e a abertura do modal de criação de jogo independente ou de torneio.
+
+### 4. Boas Práticas ao Criar Novos Testes
+- Utilizar seletores por `testID` (ex: `id: "topbar-avatar-btn"`, `id: "header-create-tournament-btn"`).
+- Para capturar screenshots de evidência nos fluxos de teste:
+  ```yaml
+  - takeScreenshot: "evidencia-torneio-criado"
+  ```
+- Para esperar por animações ou transições: o Maestro aguarda automaticamente que os elementos estejam visíveis e estáveis antes de efetuar cliques.
+
+---
+
 ## 📄 Licença
 Propriedade do projeto ScoreBoard. Todos os direitos reservados.

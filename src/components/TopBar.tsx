@@ -110,6 +110,7 @@ export function TopBar({ onSearchPress }: TopBarProps) {
           {/* User Avatar or Sign In Button */}
           {user ? (
             <TouchableOpacity
+              testID="topbar-avatar-btn"
               style={styles.avatarBtn}
               onPress={() => setUserMenuVisible(true)}
               activeOpacity={0.8}
@@ -122,6 +123,7 @@ export function TopBar({ onSearchPress }: TopBarProps) {
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
+              testID="topbar-signin-btn"
               style={styles.signInBtn}
               onPress={() => setAuthModalVisible(true)}
               activeOpacity={0.8}
@@ -210,6 +212,7 @@ export function TopBar({ onSearchPress }: TopBarProps) {
             <View style={styles.menuDivider} />
 
             <TouchableOpacity
+              testID="menu-settings-btn"
               style={styles.menuItem}
               onPress={() => {
                 setUserMenuVisible(false);
@@ -223,6 +226,7 @@ export function TopBar({ onSearchPress }: TopBarProps) {
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="menu-my-matches-btn"
               style={styles.menuItem}
               onPress={() => {
                 setUserMenuVisible(false);
@@ -236,6 +240,7 @@ export function TopBar({ onSearchPress }: TopBarProps) {
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="menu-my-tournaments-btn"
               style={styles.menuItem}
               onPress={() => {
                 setUserMenuVisible(false);
@@ -251,6 +256,7 @@ export function TopBar({ onSearchPress }: TopBarProps) {
             <View style={styles.menuDivider} />
 
             <TouchableOpacity
+              testID="menu-logout-btn"
               style={[styles.menuItem, { marginTop: 4 }]}
               onPress={async () => {
                 setUserMenuVisible(false);

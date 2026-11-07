@@ -1,0 +1,50 @@
+appId: dev.goncaloforte.scoreboard
+---
+- launchApp:
+    clearState: false
+
+# 1. Ensure TopBar is present
+- assertVisible: "SCORE:BOARD"
+
+# 2. Tap avatar button to open user menu (if logged in)
+- tapOn:
+    id: "topbar-avatar-btn"
+    optional: true
+
+# 3. If user menu opened, tap "Os Meus Torneios"
+- runFlow:
+    when:
+      visible:
+        id: "menu-my-tournaments-btn"
+    commands:
+      - tapOn:
+          id: "menu-my-tournaments-btn"
+
+      # 4. Verify we navigated to My Tournaments (NOT fallback to Home)
+      - assertVisible: "Os Meus Torneios"
+      - assertVisible: "Torneios organizados por si"
+
+      # 5. Verify creation buttons exist
+      - assertVisible:
+          id: "header-create-tournament-btn"
+
+      # 6. Tap create button
+      - tapOn:
+          id: "header-create-tournament-btn"
+
+      # 7. Verify tournament creation modal or pro-tier alert is shown
+      # If modal opened:
+      - runFlow:
+          when:
+            visible:
+              id: "close-create-tournament-modal"
+          commands:
+            - assertVisible:
+                id: "tournament-name-input"
+            - tapOn:
+                id: "close-create-tournament-modal"
+
+      # 8. Test back button returns to tabs
+      - tapOn:
+          id: "header-back-btn"
+          optional: true

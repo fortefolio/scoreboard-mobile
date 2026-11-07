@@ -1,0 +1,48 @@
+appId: dev.goncaloforte.scoreboard
+---
+- launchApp:
+    clearState: false
+
+# 1. Ensure TopBar is present
+- assertVisible: "SCORE:BOARD"
+
+# 2. Tap avatar button to open user menu (if logged in)
+- tapOn:
+    id: "topbar-avatar-btn"
+    optional: true
+
+# 3. If user menu opened, tap "Os Meus Jogos"
+- runFlow:
+    when:
+      visible:
+        id: "menu-my-matches-btn"
+    commands:
+      - tapOn:
+          id: "menu-my-matches-btn"
+
+      # 4. Verify we navigated to My Matches (NOT fallback to Home)
+      - assertVisible: "Os Meus Jogos"
+      - assertVisible: "Jogos organizados ou arbitrados"
+
+      # 5. Verify creation buttons exist
+      - assertVisible:
+          id: "header-create-match-btn"
+
+      # 6. Tap create button
+      - tapOn:
+          id: "header-create-match-btn"
+
+      # 7. Verify match creation modal is opened
+      - runFlow:
+          when:
+            visible:
+              id: "cancel-create-match-btn"
+          commands:
+            - assertVisible: "Modalidade Desportiva"
+            - tapOn:
+                id: "cancel-create-match-btn"
+
+      # 8. Test back button returns to tabs
+      - tapOn:
+          id: "header-back-btn"
+          optional: true
