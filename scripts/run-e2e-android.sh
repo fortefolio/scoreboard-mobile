@@ -50,8 +50,8 @@ fi
 osascript -e 'tell application "System Events" to set frontmost of first process whose name contains "qemu" to true' 2>/dev/null || true
 
 # 5. Build and install APK
-echo "Building release APK with local Supabase configuration..."
-(cd "$ROOT_DIR/android" && ./gradlew assembleRelease)
+echo "Building release APK with local Supabase configuration (-Pe2eLocal=true)..."
+(cd "$ROOT_DIR/android" && ./gradlew assembleRelease -Pe2eLocal=true)
 
 echo "Installing APK: $APK_PATH"
 adb install -r "$APK_PATH"

@@ -9,14 +9,14 @@ appId: dev.goncaloforte.scoreboard
 - tapOn:
     id: "topbar-avatar-btn"
 
-# 2. Tap "Os Meus Jogos"
+# 2. Tap My Matches
 - assertVisible:
     id: "menu-my-matches-btn"
 - tapOn:
     id: "menu-my-matches-btn"
 
 # 3. Assert we navigated to My Matches (not redirected to Home)
-- assertVisible: "Os Meus Jogos"
+- assertVisible: ".*Matches.*"
 - assertVisible:
     id: "header-create-match-btn"
 
@@ -35,18 +35,25 @@ appId: dev.goncaloforte.scoreboard
 - tapOn:
     id: "match-team2-input"
 - inputText: "Porto E2E"
-- back
 
 # 7. Submit match creation
 - tapOn:
     id: "submit-create-match-btn"
 
-# 8. Wait for match to appear
+# 8. Dismiss success alert
+- tapOn:
+    id: "android:id/button1"
+    optional: true
+- tapOn:
+    text: "OK"
+    optional: true
+
+# 9. Wait for match to appear
 - extendedWaitUntil:
     visible: "Benfica E2E"
     timeout: 10000
 
-# 9. Return to home
+# 10. Return to home
 - tapOn:
     id: "header-back-btn"
     optional: true

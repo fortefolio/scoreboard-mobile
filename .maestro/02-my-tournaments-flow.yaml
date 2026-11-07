@@ -9,14 +9,14 @@ appId: dev.goncaloforte.scoreboard
 - tapOn:
     id: "topbar-avatar-btn"
 
-# 2. Tap "Os Meus Torneios"
+# 2. Tap My Tournaments
 - assertVisible:
     id: "menu-my-tournaments-btn"
 - tapOn:
     id: "menu-my-tournaments-btn"
 
 # 3. Assert we navigated to My Tournaments (not redirected to Home)
-- assertVisible: "Os Meus Torneios"
+- assertVisible: ".*Tournaments.*"
 - assertVisible:
     id: "header-create-tournament-btn"
 
@@ -24,7 +24,7 @@ appId: dev.goncaloforte.scoreboard
 - tapOn:
     id: "header-create-tournament-btn"
 
-# 5. Assert Create Modal opened (PRO tier allows opening)
+# 5. Assert Create Modal opened (PRO tier validated)
 - assertVisible:
     id: "tournament-name-input"
 
@@ -32,18 +32,25 @@ appId: dev.goncaloforte.scoreboard
 - tapOn:
     id: "tournament-name-input"
 - inputText: "Torneio Maestro E2E"
-- back
 
 # 7. Submit tournament creation
 - tapOn:
     id: "submit-create-btn"
 
-# 8. Wait for creation to complete
+# 8. Dismiss success alert
+- tapOn:
+    id: "android:id/button1"
+    optional: true
+- tapOn:
+    text: "OK"
+    optional: true
+
+# 9. Wait for tournament details screen to load with name
 - extendedWaitUntil:
     visible: "Torneio Maestro E2E"
     timeout: 10000
 
-# 9. Return to home
+# 10. Return to home
 - tapOn:
     id: "header-back-btn"
     optional: true

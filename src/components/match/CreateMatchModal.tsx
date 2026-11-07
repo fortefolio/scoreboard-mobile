@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     borderColor: "#1e293b",
     maxHeight: "90%",
     paddingTop: 16,
-    paddingBottom: Platform.OS === "ios" ? 36 : 20,
+    paddingBottom: Platform.OS === "ios" ? 36 : 44,
   },
   header: {
     flexDirection: "row",

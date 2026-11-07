@@ -198,9 +198,9 @@ maestro test .maestro/02-my-tournaments-flow.yaml
 ### 3. Estrutura de Fluxos E2E (`.maestro/`)
 
 Os testes são organizados de forma declarativa em ficheiros YAML:
-- `.maestro/01-guest-flow.yaml`: Valida arranque na Home, abertura do modal de autenticação (Sign In) e fecho.
-- `.maestro/02-my-tournaments-flow.yaml`: Abre o menu de utilizador a partir do avatar na `TopBar`, navega para "Os Meus Torneios" (garantindo que não ocorre fallback para a Home), valida os botões de criação `+ Criar` e o modal de criação de torneio.
-- `.maestro/03-my-matches-flow.yaml`: Abre o menu de utilizador, navega para "Os Meus Jogos", valida a presença do botão `+ Criar` e a abertura do modal de criação de jogo independente ou de torneio.
+- `.maestro/01-auth-login-flow.yaml`: Valida arranque na Home, abertura do modal de autenticação (Sign In), submissão de credenciais de teste locais (`gmail@chucknorris.com`) e confirmação do avatar de utilizador autenticado.
+- `.maestro/02-my-tournaments-flow.yaml`: Abre o menu de utilizador a partir do avatar na `TopBar`, navega para "Os Meus Torneios" (garantindo que não ocorre fallback para a Home), valida os botões de criação `+ Criar` (acesso PRO), preenche o formulário e confirma a criação do torneio.
+- `.maestro/03-my-matches-flow.yaml`: Abre o menu de utilizador, navega para "Os Meus Jogos", valida o botão `+ Criar`, preenche as equipas e confirma a criação do jogo no feed.
 
 ### 4. Boas Práticas ao Criar Novos Testes
 - Utilizar seletores por `testID` (ex: `id: "topbar-avatar-btn"`, `id: "header-create-tournament-btn"`).
