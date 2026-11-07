@@ -213,7 +213,9 @@ export function TopBar({ onSearchPress }: TopBarProps) {
               style={styles.menuItem}
               onPress={() => {
                 setUserMenuVisible(false);
-                router.push("/(tabs)/profile");
+                setTimeout(() => {
+                  router.push("/(tabs)/profile" as any);
+                }, 100);
               }}
             >
               <Ionicons name="person-outline" size={18} color="#dce1fb" />
@@ -224,7 +226,9 @@ export function TopBar({ onSearchPress }: TopBarProps) {
               style={styles.menuItem}
               onPress={() => {
                 setUserMenuVisible(false);
-                router.push("/(tabs)/my-matches");
+                setTimeout(() => {
+                  router.push("/(tabs)/my-matches" as any);
+                }, 100);
               }}
             >
               <Ionicons name="trophy-outline" size={18} color="#dce1fb" />
@@ -235,7 +239,9 @@ export function TopBar({ onSearchPress }: TopBarProps) {
               style={styles.menuItem}
               onPress={() => {
                 setUserMenuVisible(false);
-                router.push("/(tabs)/my-tournaments");
+                setTimeout(() => {
+                  router.push("/(tabs)/my-tournaments" as any);
+                }, 100);
               }}
             >
               <Ionicons name="ribbon-outline" size={18} color="#dce1fb" />

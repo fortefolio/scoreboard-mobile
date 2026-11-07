@@ -152,14 +152,16 @@ export default function TabLayout() {
       <Tabs.Screen
         name="my-matches"
         options={{
-          href: null,
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
         }}
       />
 
       <Tabs.Screen
         name="my-tournaments"
         options={{
-          href: null,
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
         }}
       />
     </Tabs>

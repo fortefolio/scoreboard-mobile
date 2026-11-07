@@ -86,6 +86,15 @@ export default function MyMatchesScreen() {
       <TopBar />
 
       <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.headerBackBtn}
+          onPress={() => router.push("/(tabs)" as any)}
+          activeOpacity={0.7}
+          testID="header-back-btn"
+        >
+          <Ionicons name="arrow-back" size={24} color="#f8fafc" />
+        </TouchableOpacity>
+
         <View style={styles.headerTextCol}>
           <Text style={styles.headerTitle}>{t("nav.myMatches") || "Os Meus Jogos"}</Text>
           <Text style={styles.headerSubtitle}>
@@ -202,6 +211,10 @@ const styles = StyleSheet.create({
   },
   headerTextCol: {
     flex: 1,
+  },
+  headerBackBtn: {
+    marginRight: 12,
+    padding: 4,
   },
   headerTitle: {
     fontSize: 20,
