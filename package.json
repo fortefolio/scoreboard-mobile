@@ -67,7 +67,10 @@
     "test:e2e:android": "bash ./scripts/run-e2e-android.sh",
     "test:e2e:cleanup": "node scripts/cleanup-e2e.js",
     "sync:i18n": "node scripts/sync-i18n.js",
-    "check:i18n": "node scripts/sync-i18n.js --check"
+    "check:i18n": "node scripts/sync-i18n.js --check",
+    "build:android": "cd android && ./gradlew assembleRelease",
+    "build:ios": "cd ios && xcodebuild -workspace ScoreBoard.xcworkspace -scheme ScoreBoard -configuration Release -destination 'generic/platform=iOS' -quiet build",
+    "postinstall": "node scripts/patch-expo-modules-jsi.js"
   },
   "private": true
 }
