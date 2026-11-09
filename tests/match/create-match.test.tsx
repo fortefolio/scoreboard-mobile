@@ -205,6 +205,9 @@ describe("Mobile Match Creation — Feature Parity Tests", () => {
         })
       );
 
+      const confirmBtn = await screen.findByTestId("success-modal-confirm-btn");
+      fireEvent.click(confirmBtn);
+
       expect(mockSuccess).toHaveBeenCalledWith("new-match-999");
     });
 
@@ -253,6 +256,9 @@ describe("Mobile Match Creation — Feature Parity Tests", () => {
           tournament_id: "tournament-1",
         })
       );
+
+      const confirmBtn = await screen.findByTestId("success-modal-confirm-btn");
+      fireEvent.click(confirmBtn);
 
       expect(mockSuccess).toHaveBeenCalledWith("new-match-999");
     });

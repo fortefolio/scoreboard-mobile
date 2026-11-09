@@ -212,6 +212,9 @@ describe("Mobile Tournament Creation — Feature Parity Tests", () => {
         })
       );
 
+      const confirmBtn = await screen.findByTestId("success-modal-confirm-btn");
+      fireEvent.click(confirmBtn);
+
       expect(mockSuccess).toHaveBeenCalledWith("new-tournament-789");
     });
   });

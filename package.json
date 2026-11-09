@@ -65,6 +65,7 @@
     "test:ui": "vitest --ui",
     "test:e2e": "maestro test .maestro/",
     "test:e2e:android": "bash ./scripts/run-e2e-android.sh",
+    "test:e2e:cleanup": "node scripts/cleanup-e2e.js",
     "sync:i18n": "node scripts/sync-i18n.js",
     "check:i18n": "node scripts/sync-i18n.js --check"
   },

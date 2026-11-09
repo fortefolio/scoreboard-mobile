@@ -33,7 +33,7 @@ if [ "$DEVICE_COUNT" -eq "0" ]; then
     EMULATOR_BIN="emulator"
   fi
   
-  "$EMULATOR_BIN" -avd "$EMULATOR_NAME" -no-snapshot-load -no-audio &
+  nohup "$EMULATOR_BIN" -avd "$EMULATOR_NAME" -no-snapshot-load -no-audio > /dev/null 2>&1 &
   echo "Waiting for emulator to connect to adb..."
   adb wait-for-device
   
@@ -56,7 +56,14 @@ echo "Building release APK with local Supabase configuration (-Pe2eLocal=true)..
 echo "Installing APK: $APK_PATH"
 adb install -r "$APK_PATH"
 
-# 6. Run Maestro flows
+# 6. Cleanup trap ensuring test data is purged even on failure/interrupt
+cleanup() {
+  echo "Running E2E cleanup..."
+  node "$SCRIPT_DIR/cleanup-e2e.js" || true
+}
+trap cleanup EXIT
+
+# 7. Run Maestro flows
 echo "Running Maestro E2E test flows..."
 cd "$ROOT_DIR"
 maestro test .maestro/

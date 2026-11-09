@@ -7,6 +7,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -30,6 +32,32 @@ export default function MyMatchesScreen() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [createModalVisible, setCreateModalVisible] = useState<boolean>(false);
   const [authModalVisible, setAuthModalVisible] = useState<boolean>(false);
+  const [matchToDelete, setMatchToDelete] = useState<any | null>(null);
+  const [deletingMatch, setDeletingMatch] = useState<boolean>(false);
+
+  const handleDeleteMatch = (matchId: string) => {
+    const target = matches.find((m) => m.id === matchId);
+    if (target) setMatchToDelete(target);
+  };
+
+  const confirmDeleteMatch = async () => {
+    if (!matchToDelete) return;
+    setDeletingMatch(true);
+    try {
+      const { error } = await supabase
+        .from("matches")
+        .delete()
+        .eq("id", matchToDelete.id);
+
+      if (error) throw error;
+      setMatchToDelete(null);
+      fetchMyMatches();
+    } catch (err: any) {
+      Alert.alert(isPt ? "Erro ao Eliminar" : "Error Deleting", err?.message || "");
+    } finally {
+      setDeletingMatch(false);
+    }
+  };
 
   const fetchMyMatches = useCallback(async () => {
     if (!user) {
@@ -146,7 +174,13 @@ export default function MyMatchesScreen() {
         <FlatList
           data={matches}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <MatchCard match={item} />}
+          renderItem={({ item }) => (
+            <MatchCard
+              match={item}
+              canDelete={user ? item.organizer_id === user.id : false}
+              onDelete={handleDeleteMatch}
+            />
+          )}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4f46e5" />
@@ -176,6 +210,59 @@ export default function MyMatchesScreen() {
             </View>
           }
         />
+      )}
+
+      {/* Delete Match Confirmation Modal */}
+      {matchToDelete && (
+        <Modal
+          visible={!!matchToDelete}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setMatchToDelete(null)}
+        >
+          <View style={styles.deleteModalOverlay}>
+            <View style={styles.deleteModalCard}>
+              <View style={styles.deleteIconWrapper}>
+                <Ionicons name="trash-outline" size={32} color="#ef4444" />
+              </View>
+              <Text style={styles.deleteModalTitle}>
+                {isPt ? "Eliminar Jogo" : "Delete Match"}
+              </Text>
+              <Text style={styles.deleteModalMessage}>
+                {isPt
+                  ? "Tem a certeza que deseja eliminar este jogo? Esta ação é irreversível."
+                  : "Are you sure you want to delete this match? This action cannot be undone."}
+              </Text>
+              <View style={styles.deleteButtonsRow}>
+                <TouchableOpacity
+                  style={styles.cancelDeleteBtn}
+                  onPress={() => setMatchToDelete(null)}
+                  disabled={deletingMatch}
+                  testID="cancel-delete-match-btn"
+                >
+                  <Text style={styles.cancelDeleteBtnText}>
+                    {isPt ? "Cancelar" : "Cancel"}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.confirmDeleteBtn}
+                  onPress={confirmDeleteMatch}
+                  disabled={deletingMatch}
+                  testID="confirm-delete-match-btn"
+                >
+                  {deletingMatch ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Text style={styles.confirmDeleteBtnText}>
+                      {isPt ? "Eliminar" : "Delete"}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       )}
 
       {user && (
@@ -287,6 +374,79 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   signInButtonText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  deleteModalCard: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: "#0f172a",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#1e293b",
+    padding: 24,
+    alignItems: "center",
+  },
+  deleteIconWrapper: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#f8fafc",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  deleteModalMessage: {
+    fontSize: 14,
+    color: "#94a3b8",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  deleteButtonsRow: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  cancelDeleteBtn: {
+    flex: 1,
+    height: 44,
+    backgroundColor: "#1e293b",
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  cancelDeleteBtnText: {
+    color: "#94a3b8",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  confirmDeleteBtn: {
+    flex: 1,
+    height: 44,
+    backgroundColor: "#ef4444",
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmDeleteBtnText: {
     color: "#ffffff",
     fontSize: 14,
     fontWeight: "700",

@@ -3,7 +3,10 @@ appId: dev.goncaloforte.scoreboard
 - launchApp:
     clearState: false
 
-- assertVisible: "SCORE:BOARD"
+- extendedWaitUntil:
+    visible:
+      id: "topbar-avatar-btn"
+    timeout: 30000
 
 # 1. Tap Avatar
 - tapOn:
@@ -36,24 +39,45 @@ appId: dev.goncaloforte.scoreboard
     id: "match-team2-input"
 - inputText: "Porto E2E"
 
-# 7. Submit match creation
+# 7. Select sport from Dropdown
+- tapOn:
+    id: "match-sport-dropdown-trigger"
+- tapOn:
+    id: "match-sport-select-football"
+
+# 8. Submit match creation
 - tapOn:
     id: "submit-create-match-btn"
 
-# 8. Dismiss success alert
+# 9. Confirm sleek FeedbackModal
+- extendedWaitUntil:
+    visible:
+      id: "success-modal-confirm-btn"
+    timeout: 10000
 - tapOn:
-    id: "android:id/button1"
-    optional: true
-- tapOn:
-    text: "OK"
-    optional: true
+    id: "success-modal-confirm-btn"
 
-# 9. Wait for match to appear
+# 10. Wait for match to appear in Match Detail screen
 - extendedWaitUntil:
     visible: "Benfica E2E"
     timeout: 10000
 
-# 10. Return to home
+# 11. Navigate back to My Matches list to test deletion
+- tapOn:
+    id: "match-detail-back-btn"
+
+# 12. CLEANUP: Delete created match from My Matches list
+- extendedWaitUntil:
+    visible: "Benfica E2E"
+    timeout: 10000
+- tapOn:
+    id: ".*match-delete-btn.*"
+- assertVisible:
+    id: "confirm-delete-match-btn"
+- tapOn:
+    id: "confirm-delete-match-btn"
+
+# 13. Return to home
 - tapOn:
     id: "header-back-btn"
     optional: true

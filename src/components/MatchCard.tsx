@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation, getSportTranslation } from "@/lib/i18n";
 import { SportIcon } from "@/components/SportIcon";
@@ -13,9 +14,16 @@ const TENNIS_POINTS = ["0", "15", "30", "40", "AD"];
 export interface MatchCardProps {
   match: any;
   onAuthRequired?: () => void;
+  onDelete?: (matchId: string) => void;
+  canDelete?: boolean;
 }
 
-export function MatchCard({ match, onAuthRequired }: MatchCardProps) {
+export function MatchCard({
+  match,
+  onAuthRequired,
+  onDelete,
+  canDelete = false,
+}: MatchCardProps) {
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -124,6 +132,21 @@ export function MatchCard({ match, onAuthRequired }: MatchCardProps) {
             size={16}
             onAuthRequired={onAuthRequired}
           />
+
+          {canDelete && onDelete && (
+            <TouchableOpacity
+              style={styles.deleteBtn}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                onDelete(match.id);
+              }}
+              testID={`match-delete-btn-${match.id}`}
+              accessibilityLabel="Delete Match"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="trash-outline" size={16} color="#ef4444" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -372,5 +395,10 @@ const styles = StyleSheet.create({
     color: ScoreBoardTheme.onSurface,
     fontFamily: "Digital7",
     letterSpacing: 0.5,
+  },
+  deleteBtn: {
+    padding: 4,
+    borderRadius: 6,
+    marginLeft: 6,
   },
 });

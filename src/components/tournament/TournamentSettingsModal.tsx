@@ -196,7 +196,7 @@ export function TournamentSettingsModal({
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.overlay}
       >
         <View style={styles.modalContainer}>
@@ -229,6 +229,7 @@ export function TournamentSettingsModal({
             style={styles.body}
             contentContainerStyle={styles.bodyContent}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
             {/* Visibility */}
             <View style={styles.fieldGroup}>

@@ -11,11 +11,14 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Keyboard,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLanguage, getSportTranslation } from "@/lib/i18n";
 import { SportIcon } from "@/components/SportIcon";
 import { supabase } from "@/lib/supabase/client";
+import { DropdownSelect } from "@/components/common/DropdownSelect";
+import { FeedbackModal } from "@/components/common/FeedbackModal";
 
 export interface CreateTournamentModalProps {
   visible: boolean;
@@ -93,6 +96,8 @@ export function CreateTournamentModal({
   const [endDate, setEndDate] = useState("");
   const [visibility, setVisibility] = useState<"public" | "unlisted" | "private">("public");
   const [submitting, setSubmitting] = useState(false);
+  const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
+  const [createdTournamentId, setCreatedTournamentId] = useState<string | null>(null);
 
   const resetForm = () => {
     setName("");
@@ -103,6 +108,8 @@ export function CreateTournamentModal({
     setEndDate("");
     setVisibility("public");
     setSubmitting(false);
+    setFeedbackModalVisible(false);
+    setCreatedTournamentId(null);
   };
 
   const handleClose = () => {
@@ -224,12 +231,8 @@ export function CreateTournamentModal({
       }
 
       if (data?.id) {
-        Alert.alert(
-          isPt ? "Sucesso" : "Success",
-          isPt ? "Torneio criado com sucesso!" : "Tournament created successfully!"
-        );
-        resetForm();
-        onCreateSuccess(data.id);
+        setCreatedTournamentId(data.id);
+        setFeedbackModalVisible(true);
       }
     } catch (err: any) {
       Alert.alert(
@@ -242,139 +245,114 @@ export function CreateTournamentModal({
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={handleClose}
-    >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.overlay}
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleClose}
       >
-        <View style={styles.modalContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
-              <View style={styles.headerIconContainer}>
-                <Ionicons name="trophy" size={20} color="#818cf8" />
-              </View>
-              <View>
-                <Text style={styles.headerTitle}>
-                  {isPt ? "Criar Novo Torneio" : "Create New Tournament"}
-                </Text>
-                <Text style={styles.headerSubtitle}>
-                  {isPt ? "Configure a sua competição" : "Configure your competition"}
-                </Text>
-              </View>
-            </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.overlay}
+        >
+          <View style={styles.modalContainer}>
+            {/* Header */}
             <TouchableOpacity
-              onPress={handleClose}
-              style={styles.closeBtn}
-              testID="close-create-tournament-modal"
-              disabled={submitting}
+              activeOpacity={1}
+              onPress={Keyboard.dismiss}
+              style={styles.header}
             >
-              <Ionicons name="close" size={22} color="#94a3b8" />
+              <View style={styles.headerTitleRow}>
+                <View style={styles.headerIconContainer}>
+                  <Ionicons name="trophy" size={20} color="#818cf8" />
+                </View>
+                <View>
+                  <Text style={styles.headerTitle}>
+                    {isPt ? "Criar Novo Torneio" : "Create New Tournament"}
+                  </Text>
+                  <Text style={styles.headerSubtitle}>
+                    {isPt ? "Configure a sua competição" : "Configure your competition"}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={handleClose}
+                style={styles.closeBtn}
+                testID="close-create-tournament-modal"
+                disabled={submitting}
+              >
+                <Ionicons name="close" size={22} color="#94a3b8" />
+              </TouchableOpacity>
             </TouchableOpacity>
-          </View>
 
-          <ScrollView
-            style={styles.body}
-            contentContainerStyle={styles.bodyContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Tournament Name */}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>
-                {isPt ? "Nome do Torneio *" : "Tournament Name *"}
-              </Text>
-              <TextInput
-                style={styles.input}
-                placeholder={isPt ? "Ex: Torneio de Padel Primavera 2026" : "e.g., Spring Padel Open 2026"}
-                placeholderTextColor="#64748b"
-                value={name}
-                onChangeText={setName}
-                autoFocus={true}
-                editable={!submitting}
-                testID="tournament-name-input"
+            <ScrollView
+              style={styles.body}
+              contentContainerStyle={styles.bodyContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* Tournament Name */}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>
+                  {isPt ? "Nome do Torneio *" : "Tournament Name *"}
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={isPt ? "Ex: Torneio de Padel Primavera 2026" : "e.g., Spring Padel Open 2026"}
+                  placeholderTextColor="#64748b"
+                  value={name}
+                  onChangeText={setName}
+                  autoFocus={true}
+                  editable={!submitting}
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
+                  testID="tournament-name-input"
+                />
+              </View>
+
+              {/* Sport Selector Dropdown */}
+              <DropdownSelect
+                label={isPt ? "Modalidade Desportiva" : "Sport"}
+                value={sport}
+                options={SPORTS.map((s) => ({
+                  value: s,
+                  label: getSportTranslation(s, t),
+                  icon: <SportIcon sport={s} size={18} />,
+                  testID: `sport-select-${s.toLowerCase().replace(/\s+/g, "-")}`,
+                }))}
+                onSelect={setSport}
+                testID="tournament-sport-dropdown"
+                disabled={submitting}
               />
-            </View>
 
-            {/* Sport Selector */}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>
-                {isPt ? "Modalidade Desportiva" : "Sport"}
-              </Text>
-              <View style={styles.sportsGrid}>
-                {SPORTS.map((s) => {
-                  const isSelected = sport === s;
-                  return (
-                    <TouchableOpacity
-                      key={s}
-                      style={[styles.sportCard, isSelected && styles.sportCardActive]}
-                      onPress={() => setSport(s)}
-                      disabled={submitting}
-                      testID={`sport-select-${s.toLowerCase().replace(/\s+/g, "-")}`}
-                    >
-                      <SportIcon sport={s} size={18} />
-                      <Text
-                        style={[styles.sportCardText, isSelected && styles.sportCardTextActive]}
-                        numberOfLines={1}
-                      >
-                        {getSportTranslation(s, t)}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Stage 1 Format */}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>
-                {isPt ? "Formato da 1ª Fase" : "1st Stage Format"}
-              </Text>
-              <View style={styles.stageOptionsColumn}>
-                {STAGE_TYPES.map((st) => {
-                  const isSelected = stage1Type === st.key;
-                  return (
-                    <TouchableOpacity
-                      key={st.key}
-                      style={[styles.stageCard, isSelected && styles.stageCardActive]}
-                      onPress={() => setStage1Type(st.key)}
-                      disabled={submitting}
-                      testID={`stage-select-${st.key}`}
-                    >
-                      <View style={styles.stageCardHeader}>
-                        <Ionicons
-                          name={
-                            st.key === "bracket"
-                              ? "git-network-outline"
-                              : st.key === "groups"
-                              ? "grid-outline"
-                              : "repeat-outline"
-                          }
-                          size={18}
-                          color={isSelected ? "#818cf8" : "#94a3b8"}
-                        />
-                        <Text style={[styles.stageCardTitle, isSelected && styles.stageCardTitleActive]}>
-                          {isPt ? st.labelPt : st.labelEn}
-                        </Text>
-                        <Ionicons
-                          name={isSelected ? "radio-button-on" : "radio-button-off"}
-                          size={18}
-                          color={isSelected ? "#6366f1" : "#475569"}
-                          style={{ marginLeft: "auto" }}
-                        />
-                      </View>
-                      <Text style={styles.stageCardDesc}>
-                        {isPt ? st.descPt : st.descEn}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
+              {/* Stage 1 Format Dropdown */}
+              <DropdownSelect
+                label={isPt ? "Formato da 1ª Fase" : "1st Stage Format"}
+                value={stage1Type}
+                options={STAGE_TYPES.map((st) => ({
+                  value: st.key,
+                  label: isPt ? st.labelPt : st.labelEn,
+                  desc: isPt ? st.descPt : st.descEn,
+                  icon: (
+                    <Ionicons
+                      name={
+                        st.key === "bracket"
+                          ? "git-network-outline"
+                          : st.key === "groups"
+                          ? "grid-outline"
+                          : "repeat-outline"
+                      }
+                      size={18}
+                      color="#818cf8"
+                    />
+                  ),
+                  testID: `stage-select-${st.key}`,
+                }))}
+                onSelect={(val) => setStage1Type(val as any)}
+                testID="tournament-format-dropdown"
+                disabled={submitting}
+              />
 
             {/* Max Teams */}
             <View style={styles.fieldGroup}>
@@ -508,6 +486,24 @@ export function CreateTournamentModal({
         </View>
       </KeyboardAvoidingView>
     </Modal>
+
+    <FeedbackModal
+      visible={feedbackModalVisible}
+      type="success"
+      title={isPt ? "Sucesso" : "Success"}
+      message={isPt ? "Torneio criado com sucesso!" : "Tournament created successfully!"}
+      confirmText="OK"
+      testID="success-modal-confirm-btn"
+      onConfirm={() => {
+        setFeedbackModalVisible(false);
+        const id = createdTournamentId;
+        resetForm();
+        if (id) {
+          onCreateSuccess(id);
+        }
+      }}
+    />
+  </>
   );
 }
 

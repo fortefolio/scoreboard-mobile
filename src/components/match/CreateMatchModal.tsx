@@ -11,11 +11,14 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Keyboard,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLanguage, getSportTranslation } from "@/lib/i18n";
 import { SportIcon } from "@/components/SportIcon";
 import { supabase } from "@/lib/supabase/client";
+import { DropdownSelect } from "@/components/common/DropdownSelect";
+import { FeedbackModal } from "@/components/common/FeedbackModal";
 
 export interface CreateMatchModalProps {
   visible: boolean;
@@ -50,6 +53,8 @@ export function CreateMatchModal({
   const [matchDate, setMatchDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [loadingTournaments, setLoadingTournaments] = useState(false);
+  const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
+  const [createdMatchId, setCreatedMatchId] = useState<string | null>(null);
 
   useEffect(() => {
     if (visible && userId) {
@@ -147,12 +152,10 @@ export function CreateMatchModal({
 
       if (error) throw error;
 
-      Alert.alert(
-        isPt ? "Sucesso" : "Success",
-        isPt ? "Jogo criado com sucesso!" : "Match created successfully!"
-      );
-      resetForm();
-      onCreateSuccess(data?.id);
+      if (data?.id) {
+        setCreatedMatchId(data.id);
+        setFeedbackModalVisible(true);
+      }
     } catch (err: any) {
       Alert.alert(
         isPt ? "Erro ao Criar Jogo" : "Error Creating Match",
@@ -164,109 +167,105 @@ export function CreateMatchModal({
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={handleClose}
-    >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.overlay}
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleClose}
       >
-        <View style={styles.modalContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
-              <View style={styles.headerIconContainer}>
-                <Ionicons name="tennisball" size={20} color="#818cf8" />
-              </View>
-              <View>
-                <Text style={styles.headerTitle}>
-                  {isPt ? "Criar Novo Jogo" : "Create New Match"}
-                </Text>
-                <Text style={styles.headerSubtitle}>
-                  {isPt ? "Agende um jogo individual ou de torneio" : "Schedule a standalone or tournament match"}
-                </Text>
-              </View>
-            </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.overlay}
+        >
+          <View style={styles.modalContainer}>
+            {/* Header */}
             <TouchableOpacity
-              onPress={handleClose}
-              style={styles.closeBtn}
-              testID="close-create-match-modal"
-              disabled={submitting}
+              activeOpacity={1}
+              onPress={Keyboard.dismiss}
+              style={styles.header}
             >
-              <Ionicons name="close" size={22} color="#94a3b8" />
+              <View style={styles.headerTitleRow}>
+                <View style={styles.headerIconContainer}>
+                  <Ionicons name="tennisball" size={20} color="#818cf8" />
+                </View>
+                <View>
+                  <Text style={styles.headerTitle}>
+                    {isPt ? "Criar Novo Jogo" : "Create New Match"}
+                  </Text>
+                  <Text style={styles.headerSubtitle}>
+                    {isPt ? "Agende um jogo individual ou de torneio" : "Schedule a standalone or tournament match"}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={handleClose}
+                style={styles.closeBtn}
+                testID="close-create-match-modal"
+                disabled={submitting}
+              >
+                <Ionicons name="close" size={22} color="#94a3b8" />
+              </TouchableOpacity>
             </TouchableOpacity>
-          </View>
 
-          <ScrollView
-            style={styles.body}
-            contentContainerStyle={styles.bodyContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Team 1 & Team 2 */}
-            <View style={styles.teamsRow}>
-              <View style={[styles.fieldGroup, { flex: 1 }]}>
-                <Text style={styles.label}>
-                  {isPt ? "Equipa / Jogador 1 *" : "Team / Player 1 *"}
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={isPt ? "Ex: Equipa Alfa" : "e.g., Team Alpha"}
-                  placeholderTextColor="#64748b"
-                  value={team1}
-                  onChangeText={setTeam1}
-                  autoFocus={true}
-                  editable={!submitting}
-                  testID="match-team1-input"
-                />
+            <ScrollView
+              style={styles.body}
+              contentContainerStyle={styles.bodyContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* Team 1 & Team 2 */}
+              <View style={styles.teamsRow}>
+                <View style={[styles.fieldGroup, { flex: 1 }]}>
+                  <Text style={styles.label}>
+                    {isPt ? "Equipa / Jogador 1 *" : "Team / Player 1 *"}
+                  </Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={isPt ? "Ex: Equipa Alfa" : "e.g., Team Alpha"}
+                    placeholderTextColor="#64748b"
+                    value={team1}
+                    onChangeText={setTeam1}
+                    autoFocus={true}
+                    editable={!submitting}
+                    returnKeyType="done"
+                    onSubmitEditing={Keyboard.dismiss}
+                    testID="match-team1-input"
+                  />
+                </View>
+
+                <View style={[styles.fieldGroup, { flex: 1 }]}>
+                  <Text style={styles.label}>
+                    {isPt ? "Equipa / Jogador 2 *" : "Team / Player 2 *"}
+                  </Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={isPt ? "Ex: Equipa Beta" : "e.g., Team Beta"}
+                    placeholderTextColor="#64748b"
+                    value={team2}
+                    onChangeText={setTeam2}
+                    editable={!submitting}
+                    returnKeyType="done"
+                    onSubmitEditing={Keyboard.dismiss}
+                    testID="match-team2-input"
+                  />
+                </View>
               </View>
 
-              <View style={[styles.fieldGroup, { flex: 1 }]}>
-                <Text style={styles.label}>
-                  {isPt ? "Equipa / Jogador 2 *" : "Team / Player 2 *"}
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={isPt ? "Ex: Equipa Beta" : "e.g., Team Beta"}
-                  placeholderTextColor="#64748b"
-                  value={team2}
-                  onChangeText={setTeam2}
-                  editable={!submitting}
-                  testID="match-team2-input"
-                />
-              </View>
-            </View>
-
-            {/* Sport Selector */}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>
-                {isPt ? "Modalidade Desportiva" : "Sport"}
-              </Text>
-              <View style={styles.sportsGrid}>
-                {SPORTS.map((s) => {
-                  const isSelected = sport === s;
-                  return (
-                    <TouchableOpacity
-                      key={s}
-                      style={[styles.sportCard, isSelected && styles.sportCardActive]}
-                      onPress={() => setSport(s)}
-                      disabled={submitting}
-                      testID={`match-sport-select-${s.toLowerCase().replace(/\s+/g, "-")}`}
-                    >
-                      <SportIcon sport={s} size={18} />
-                      <Text
-                        style={[styles.sportCardText, isSelected && styles.sportCardTextActive]}
-                        numberOfLines={1}
-                      >
-                        {getSportTranslation(s, t)}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
+              {/* Sport Selector Dropdown */}
+              <DropdownSelect
+                label={isPt ? "Modalidade Desportiva" : "Sport"}
+                value={sport}
+                options={SPORTS.map((s) => ({
+                  value: s,
+                  label: getSportTranslation(s, t),
+                  icon: <SportIcon sport={s} size={18} />,
+                  testID: `match-sport-select-${s.toLowerCase().replace(/\s+/g, "-")}`,
+                }))}
+                onSelect={setSport}
+                testID="match-sport-dropdown"
+                disabled={submitting}
+              />
 
             {/* Associated Tournament (Optional) */}
             <View style={styles.fieldGroup}>
@@ -387,6 +386,22 @@ export function CreateMatchModal({
         </View>
       </KeyboardAvoidingView>
     </Modal>
+
+    <FeedbackModal
+      visible={feedbackModalVisible}
+      type="success"
+      title={isPt ? "Sucesso" : "Success"}
+      message={isPt ? "Jogo criado com sucesso!" : "Match created successfully!"}
+      confirmText="OK"
+      testID="success-modal-confirm-btn"
+      onConfirm={() => {
+        setFeedbackModalVisible(false);
+        const id = createdMatchId;
+        resetForm();
+        onCreateSuccess(id || undefined);
+      }}
+    />
+  </>
   );
 }
 

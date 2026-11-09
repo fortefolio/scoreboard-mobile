@@ -369,7 +369,11 @@ export default function MatchDetailScreen() {
 
       {/* Top Header Bar */}
       <View style={styles.topNav}>
-        <TouchableOpacity style={styles.navIconBtn} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.navIconBtn}
+          onPress={() => router.back()}
+          testID="match-detail-back-btn"
+        >
           <Ionicons name="arrow-back" size={20} color="#dce1fb" />
         </TouchableOpacity>
 

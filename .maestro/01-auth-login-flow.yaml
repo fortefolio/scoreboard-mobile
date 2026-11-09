@@ -3,7 +3,10 @@ appId: dev.goncaloforte.scoreboard
 - launchApp:
     clearState: false
 
-- assertVisible: "SCORE:BOARD"
+- extendedWaitUntil:
+    visible:
+      text: "SCORE:BOARD"
+    timeout: 30000
 
 # If not logged in, perform login with local test credentials
 - runFlow:

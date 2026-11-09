@@ -180,9 +180,15 @@ export PATH="$PATH:$HOME/.maestro/bin"
 ### 2. Executar Testes E2E Automatizados
 
 #### No Android (script integrado):
-O script `run-e2e-android.sh` verifica se o emulador já está aberto; se não estiver, arranca o emulador Android AVD configurado (por defeito `Medium_Phone_API_36.1`), aguarda pelo boot completo, instala a versão mais recente do APK de release e executa todos os fluxos:
+O script `run-e2e-android.sh` verifica se o emulador já está aberto; se não estiver, arranca o emulador Android AVD configurado (por defeito `Medium_Phone_API_36.1`), aguarda pelo boot completo, compila e instala a versão mais recente do APK de release configurado para o Supabase local (`-Pe2eLocal=true`), executa todos os fluxos e no final executa automaticamente uma limpeza (*cleanup*) de todos os jogos e torneios criados pelos testes:
 ```bash
 npm run test:e2e:android
+```
+
+#### Limpeza manual de dados de teste (Cleanup):
+Caso queiras purgar manualmente da base de dados quaisquer torneios ou jogos residuais criados durante os testes automatizados da conta de testes:
+```bash
+npm run test:e2e:cleanup
 ```
 
 #### Em qualquer dispositivo / emulador já ativo (Android ou iOS Simulator):
