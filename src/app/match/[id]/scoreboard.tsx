@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
+import { useKeepAwake } from "expo-keep-awake";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/components/AuthProvider";
@@ -35,9 +35,11 @@ export default function RefereeScoreboardScreen() {
 
   const matchIdStr = (Array.isArray(id) ? id[0] : id) || "";
 
-  // Screen keep awake management & Force Landscape on Scoreboard
+  // Prevent screen sleep while in scoreboard
+  useKeepAwake();
+
+  // Screen orientation management: Lock Landscape on mount, restore Portrait on exit
   useEffect(() => {
-    activateKeepAwakeAsync();
     async function lockLandscape() {
       try {
         await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
@@ -48,8 +50,7 @@ export default function RefereeScoreboardScreen() {
     lockLandscape();
 
     return () => {
-      deactivateKeepAwake();
-      ScreenOrientation.unlockAsync().catch(() => {});
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
     };
   }, []);
 
@@ -183,10 +184,10 @@ export default function RefereeScoreboardScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <SafeAreaView testID="scoreboard-screen" style={styles.safeArea} edges={["top", "bottom", "left", "right"]}>
       {/* Top Referee Bar */}
       <View style={styles.refereeHeader}>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
+        <TouchableOpacity testID="scoreboard-back-btn" style={styles.iconBtn} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color="#f8fafc" />
         </TouchableOpacity>
 

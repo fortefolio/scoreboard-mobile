@@ -11,6 +11,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
+  resetPasswordForEmail: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
 }
 
@@ -124,6 +125,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error as Error | null };
   };
 
+  const resetPasswordForEmail = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: "scoreboard://auth/reset-password",
+    });
+    return { error: error as Error | null };
+  };
+
   const signOut = async () => {
     await clearOfflineQueue().catch(() => {});
     const { error } = await supabase.auth.signOut();
@@ -138,6 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         signIn,
         signUp,
+        resetPasswordForEmail,
         signOut,
       }}
     >

@@ -1,7 +1,8 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import * as ScreenOrientation from 'expo-screen-orientation';
+import { useColorScheme, Platform } from 'react-native';
 import { useFonts } from 'expo-font';
 import { useEffect } from 'react';
 
@@ -23,6 +24,13 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
+  useEffect(() => {
+    // Lock app to portrait on launch
+    if (Platform.OS !== 'web') {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+    }
+  }, []);
+
   if (!fontsLoaded && !fontError) {
     return null;
   }
@@ -33,6 +41,13 @@ export default function RootLayout() {
         <AuthProvider>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="match/[id]/scoreboard"
+              options={{
+                headerShown: false,
+                orientation: "landscape",
+              }}
+            />
           </Stack>
         </AuthProvider>
       </LanguageProvider>

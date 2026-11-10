@@ -453,6 +453,7 @@ export default function MatchDetailScreen() {
         {/* Start Scoreboard Handheld Button */}
         {canStart && !isCompleted && (
           <TouchableOpacity
+            testID="start-scoreboard-btn"
             style={styles.startScoreboardBtn}
             onPress={handleStartScoreboard}
             disabled={startingMatch}

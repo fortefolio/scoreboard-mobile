@@ -22,19 +22,20 @@ import { Colors, Spacing } from "@/constants/theme";
 interface AuthModalProps {
   visible: boolean;
   onClose: () => void;
-  initialMode?: "login" | "signup";
+  initialMode?: "login" | "signup" | "forgot";
 }
 
 export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModalProps) {
   const { t } = useLanguage();
-  const { signIn, signUp } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup">(initialMode);
+  const { signIn, signUp, resetPasswordForEmail } = useAuth();
+  const [mode, setMode] = useState<"login" | "signup" | "forgot">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   // Reset success state when modal visibility or initialMode changes
   React.useEffect(() => {
@@ -42,11 +43,34 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
       setMode(initialMode);
       setErrorMsg(null);
       setSignupSuccess(false);
+      setResetEmailSent(false);
     }
   }, [visible, initialMode]);
 
   const handleSubmit = async () => {
     setErrorMsg(null);
+
+    if (mode === "forgot") {
+      if (!email.trim()) {
+        setErrorMsg(t("auth.fillAllFields"));
+        return;
+      }
+      setLoading(true);
+      try {
+        const { error } = await resetPasswordForEmail(email.trim());
+        if (error) {
+          setErrorMsg(error.message);
+        } else {
+          setResetEmailSent(true);
+        }
+      } catch (e: any) {
+        setErrorMsg(e.message || t("common.error"));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     if (!email.trim() || !password.trim()) {
       setErrorMsg(t("auth.fillAllFields"));
       return;
@@ -126,10 +150,34 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
                   <Text style={styles.submitBtnText}>{t("auth.gotIt")}</Text>
                 </TouchableOpacity>
               </View>
+            ) : resetEmailSent ? (
+              <View style={styles.successContainer}>
+                <View style={styles.successIconCircle}>
+                  <Ionicons name="mail-unread-outline" size={44} color="#22c55e" />
+                </View>
+                <Text style={styles.successTitle}>{t("auth.resetEmailSentTitle")}</Text>
+                <Text style={styles.successMessage}>
+                  {t("auth.resetEmailSentMessage")}
+                </Text>
+                <TouchableOpacity
+                  style={styles.submitBtn}
+                  onPress={() => {
+                    setResetEmailSent(false);
+                    setMode("login");
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.submitBtnText}>{t("auth.backToSignIn")}</Text>
+                </TouchableOpacity>
+              </View>
             ) : (
               <>
                 <Text style={styles.title}>
-                  {mode === "login" ? t("auth.welcomeBack") : t("auth.createAccount")}
+                  {mode === "login"
+                    ? t("auth.welcomeBack")
+                    : mode === "forgot"
+                    ? t("auth.forgotPasswordTitle")
+                    : t("auth.createAccount")}
                 </Text>
 
                 {/* Error Message */}
@@ -169,25 +217,41 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
                   />
                 </View>
 
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>{t("auth.password")}</Text>
-                  <TextInput
-                    testID="auth-password-input"
-                    style={styles.input}
-                    placeholder={t("auth.passwordPlaceholder")}
-                    placeholderTextColor="#64748b"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                    returnKeyType="done"
-                    onSubmitEditing={handleSubmit}
-                  />
-                  {mode === "signup" && (
-                    <Text style={styles.helpText}>
-                      {t("auth.passwordRequirements")}
-                    </Text>
-                  )}
-                </View>
+                {mode !== "forgot" && (
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>{t("auth.password")}</Text>
+                    <TextInput
+                      testID="auth-password-input"
+                      style={styles.input}
+                      placeholder={t("auth.passwordPlaceholder")}
+                      placeholderTextColor="#64748b"
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry
+                      returnKeyType="done"
+                      onSubmitEditing={handleSubmit}
+                    />
+                    {mode === "login" && (
+                      <TouchableOpacity
+                        testID="auth-forgot-password-btn"
+                        onPress={() => {
+                          setErrorMsg(null);
+                          setMode("forgot");
+                        }}
+                        style={{ alignSelf: "flex-end", marginTop: 6 }}
+                      >
+                        <Text style={{ color: "#4edea3", fontSize: 12, fontWeight: "600" }}>
+                          {t("auth.forgotPassword")}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    {mode === "signup" && (
+                      <Text style={styles.helpText}>
+                        {t("auth.passwordRequirements")}
+                      </Text>
+                    )}
+                  </View>
+                )}
 
                 {/* Submit Button */}
                 <TouchableOpacity
@@ -201,29 +265,48 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
                     <ActivityIndicator color="#ffffff" />
                   ) : (
                     <Text style={styles.submitBtnText}>
-                      {mode === "login" ? t("auth.signInBtn") : t("auth.signUpBtn")}
+                      {mode === "login"
+                        ? t("auth.signInBtn")
+                        : mode === "forgot"
+                        ? t("auth.sendResetLink")
+                        : t("auth.signUpBtn")}
                     </Text>
                   )}
                 </TouchableOpacity>
 
                 {/* Toggle Mode Footer */}
-                <TouchableOpacity
-                  testID="auth-switch-mode-btn"
-                  style={styles.switchModeBtn}
-                  onPress={() => {
-                    setErrorMsg(null);
-                    setMode(mode === "login" ? "signup" : "login");
-                  }}
-                >
-                  <Text style={styles.switchModeText}>
-                    {mode === "login"
-                      ? `${t("auth.dontHaveAccount")} `
-                      : `${t("auth.alreadyHaveAccount")} `}
+                {mode === "forgot" ? (
+                  <TouchableOpacity
+                    testID="auth-switch-mode-btn"
+                    style={styles.switchModeBtn}
+                    onPress={() => {
+                      setErrorMsg(null);
+                      setMode("login");
+                    }}
+                  >
                     <Text style={styles.switchModeAccent}>
-                      {mode === "login" ? t("auth.signUpBtn") : t("auth.signInBtn")}
+                      {t("auth.backToSignIn")}
                     </Text>
-                  </Text>
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    testID="auth-switch-mode-btn"
+                    style={styles.switchModeBtn}
+                    onPress={() => {
+                      setErrorMsg(null);
+                      setMode(mode === "login" ? "signup" : "login");
+                    }}
+                  >
+                    <Text style={styles.switchModeText}>
+                      {mode === "login"
+                        ? `${t("auth.dontHaveAccount")} `
+                        : `${t("auth.alreadyHaveAccount")} `}
+                      <Text style={styles.switchModeAccent}>
+                        {mode === "login" ? t("auth.signUpBtn") : t("auth.signInBtn")}
+                      </Text>
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </>
             )}
             </ScrollView>
