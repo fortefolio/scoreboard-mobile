@@ -43,6 +43,8 @@ export interface Translations {
     sport: string;
     status: string;
     score: string;
+    match: string;
+    tournament: string;
     format: string;
     event: string;
     teamsOrPlayers: string;
@@ -416,5 +418,14 @@ export interface Translations {
       deleting: string;
       deleteSuccess: string;
     };
+  };
+  footer: {
+    tagline: string;
+    matches: string;
+    tournaments: string;
+    terms: string;
+    settings: string;
+    statusOnline: string;
+    allRightsReserved: string;
   };
 }

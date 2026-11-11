@@ -43,6 +43,8 @@ export const pt: Translations = {
     sport: "Desporto",
     status: "Estado",
     score: "Resultado",
+    match: "Partida",
+    tournament: "Torneio",
     format: "Formato",
     event: "Evento",
     teamsOrPlayers: "Equipas / Jogadores",
@@ -420,5 +422,14 @@ export const pt: Translations = {
       deleting: "A eliminar conta...",
       deleteSuccess: "Conta eliminada com sucesso. A terminar sessão...",
     },
+  },
+  footer: {
+    tagline: "Plataforma de resultados ao vivo e torneios para desporto competitivo.",
+    matches: "Jogos",
+    tournaments: "Torneios",
+    terms: "Termos & Privacidade",
+    settings: "Definições",
+    statusOnline: "SISTEMA OPERACIONAL",
+    allRightsReserved: "Todos os direitos reservados.",
   },
 };
