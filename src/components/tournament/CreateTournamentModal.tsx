@@ -16,6 +16,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useLanguage, getSportTranslation } from "@/lib/i18n";
 import { SportIcon } from "@/components/SportIcon";
+import { ScoreBoardTheme } from "@/constants/theme";
 import { supabase } from "@/lib/supabase/client";
 import { DropdownSelect } from "@/components/common/DropdownSelect";
 import { FeedbackModal } from "@/components/common/FeedbackModal";
@@ -265,7 +266,7 @@ export function CreateTournamentModal({
             >
               <View style={styles.headerTitleRow}>
                 <View style={styles.headerIconContainer}>
-                  <Ionicons name="trophy" size={20} color="#818cf8" />
+                  <Ionicons name="trophy" size={20} color={ScoreBoardTheme.onSurfaceVariant} />
                 </View>
                 <View>
                   <Text style={styles.headerTitle}>
@@ -344,7 +345,7 @@ export function CreateTournamentModal({
                           : "repeat-outline"
                       }
                       size={18}
-                      color="#818cf8"
+                      color={ScoreBoardTheme.onSurfaceVariant}
                     />
                   ),
                   testID: `stage-select-${st.key}`,
@@ -434,7 +435,7 @@ export function CreateTournamentModal({
                       <Ionicons
                         name={v.icon}
                         size={15}
-                        color={isSelected ? "#ffffff" : "#94a3b8"}
+                        color={isSelected ? ScoreBoardTheme.surfaceContainerLowest : ScoreBoardTheme.onSurfaceVariant}
                         style={{ marginRight: 6 }}
                       />
                       <Text
@@ -472,10 +473,15 @@ export function CreateTournamentModal({
               testID="submit-create-btn"
             >
               {submitting ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <ActivityIndicator size="small" color={ScoreBoardTheme.surfaceContainerLowest} />
               ) : (
                 <>
-                  <Ionicons name="checkmark" size={18} color="#ffffff" style={{ marginRight: 6 }} />
+                  <Ionicons
+                    name="checkmark"
+                    size={18}
+                    color={ScoreBoardTheme.surfaceContainerLowest}
+                    style={{ marginRight: 6 }}
+                  />
                   <Text style={styles.submitBtnText}>
                     {isPt ? "Criar Torneio" : "Create Tournament"}
                   </Text>
@@ -514,11 +520,11 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContainer: {
-    backgroundColor: "#0f172a",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     maxHeight: "90%",
     paddingTop: 16,
     paddingBottom: Platform.OS === "ios" ? 36 : 44,
@@ -530,7 +536,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
+    borderBottomColor: ScoreBoardTheme.borderSubtle,
   },
   headerTitleRow: {
     flexDirection: "row",
@@ -541,18 +547,20 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: "rgba(99, 102, 241, 0.15)",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
     alignItems: "center",
     justifyContent: "center",
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
     marginTop: 2,
   },
   closeBtn: {
@@ -573,19 +581,19 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#cbd5e1",
+    color: ScoreBoardTheme.onSurfaceVariant,
     marginBottom: 8,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: ScoreBoardTheme.borderSubtle,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
     fontSize: 14,
   },
   sportsGrid: {
@@ -596,40 +604,40 @@ const styles = StyleSheet.create({
   sportCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: ScoreBoardTheme.borderSubtle,
     borderRadius: 10,
     paddingVertical: 9,
     paddingHorizontal: 12,
     gap: 8,
   },
   sportCardActive: {
-    backgroundColor: "rgba(99, 102, 241, 0.2)",
-    borderColor: "#6366f1",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
+    borderColor: ScoreBoardTheme.onSurfaceVariant,
   },
   sportCardText: {
     fontSize: 13,
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
     fontWeight: "500",
   },
   sportCardTextActive: {
-    color: "#e0e7ff",
+    color: ScoreBoardTheme.onSurface,
     fontWeight: "700",
   },
   stageOptionsColumn: {
     gap: 8,
   },
   stageCard: {
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: ScoreBoardTheme.borderSubtle,
     borderRadius: 10,
     padding: 12,
   },
   stageCardActive: {
-    backgroundColor: "rgba(99, 102, 241, 0.15)",
-    borderColor: "#6366f1",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
+    borderColor: ScoreBoardTheme.onSurfaceVariant,
   },
   stageCardHeader: {
     flexDirection: "row",
@@ -639,14 +647,14 @@ const styles = StyleSheet.create({
   stageCardTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#cbd5e1",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
   stageCardTitleActive: {
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
   },
   stageCardDesc: {
     fontSize: 11,
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
     marginTop: 4,
     marginLeft: 26,
   },
@@ -656,24 +664,24 @@ const styles = StyleSheet.create({
   },
   presetPill: {
     flex: 1,
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: ScoreBoardTheme.borderSubtle,
     borderRadius: 10,
     paddingVertical: 10,
     alignItems: "center",
   },
   presetPillActive: {
-    backgroundColor: "#4f46e5",
-    borderColor: "#6366f1",
+    backgroundColor: ScoreBoardTheme.onSurface,
+    borderColor: ScoreBoardTheme.onSurface,
   },
   presetPillText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
   presetPillTextActive: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontWeight: "700",
   },
   datesRow: {
@@ -689,24 +697,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: ScoreBoardTheme.borderSubtle,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 8,
   },
   visibilityPillActive: {
-    backgroundColor: "#4f46e5",
-    borderColor: "#6366f1",
+    backgroundColor: ScoreBoardTheme.onSurface,
+    borderColor: ScoreBoardTheme.onSurface,
   },
   visibilityPillText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
   visibilityPillTextActive: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontWeight: "700",
   },
   footer: {
@@ -714,25 +722,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: "#1e293b",
+    borderTopColor: ScoreBoardTheme.borderSubtle,
     gap: 12,
   },
   cancelBtn: {
     flex: 1,
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
     borderRadius: 10,
     paddingVertical: 13,
     alignItems: "center",
     justifyContent: "center",
   },
   cancelBtnText: {
-    color: "#cbd5e1",
+    color: ScoreBoardTheme.onSurfaceVariant,
     fontSize: 14,
     fontWeight: "600",
   },
   submitBtn: {
     flex: 1.6,
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.onSurface,
     borderRadius: 10,
     paddingVertical: 13,
     flexDirection: "row",
@@ -743,7 +751,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitBtnText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontSize: 14,
     fontWeight: "700",
   },

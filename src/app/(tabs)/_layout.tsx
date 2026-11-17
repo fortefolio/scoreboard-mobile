@@ -55,20 +55,19 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: ScoreBoardTheme.secondary,
-        tabBarInactiveTintColor: "rgba(220, 225, 251, 0.4)",
+        tabBarActiveTintColor: ScoreBoardTheme.onSurface,
+        tabBarInactiveTintColor: ScoreBoardTheme.textMuted,
         tabBarStyle: {
           backgroundColor: ScoreBoardTheme.background,
-          borderTopColor: ScoreBoardTheme.borderGhost,
+          borderTopColor: ScoreBoardTheme.borderSubtle,
           borderTopWidth: 1,
-          height: Platform.OS === "ios" ? 84 : 64,
-          paddingTop: 8,
-          paddingBottom: Platform.OS === "ios" ? 28 : 8,
+          height: Platform.OS === "ios" ? 82 : 62,
+          paddingTop: 6,
+          paddingBottom: Platform.OS === "ios" ? 26 : 6,
         },
         tabBarLabelStyle: {
           fontSize: 10,
-          fontWeight: "700",
-          letterSpacing: 0.3,
+          fontWeight: "500",
         },
       }}
     >
@@ -79,8 +78,8 @@ export default function TabLayout() {
           tabBarIcon: ({ size, focused }) => (
             <Ionicons
               name={focused ? "tennisball" : "tennisball-outline"}
-              size={22}
-              color={focused ? "#4edea3" : "#64748b"}
+              size={20}
+              color={focused ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
             />
           ),
         }}
@@ -93,8 +92,8 @@ export default function TabLayout() {
           tabBarIcon: ({ size, focused }) => (
             <Ionicons
               name={focused ? "trophy" : "trophy-outline"}
-              size={22}
-              color={focused ? "#4edea3" : "#64748b"}
+              size={20}
+              color={focused ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
             />
           ),
         }}
@@ -107,8 +106,8 @@ export default function TabLayout() {
           tabBarIcon: ({ size, focused }) => (
             <Ionicons
               name={focused ? "star" : "star-outline"}
-              size={22}
-              color={focused ? "#4edea3" : "#64748b"}
+              size={20}
+              color={focused ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
             />
           ),
         }}
@@ -120,16 +119,16 @@ export default function TabLayout() {
           title: t("nav.dashboard") || "Alertas",
           tabBarBadge: unreadNotifications > 0 ? unreadNotifications : undefined,
           tabBarBadgeStyle: {
-            backgroundColor: "#ef4444",
+            backgroundColor: ScoreBoardTheme.error,
             color: "#ffffff",
             fontSize: 10,
-            fontWeight: "800",
+            fontWeight: "600",
           },
           tabBarIcon: ({ size, focused }) => (
             <Ionicons
               name={focused ? "notifications" : "notifications-outline"}
-              size={22}
-              color={focused ? "#4edea3" : "#64748b"}
+              size={20}
+              color={focused ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
             />
           ),
         }}
@@ -142,8 +141,8 @@ export default function TabLayout() {
           tabBarIcon: ({ size, focused }) => (
             <Ionicons
               name={focused ? "person" : "person-outline"}
-              size={22}
-              color={focused ? "#4edea3" : "#64748b"}
+              size={20}
+              color={focused ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
             />
           ),
         }}

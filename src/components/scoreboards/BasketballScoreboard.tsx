@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/lib/i18n";
 import { recordMatchEventAtomic } from "@/lib/scoring/atomicScoring";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 interface BasketballScoreboardProps {
   matchData: any;
@@ -329,7 +330,6 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
       {/* Column 1: Team Home */}
       <View style={styles.teamColumn}>
         <View style={styles.teamHeaderRow}>
-          <View style={[styles.teamDot, { backgroundColor: "#818cf8" }]} />
           <Text style={styles.teamName} numberOfLines={1}>
             {teamA}
           </Text>
@@ -355,7 +355,7 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
         </View>
 
         {/* Big Home Score */}
-        <Text style={[styles.scoreDigital, { color: "#818cf8" }]}>{scores.home}</Text>
+        <Text style={[styles.scoreDigital, { color: ScoreBoardTheme.onSurface }]}>{scores.home}</Text>
 
         {/* Home Controls */}
         {canEdit && (
@@ -488,7 +488,6 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
           <Text style={styles.teamName} numberOfLines={1}>
             {teamB}
           </Text>
-          <View style={[styles.teamDot, { backgroundColor: "#4edea3" }]} />
         </View>
 
         <View style={styles.statsBadgesRow}>
@@ -506,7 +505,7 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
         </View>
 
         {/* Big Away Score */}
-        <Text style={[styles.scoreDigital, { color: "#4edea3" }]}>{scores.away}</Text>
+        <Text style={[styles.scoreDigital, { color: ScoreBoardTheme.onSurface }]}>{scores.away}</Text>
 
         {/* Away Controls */}
         {canEdit && (
@@ -567,16 +566,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: "#080c14",
+    backgroundColor: "transparent",
     alignItems: "stretch",
     gap: 8,
   },
   teamColumn: {
     flex: 1,
-    backgroundColor: "#0d1322",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     padding: 10,
     alignItems: "center",
     justifyContent: "space-between",
@@ -634,12 +633,12 @@ const styles = StyleSheet.create({
     color: "#f43f5e",
   },
   digitalBadgeNum: {
-    fontFamily: "Digital7",
+    fontFamily: "Digital7Mono",
     fontSize: 12,
     color: "#f8fafc",
   },
   scoreDigital: {
-    fontFamily: "Digital7",
+    fontFamily: "Digital7Mono",
     fontSize: 52,
     lineHeight: 56,
   },
@@ -660,24 +659,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   btnPoint: {
-    backgroundColor: "#334155",
+    backgroundColor: ScoreBoardTheme.onSurface,
   },
   btnPoint2: {
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.onSurface,
   },
   btnPoint3: {
-    backgroundColor: "#0284c7",
+    backgroundColor: ScoreBoardTheme.onSurface,
   },
   btnPointText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   btnUndo: {
     flexDirection: "row",
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: ScoreBoardTheme.borderSubtle,
     gap: 2,
   },
   btnUndoText: {
@@ -736,7 +735,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(79, 70, 229, 0.15)",
   },
   clockDigital: {
-    fontFamily: "Digital7",
+    fontFamily: "Digital7Mono",
     fontSize: 32,
     color: "#ffffff",
   },
@@ -765,7 +764,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   shotClockNum: {
-    fontFamily: "Digital7",
+    fontFamily: "Digital7Mono",
     fontSize: 16,
     color: "#fbbf24",
   },

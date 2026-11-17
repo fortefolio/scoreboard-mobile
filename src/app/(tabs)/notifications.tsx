@@ -2,14 +2,17 @@ import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, FlatList, RefreshControl, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { TopBar } from "@/components/TopBar";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 export default function NotificationsScreen() {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const router = useRouter();
 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -120,7 +123,7 @@ export default function NotificationsScreen() {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#4f46e5" />
+          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
         </View>
       ) : !user ? (
         <View style={styles.centered}>
@@ -136,41 +139,51 @@ export default function NotificationsScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4f46e5" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ScoreBoardTheme.onSurfaceVariant} />
           }
           renderItem={({ item }) => {
             const isUnread = !item.read_at;
+            const data = item.data || {};
+            const isInvitation =
+              typeof data.type === "string" &&
+              data.type.includes("umpire") &&
+              (data.type.includes("invitation") || data.type.includes("assignment"));
+            const matchId = data.match_id || data.matchId;
+
             return (
               <TouchableOpacity
                 style={[styles.itemCard, isUnread && styles.itemCardUnread]}
-                onPress={() => markAsRead(item.id)}
+                onPress={() => {
+                  if (isUnread) markAsRead(item.id);
+                  if (matchId) {
+                    router.push(`/match/${matchId}` as any);
+                  }
+                }}
                 activeOpacity={0.8}
               >
-                <View style={styles.itemIconCol}>
-                  <View style={[styles.iconCircle, isUnread && styles.iconCircleUnread]}>
+                <View style={styles.itemMetaRow}>
+                  <View style={styles.itemMetaLeft}>
                     <Ionicons
-                      name="flash"
-                      size={16}
-                      color={isUnread ? "#4edea3" : "#64748b"}
+                      name={isInvitation ? "shield-checkmark-outline" : "notifications-outline"}
+                      size={14}
+                      color={ScoreBoardTheme.onSurfaceVariant}
                     />
+                    <Text style={styles.itemDate}>
+                      {new Date(item.created_at).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </Text>
                   </View>
+                  {isUnread && <View style={styles.unreadDot} />}
                 </View>
 
-                <View style={styles.itemBody}>
-                  <View style={styles.itemTitleRow}>
-                    <Text style={[styles.itemTitle, isUnread && styles.itemTitleUnread]}>
-                      {item.title}
-                    </Text>
-                    {isUnread && <View style={styles.unreadDot} />}
-                  </View>
-                  <Text style={styles.itemText}>{item.body}</Text>
-                  <Text style={styles.itemDate}>
-                    {new Date(item.created_at).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </Text>
-                </View>
+                <Text
+                  style={[styles.itemTitle, isUnread && styles.itemTitleUnread]}
+                  numberOfLines={2}
+                >
+                  {item.title}
+                </Text>
               </TouchableOpacity>
             );
           }}
@@ -192,7 +205,7 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0c1324",
+    backgroundColor: ScoreBoardTheme.background,
   },
   header: {
     flexDirection: "row",
@@ -201,30 +214,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
+    borderBottomColor: ScoreBoardTheme.borderSubtle,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: "800",
-    color: "#f8fafc",
+    fontWeight: "700",
+    color: ScoreBoardTheme.onSurface,
   },
   headerSubtitle: {
-    fontSize: 13,
-    color: "#94a3b8",
+    fontSize: 12,
+    color: ScoreBoardTheme.textMuted,
     marginTop: 2,
   },
   markAllBtn: {
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
   },
   markAllText: {
-    color: "#4edea3",
+    color: ScoreBoardTheme.onSurface,
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
   },
   listContent: {
     paddingHorizontal: 16,
@@ -238,77 +251,60 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   emptyTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#f8fafc",
+    fontSize: 15,
+    fontWeight: "600",
+    color: ScoreBoardTheme.onSurface,
     marginTop: 14,
     marginBottom: 6,
   },
   emptySubtitle: {
-    fontSize: 13,
-    color: "#64748b",
+    fontSize: 12,
+    color: ScoreBoardTheme.textMuted,
     textAlign: "center",
     lineHeight: 18,
   },
   itemCard: {
-    flexDirection: "row",
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderWidth: 1,
-    borderColor: "#232d4b",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
-    gap: 12,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
   },
   itemCardUnread: {
-    borderColor: "rgba(78, 222, 163, 0.4)",
-    backgroundColor: "#131a2c",
+    borderColor: ScoreBoardTheme.onSurfaceVariant,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
   },
-  itemIconCol: {
-    paddingTop: 2,
-  },
-  iconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "#0c1324",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconCircleUnread: {
-    backgroundColor: "rgba(78, 222, 163, 0.12)",
-  },
-  itemBody: {
-    flex: 1,
-  },
-  itemTitleRow: {
+  itemMetaRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 4,
+    marginBottom: 6,
+  },
+  itemMetaLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   itemTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#cbd5e1",
+    fontSize: 13,
+    fontWeight: "500",
+    color: ScoreBoardTheme.onSurfaceVariant,
+    lineHeight: 18,
   },
   itemTitleUnread: {
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
+    fontWeight: "600",
   },
   unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#4edea3",
-  },
-  itemText: {
-    fontSize: 13,
-    color: "#94a3b8",
-    lineHeight: 18,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: ScoreBoardTheme.liveCrimson,
   },
   itemDate: {
     fontSize: 11,
-    color: "#64748b",
-    marginTop: 6,
+    color: ScoreBoardTheme.textMuted,
+    fontVariant: ["tabular-nums"],
   },
 });

@@ -13,10 +13,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { TopBar } from "@/components/TopBar";
+import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
 import { TournamentCard } from "@/components/TournamentCard";
 import { CreateTournamentModal } from "@/components/tournament/CreateTournamentModal";
 import { AuthModal } from "@/components/AuthModal";
 import { useAuth } from "@/components/AuthProvider";
+import { ScoreBoardTheme } from "@/constants/theme";
 import { useLanguage } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
 
@@ -106,6 +108,7 @@ export default function MyTournamentsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <MatchAtmosphereBackground sportType="random" mode="spectator" />
       <TopBar />
 
       <View style={styles.header}>
@@ -115,7 +118,7 @@ export default function MyTournamentsScreen() {
           activeOpacity={0.7}
           testID="header-back-btn"
         >
-          <Ionicons name="arrow-back" size={24} color="#f8fafc" />
+          <Ionicons name="arrow-back" size={24} color={ScoreBoardTheme.onSurface} />
         </TouchableOpacity>
 
         <View style={styles.headerTextCol}>
@@ -132,9 +135,9 @@ export default function MyTournamentsScreen() {
             activeOpacity={0.8}
             testID="header-create-tournament-btn"
           >
-            <Ionicons name="add" size={18} color="#ffffff" />
+            <Ionicons name="add" size={18} color={ScoreBoardTheme.surfaceContainerLowest} />
             <Text style={styles.createButtonHeaderText}>
-              {isPt ? "Criar" : "Create"}
+              {t("common.newTournament")}
             </Text>
           </TouchableOpacity>
         )}
@@ -142,11 +145,11 @@ export default function MyTournamentsScreen() {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#4f46e5" />
+          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
         </View>
       ) : !user ? (
         <View style={styles.centered}>
-          <Ionicons name="lock-closed-outline" size={48} color="#475569" />
+          <Ionicons name="lock-closed-outline" size={48} color={ScoreBoardTheme.textMuted} />
           <Text style={styles.emptyTitle}>
             {isPt ? "Inicie Sessão" : "Sign In Required"}
           </Text>
@@ -172,11 +175,15 @@ export default function MyTournamentsScreen() {
           renderItem={({ item }) => <TournamentCard tournament={item} />}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4f46e5" />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={ScoreBoardTheme.onSurfaceVariant}
+            />
           }
           ListEmptyComponent={
             <View style={styles.centered}>
-              <Ionicons name="trophy-outline" size={48} color="#334155" />
+              <Ionicons name="trophy-outline" size={48} color={ScoreBoardTheme.textMuted} />
               <Text style={styles.emptyTitle}>
                 {isPt ? "Nenhum torneio criado" : "No tournaments created"}
               </Text>
@@ -191,7 +198,12 @@ export default function MyTournamentsScreen() {
                 activeOpacity={0.8}
                 testID="empty-create-tournament-btn"
               >
-                <Ionicons name="add-circle-outline" size={18} color="#ffffff" style={{ marginRight: 6 }} />
+                <Ionicons
+                  name="add-circle-outline"
+                  size={18}
+                  color={ScoreBoardTheme.surfaceContainerLowest}
+                  style={{ marginRight: 6 }}
+                />
                 <Text style={styles.emptyCreateButtonText}>
                   {isPt ? "Criar Primeiro Torneio" : "Create First Tournament"}
                 </Text>
@@ -221,7 +233,7 @@ export default function MyTournamentsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0c1324",
+    backgroundColor: ScoreBoardTheme.background,
   },
   header: {
     flexDirection: "row",
@@ -230,7 +242,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
+    borderBottomColor: ScoreBoardTheme.borderSubtle,
   },
   headerTextCol: {
     flex: 1,
@@ -242,24 +254,24 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
   },
   headerSubtitle: {
     fontSize: 13,
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
     marginTop: 2,
   },
   createButtonHeader: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.onSurface,
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 8,
     gap: 4,
   },
   createButtonHeaderText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontWeight: "700",
     fontSize: 13,
   },
@@ -277,13 +289,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
     marginTop: 14,
     marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
     textAlign: "center",
     lineHeight: 18,
     marginBottom: 16,
@@ -291,26 +303,26 @@ const styles = StyleSheet.create({
   emptyCreateButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.onSurface,
     paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 10,
     marginTop: 8,
   },
   emptyCreateButtonText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontSize: 14,
     fontWeight: "700",
   },
   signInButton: {
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.onSurface,
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 10,
     marginTop: 12,
   },
   signInButtonText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontSize: 14,
     fontWeight: "700",
   },

@@ -19,8 +19,10 @@ import { useFollow } from "@/lib/hooks/useFollow";
 import { TopBar } from "@/components/TopBar";
 import { FollowButton } from "@/components/FollowButton";
 import { RuleModal } from "@/components/RuleModal";
+import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
+import { PlayByPlayTable } from "@/components/match/PlayByPlayTable";
 import { supabase } from "@/lib/supabase/client";
-import { Colors, Spacing } from "@/constants/theme";
+import { ScoreBoardTheme, Colors, Spacing } from "@/constants/theme";
 
 export default function MatchDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -251,7 +253,7 @@ export default function MatchDetailScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#4f46e5" />
+          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
           <Text style={styles.loadingText}>{t("common.loading") || "A carregar jogo..."}</Text>
         </View>
       </SafeAreaView>
@@ -364,6 +366,7 @@ export default function MatchDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <MatchAtmosphereBackground sportType={match.sport_type} mode="spectator" />
       {/* Main Global TopBar */}
       <TopBar />
 
@@ -416,9 +419,12 @@ export default function MatchDetailScreen() {
             )}
 
             {match.court && (
-              <Text style={styles.courtBadge} numberOfLines={1}>
-                📍 {match.court}
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Ionicons name="location-outline" size={13} color={ScoreBoardTheme.textMuted} />
+                <Text style={styles.courtBadge} numberOfLines={1}>
+                  {match.court}
+                </Text>
+              </View>
             )}
           </View>
 
@@ -460,10 +466,10 @@ export default function MatchDetailScreen() {
             activeOpacity={0.85}
           >
             {startingMatch ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator color={ScoreBoardTheme.surfaceContainerLowest} />
             ) : (
               <>
-                <Ionicons name="play-circle" size={24} color="#ffffff" />
+                <Ionicons name="play-circle" size={24} color={ScoreBoardTheme.surfaceContainerLowest} />
                 <Text style={styles.startScoreboardText}>
                   {match.status === "scheduled"
                     ? t("match.startScoreboardUpper") || "INICIAR MARCADOR"
@@ -511,36 +517,15 @@ export default function MatchDetailScreen() {
               {t("match.pointHistoryEvents") || t("match.scoreProgress")}
             </Text>
 
-            {events.length === 0 ? (
-              <View style={styles.emptyCard}>
-                <Ionicons name="analytics-outline" size={36} color="#475569" />
-                <Text style={styles.emptyText}>{t("match.noPointsRecorded")}</Text>
-              </View>
-            ) : (
-              events.map((ev, idx) => {
-                const data = ev.event_data || {};
-                const evType = data.type || "point";
-                return (
-                  <View key={ev.id || idx} style={styles.eventItem}>
-                    <View style={styles.eventDot} />
-                    <View style={styles.eventBody}>
-                      <Text style={styles.eventText}>
-                        {data.description ||
-                          t("match.pointRecordedFor", {
-                            team: data.scoring_side === 0 ? teamAName : teamBName,
-                          })}
-                      </Text>
-                      <Text style={styles.eventTime}>
-                        {new Date(ev.created_at).toLocaleTimeString([], {
-                          minute: "2-digit",
-                          second: "2-digit",
-                        })}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })
-            )}
+            <PlayByPlayTable
+              events={events}
+              teamAName={teamAName}
+              teamBName={teamBName}
+              emptyText={t("match.noPointsRecorded")}
+              formatFallback={(team) =>
+                t("match.pointRecordedFor", { team })
+              }
+            />
           </View>
         )}
 
@@ -652,7 +637,9 @@ export default function MatchDetailScreen() {
                   onChangeText={searchUmpires}
                 />
 
-                {searchingUmpire && <ActivityIndicator color="#4f46e5" style={{ margin: 8 }} />}
+                {searchingUmpire && (
+                  <ActivityIndicator color={ScoreBoardTheme.onSurfaceVariant} style={{ margin: 8 }} />
+                )}
 
                 {umpireSearchResults.map((u) => (
                   <TouchableOpacity
@@ -701,7 +688,7 @@ export default function MatchDetailScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0c1324",
+    backgroundColor: ScoreBoardTheme.background,
   },
   centered: {
     flex: 1,
@@ -711,24 +698,24 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
     fontSize: 14,
   },
   errorTitle: {
     fontSize: 16,
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
     fontWeight: "700",
     marginTop: 12,
     marginBottom: 16,
   },
   backBtn: {
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
   },
   backBtnText: {
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
     fontWeight: "600",
   },
   topNav: {
@@ -760,63 +747,57 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   heroCard: {
-    backgroundColor: "#151b2d",
-    borderRadius: 20,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#232d4b",
-    padding: 18,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    padding: 16,
     marginBottom: 16,
   },
   heroMetaRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 18,
+    marginBottom: 16,
     gap: 8,
   },
   sportBadge: {
-    backgroundColor: "rgba(79, 70, 229, 0.15)",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
-    borderColor: "rgba(79, 70, 229, 0.3)",
+    borderColor: ScoreBoardTheme.borderSubtle,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
   sportBadgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#a5b4fc",
-    textTransform: "uppercase",
+    fontSize: 11,
+    fontWeight: "500",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
   liveIndicator: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(78, 222, 163, 0.15)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
     gap: 5,
   },
   livePulse: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#4edea3",
+    backgroundColor: ScoreBoardTheme.liveCrimson,
   },
   liveText: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: "#4edea3",
+    fontSize: 11,
+    fontWeight: "500",
+    color: ScoreBoardTheme.onSurface,
   },
   statusBadge: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#64748b",
-    textTransform: "uppercase",
+    fontSize: 11,
+    fontWeight: "400",
+    color: ScoreBoardTheme.textMuted,
   },
   courtBadge: {
     fontSize: 11,
-    color: "#94a3b8",
+    color: ScoreBoardTheme.textMuted,
   },
   matchupRow: {
     flexDirection: "row",
@@ -828,25 +809,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   teamAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "#0d1322",
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 8,
   },
   avatarLetter: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#a5b4fc",
+    fontSize: 18,
+    fontWeight: "500",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
   teamTitle: {
     fontSize: 14,
-    fontWeight: "700",
-    color: "#f8fafc",
+    fontWeight: "500",
+    color: ScoreBoardTheme.onSurface,
     textAlign: "center",
     lineHeight: 18,
   },
@@ -860,77 +841,73 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   bigScore: {
-    fontFamily: "Digital7",
-    fontSize: 48,
-    color: "#4edea3",
-    lineHeight: 52,
+    fontFamily: "Digital7Mono",
+    fontSize: 42,
+    color: ScoreBoardTheme.onSurface,
+    lineHeight: 46,
+    fontVariant: ["tabular-nums"],
   },
   scoreColon: {
-    fontFamily: "Digital7",
-    fontSize: 36,
-    color: "#64748b",
+    fontFamily: "Digital7Mono",
+    fontSize: 32,
+    color: ScoreBoardTheme.textMuted,
   },
   setsHeader: {
+    fontFamily: "Digital7Mono",
     fontSize: 12,
-    color: "#94a3b8",
-    fontFamily: "monospace",
+    color: ScoreBoardTheme.textMuted,
+    fontVariant: ["tabular-nums"],
     marginBottom: 4,
   },
   liveGamePoints: {
+    fontFamily: "Digital7Mono",
     fontSize: 12,
-    color: "#fbbf24",
-    fontWeight: "700",
+    color: ScoreBoardTheme.onSurfaceVariant,
+    fontWeight: "500",
     marginTop: 2,
+    fontVariant: ["tabular-nums"],
   },
   startScoreboardBtn: {
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.onSurface,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 14,
-    gap: 10,
-    marginBottom: 18,
-    shadowColor: "#4f46e5",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 8,
+    marginBottom: 16,
   },
   startScoreboardText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontSize: 14,
-    fontWeight: "800",
-    letterSpacing: 1,
+    fontWeight: "700",
   },
   tabsRow: {
     flexDirection: "row",
-    backgroundColor: "#151b2d",
-    borderRadius: 12,
-    padding: 4,
+    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
+    borderRadius: 10,
+    padding: 3,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
   },
   tabBtn: {
     flex: 1,
-    paddingVertical: 9,
+    paddingVertical: 8,
     alignItems: "center",
-    borderRadius: 8,
+    borderRadius: 7,
   },
   tabBtnActive: {
-    backgroundColor: "#0c1324",
-    borderWidth: 1,
-    borderColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
   },
   tabText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#64748b",
+    fontWeight: "500",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
   tabTextActive: {
-    color: "#f8fafc",
-    fontWeight: "700",
+    color: ScoreBoardTheme.onSurface,
+    fontWeight: "600",
   },
   tabContent: {
     marginTop: 4,

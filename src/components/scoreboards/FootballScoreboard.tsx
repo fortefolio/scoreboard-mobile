@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/lib/i18n";
 import { recordMatchEventAtomic } from "@/lib/scoring/atomicScoring";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 interface FootballScoreboardProps {
   matchData: any;
@@ -294,7 +295,6 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
       {/* Column 1: Team Home */}
       <View style={styles.teamColumn}>
         <View style={styles.teamHeaderRow}>
-          <View style={[styles.teamDot, { backgroundColor: "#818cf8" }]} />
           <Text style={styles.teamName} numberOfLines={1}>
             {teamA}
           </Text>
@@ -325,7 +325,7 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
         </View>
 
         {/* Big Home Score in Digital Font */}
-        <Text style={[styles.scoreDigital, { color: "#818cf8" }]}>{goals.home}</Text>
+        <Text style={[styles.scoreDigital, { color: ScoreBoardTheme.onSurface }]}>{goals.home}</Text>
 
         {/* Home Controls */}
         {canEdit && (
@@ -335,7 +335,7 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
                 style={[styles.btn, styles.btnGoal]}
                 onPress={() => handleGoal("home")}
               >
-                <Ionicons name="football" size={13} color="#ffffff" />
+                <Ionicons name="football" size={13} color={ScoreBoardTheme.surfaceContainerLowest} />
                 <Text style={styles.btnGoalText}>{t("scoreboard.football.plusGoal") || "+1 GOLO"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -429,7 +429,6 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
           <Text style={styles.teamName} numberOfLines={1}>
             {teamB}
           </Text>
-          <View style={[styles.teamDot, { backgroundColor: "#4edea3" }]} />
         </View>
 
         {/* Stats Badges */}
@@ -457,7 +456,7 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
         </View>
 
         {/* Big Away Score in Digital Font */}
-        <Text style={[styles.scoreDigital, { color: "#4edea3" }]}>{goals.away}</Text>
+        <Text style={[styles.scoreDigital, { color: ScoreBoardTheme.onSurface }]}>{goals.away}</Text>
 
         {/* Away Controls */}
         {canEdit && (
@@ -471,10 +470,10 @@ export function FootballScoreboard({ matchData, rules, canEdit }: FootballScoreb
                 <Text style={styles.btnUndoText}>{t("scoreboard.undo") || "-1"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.btn, styles.btnGoal, styles.btnGoalAway]}
+                style={[styles.btn, styles.btnGoal]}
                 onPress={() => handleGoal("away")}
               >
-                <Ionicons name="football" size={13} color="#ffffff" />
+                <Ionicons name="football" size={13} color={ScoreBoardTheme.surfaceContainerLowest} />
                 <Text style={styles.btnGoalText}>{t("scoreboard.football.plusGoal") || "+1 GOLO"}</Text>
               </TouchableOpacity>
             </View>
@@ -518,16 +517,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: "#080c14",
+    backgroundColor: "transparent",
     alignItems: "stretch",
     gap: 8,
   },
   teamColumn: {
     flex: 1,
-    backgroundColor: "#0d1322",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     padding: 10,
     alignItems: "center",
     justifyContent: "space-between",
@@ -585,12 +584,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   digitalBadgeNum: {
-    fontFamily: "Digital7",
+    fontFamily: "Digital7Mono",
     fontSize: 12,
     color: "#f8fafc",
   },
   scoreDigital: {
-    fontFamily: "Digital7",
+    fontFamily: "Digital7Mono",
     fontSize: 52,
     lineHeight: 56,
   },
@@ -613,24 +612,24 @@ const styles = StyleSheet.create({
   btnGoal: {
     flex: 2,
     flexDirection: "row",
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.onSurface,
     gap: 4,
   },
   btnGoalAway: {
-    backgroundColor: "#059669",
+    backgroundColor: ScoreBoardTheme.onSurface,
   },
   btnGoalText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontSize: 12,
-    fontWeight: "900",
-    letterSpacing: 0.5,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
   btnUndo: {
     flex: 1,
     flexDirection: "row",
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: ScoreBoardTheme.borderSubtle,
     gap: 2,
   },
   btnUndoText: {
@@ -706,7 +705,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(79, 70, 229, 0.15)",
   },
   clockDigital: {
-    fontFamily: "Digital7",
+    fontFamily: "Digital7Mono",
     fontSize: 32,
     color: "#ffffff",
   },

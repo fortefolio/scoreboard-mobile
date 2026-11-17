@@ -18,10 +18,11 @@ export interface TournamentCardProps {
     end_date?: string | null;
     created_at?: string;
   };
+  compact?: boolean;
   onAuthRequired?: () => void;
 }
 
-export function TournamentCard({ tournament, onAuthRequired }: TournamentCardProps) {
+export function TournamentCard({ tournament, compact = false, onAuthRequired }: TournamentCardProps) {
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -41,6 +42,49 @@ export function TournamentCard({ tournament, onAuthRequired }: TournamentCardPro
   const endDate = formatDate(tournament.end_date);
   const dateDisplay = startDate && endDate ? `${startDate} - ${endDate}` : startDate || t("tournaments.upcoming");
 
+  if (compact) {
+    return (
+      <TouchableOpacity
+        style={styles.compactContainer}
+        onPress={() => router.push(`/tournament/${tournament.id}` as any)}
+        activeOpacity={0.85}
+      >
+        <View style={styles.compactIconBox}>
+          <SportIcon sport={tournament.sport_type} size={15} color={ScoreBoardTheme.onSurfaceVariant} />
+        </View>
+
+        <View style={styles.compactContent}>
+          <Text style={styles.compactName} numberOfLines={1}>
+            {tournament.name}
+          </Text>
+          <Text style={styles.compactMeta} numberOfLines={1}>
+            {getSportTranslation(tournament.sport_type, t)} • {dateDisplay}
+          </Text>
+        </View>
+
+        <View style={styles.compactRight}>
+          {isLive ? (
+            <View style={styles.liveDot} />
+          ) : (
+            <Text style={styles.statusMutedText}>
+              {tournament.status === "completed"
+                ? t("status.final")
+                : tournament.status === "scheduled" || tournament.status === "pending"
+                ? t("status.scheduled")
+                : tournament.status}
+            </Text>
+          )}
+          <FollowButton
+            entityId={tournament.id}
+            entityType="tournament"
+            size={15}
+            onAuthRequired={onAuthRequired}
+          />
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
   return (
     <TouchableOpacity
       style={styles.card}
@@ -50,7 +94,7 @@ export function TournamentCard({ tournament, onAuthRequired }: TournamentCardPro
       {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.sportHeaderLeft}>
-          <SportIcon sport={tournament.sport_type} size={15} color="#c3c0ff" />
+          <SportIcon sport={tournament.sport_type} size={15} color={ScoreBoardTheme.onSurfaceVariant} />
           <Text style={styles.sportTag} numberOfLines={1}>
             {getSportTranslation(tournament.sport_type, t)}
           </Text>
@@ -98,12 +142,12 @@ export function TournamentCard({ tournament, onAuthRequired }: TournamentCardPro
       {/* Footer Info */}
       <View style={styles.footer}>
         <View style={styles.footerMeta}>
-          <Ionicons name="calendar-outline" size={13} color="rgba(220, 225, 251, 0.45)" />
+          <Ionicons name="calendar-outline" size={13} color={ScoreBoardTheme.textMuted} />
           <Text style={styles.dateText}>{dateDisplay}</Text>
         </View>
 
         <View style={styles.arrowCircle}>
-          <Ionicons name="chevron-forward" size={14} color="#c3c0ff" />
+          <Ionicons name="chevron-forward" size={14} color={ScoreBoardTheme.onSurfaceVariant} />
         </View>
       </View>
     </TouchableOpacity>
@@ -112,38 +156,31 @@ export function TournamentCard({ tournament, onAuthRequired }: TournamentCardPro
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
-    borderRadius: 18,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: ScoreBoardTheme.borderGhost,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 4,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    padding: 14,
+    marginBottom: 10,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 10,
     gap: 8,
   },
   sportHeaderLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
+    gap: 6,
     flex: 1,
     minWidth: 0,
   },
   sportTag: {
-    fontSize: 10,
-    fontWeight: "900",
-    textTransform: "uppercase",
-    letterSpacing: 1.2,
-    color: "rgba(195, 192, 255, 0.75)",
+    fontSize: 12,
+    fontWeight: "500",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
   headerRight: {
     flexDirection: "row",
@@ -154,12 +191,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "rgba(79, 70, 229, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(79, 70, 229, 0.35)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 9999,
   },
   liveDot: {
     width: 6,
@@ -168,54 +199,47 @@ const styles = StyleSheet.create({
     backgroundColor: ScoreBoardTheme.secondary,
   },
   livePillText: {
-    fontSize: 10,
-    fontWeight: "900",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    color: ScoreBoardTheme.primary,
+    fontSize: 12,
+    fontWeight: "500",
+    color: ScoreBoardTheme.secondary,
   },
   statusMutedText: {
-    fontSize: 10,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    color: "rgba(220, 225, 251, 0.45)",
+    fontSize: 12,
+    fontWeight: "400",
+    color: ScoreBoardTheme.textMuted,
   },
   body: {
     marginVertical: 4,
-    gap: 8,
+    gap: 6,
   },
   tournamentName: {
-    fontSize: 16,
-    fontWeight: "900",
+    fontSize: 15,
+    fontWeight: "600",
     color: ScoreBoardTheme.onSurface,
-    lineHeight: 22,
-    letterSpacing: -0.3,
+    lineHeight: 20,
   },
   formatPill: {
     alignSelf: "flex-start",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: ScoreBoardTheme.borderSubtle,
   },
   formatText: {
-    fontSize: 10,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-    color: "rgba(220, 225, 251, 0.65)",
+    fontSize: 11,
+    fontWeight: "500",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
   footer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 12,
-    paddingTop: 10,
+    marginTop: 10,
+    paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.04)",
+    borderTopColor: ScoreBoardTheme.borderSubtle,
   },
   footerMeta: {
     flexDirection: "row",
@@ -224,15 +248,56 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 11,
-    fontWeight: "600",
-    color: "rgba(220, 225, 251, 0.6)",
+    fontWeight: "400",
+    color: ScoreBoardTheme.textMuted,
   },
   arrowCircle: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "rgba(79, 70, 229, 0.15)",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     justifyContent: "center",
     alignItems: "center",
+  },
+  compactContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 6,
+    gap: 10,
+  },
+  compactIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  compactContent: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  compactName: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: ScoreBoardTheme.onSurface,
+  },
+  compactMeta: {
+    fontSize: 11,
+    color: ScoreBoardTheme.textMuted,
+  },
+  compactRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 });

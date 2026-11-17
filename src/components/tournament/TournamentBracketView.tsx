@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 interface BracketMatchNode {
   id: string;
@@ -126,49 +127,49 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   emptyCard: {
-    backgroundColor: "#151b2d",
-    borderRadius: 14,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     padding: 32,
     alignItems: "center",
     gap: 8,
   },
   emptyText: {
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
     fontSize: 13,
   },
   roundCol: {
     width: 220,
   },
   roundHeader: {
-    backgroundColor: "#101626",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     alignItems: "center",
     marginBottom: 12,
   },
   roundHeaderText: {
     fontSize: 11,
-    fontWeight: "800",
-    color: "#4edea3",
-    letterSpacing: 1.5,
+    fontWeight: "600",
+    color: ScoreBoardTheme.onSurfaceVariant,
+    letterSpacing: 1,
   },
   matchesCol: {
     gap: 12,
   },
   matchNodeCard: {
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     borderRadius: 12,
     padding: 10,
   },
   matchNodeCardLive: {
-    borderColor: "#4edea3",
-    backgroundColor: "#111827",
+    borderColor: "rgba(244, 63, 94, 0.35)",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
   },
   nodeMeta: {
     flexDirection: "row",
@@ -180,12 +181,12 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#4edea3",
+    backgroundColor: ScoreBoardTheme.liveCrimson,
   },
   nodeStatus: {
-    fontSize: 9,
-    fontWeight: "800",
-    color: "#64748b",
+    fontSize: 10,
+    fontWeight: "600",
+    color: ScoreBoardTheme.textMuted,
   },
   participantRow: {
     flexDirection: "row",
@@ -195,19 +196,20 @@ const styles = StyleSheet.create({
   },
   participantName: {
     fontSize: 12,
-    fontWeight: "700",
-    color: "#f8fafc",
+    fontWeight: "500",
+    color: ScoreBoardTheme.onSurface,
     flex: 1,
     paddingRight: 6,
   },
   scoreText: {
-    fontFamily: "Digital7",
+    fontFamily: "Digital7Mono",
     fontSize: 18,
-    color: "#4edea3",
+    color: ScoreBoardTheme.onSurface,
+    fontVariant: ["tabular-nums"],
   },
   nodeDivider: {
     height: 1,
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.borderSubtle,
     marginVertical: 4,
   },
 });

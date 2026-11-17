@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { MatchCard } from "@/components/MatchCard";
 import { TournamentCard } from "@/components/TournamentCard";
 import { TopBar } from "@/components/TopBar";
+import { ScoreBoardTheme } from "@/constants/theme";
 import { useLanguage } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
 
@@ -82,7 +83,7 @@ export default function PublicUserProfileScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#4f46e5" />
+          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
         </View>
       </SafeAreaView>
     );
@@ -197,7 +198,7 @@ export default function PublicUserProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0c1324",
+    backgroundColor: ScoreBoardTheme.background,
   },
   centered: {
     flex: 1,
@@ -212,12 +213,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
+    borderBottomColor: ScoreBoardTheme.borderSubtle,
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
   },
   iconBtn: {
     padding: 4,
@@ -227,9 +228,9 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   profileCard: {
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     borderRadius: 20,
     padding: 24,
     alignItems: "center",
@@ -239,7 +240,9 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
@@ -247,21 +250,21 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#ffffff",
+    color: ScoreBoardTheme.onSurface,
   },
   usernameText: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
     marginBottom: 8,
   },
   tierBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "rgba(78, 222, 163, 0.12)",
+    backgroundColor: "rgba(16, 185, 129, 0.12)",
     borderWidth: 1,
-    borderColor: "rgba(78, 222, 163, 0.3)",
+    borderColor: "rgba(16, 185, 129, 0.3)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 9999,
@@ -270,7 +273,7 @@ const styles = StyleSheet.create({
   tierText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#4edea3",
+    color: "#10b981",
     letterSpacing: 1,
   },
   statsRow: {
@@ -279,7 +282,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: "100%",
     borderTopWidth: 1,
-    borderTopColor: "#1e293b",
+    borderTopColor: ScoreBoardTheme.borderSubtle,
     paddingTop: 16,
   },
   statBox: {
@@ -289,27 +292,27 @@ const styles = StyleSheet.create({
   statNum: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
   },
   statLabel: {
     fontSize: 11,
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
     marginTop: 2,
     textTransform: "uppercase",
   },
   statDivider: {
     width: 1,
     height: 24,
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.borderSubtle,
   },
   tabsRow: {
     flexDirection: "row",
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderRadius: 12,
     padding: 4,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
   },
   tabBtn: {
     flex: 1,
@@ -318,47 +321,47 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabBtnActive: {
-    backgroundColor: "#0c1324",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
     borderWidth: 1,
-    borderColor: "#4f46e5",
+    borderColor: ScoreBoardTheme.onSurfaceVariant,
   },
   tabText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
   },
   tabTextActive: {
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
     fontWeight: "700",
   },
   emptyCard: {
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     borderRadius: 14,
     padding: 24,
     alignItems: "center",
   },
   emptyCardText: {
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
     fontSize: 13,
   },
   emptyTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
     marginTop: 12,
     marginBottom: 4,
   },
   backBtn: {
     marginTop: 16,
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   backBtnText: {
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
     fontWeight: "600",
   },
 });

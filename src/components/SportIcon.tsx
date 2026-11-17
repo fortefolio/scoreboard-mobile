@@ -1,6 +1,6 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 interface SportIconProps {
   sport?: string | null;
@@ -8,7 +8,11 @@ interface SportIconProps {
   color?: string;
 }
 
-export function SportIcon({ sport, size = 16, color = "#c3c0ff" }: SportIconProps) {
+export function SportIcon({
+  sport,
+  size = 16,
+  color = ScoreBoardTheme.onSurfaceVariant,
+}: SportIconProps) {
   const normalized = (sport || "").toLowerCase();
 
   if (normalized.includes("padel")) {

@@ -16,6 +16,7 @@ export default function RootLayout() {
 
   const [fontsLoaded, fontError] = useFonts({
     Digital7: require('@/assets/fonts/digital-7.ttf'),
+    Digital7Mono: require('@/assets/fonts/digital-7-mono.ttf'),
   });
 
   useEffect(() => {

@@ -10,12 +10,16 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { TopBar } from "@/components/TopBar";
 import { FeedHeader } from "@/components/FeedHeader";
 import { MatchCard } from "@/components/MatchCard";
 import { MatchListItem } from "@/components/MatchListItem";
 import { Pagination } from "@/components/Pagination";
 import { AuthModal } from "@/components/AuthModal";
+import { CreateMatchModal } from "@/components/match/CreateMatchModal";
+import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
+import { useAuth } from "@/components/AuthProvider";
 import { useTranslation } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
 import { ScoreBoardTheme } from "@/constants/theme";
@@ -24,29 +28,42 @@ const MATCHES_PER_PAGE = 12;
 
 export default function MatchesFeedScreen() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
 
   const [viewMode, setViewMode] = useState<"list" | "cards">("list");
   const [selectedSport, setSelectedSport] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [authModalVisible, setAuthModalVisible] = useState(false);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
 
   const [matches, setMatches] = useState<any[]>([]);
+  const [tournaments, setTournaments] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  // Fetch matches
+  // Fetch matches & tournaments (for quick-jump search)
   const fetchMatches = useCallback(async () => {
     try {
-      const { data } = await supabase
-        .from("matches")
-        .select("*, tournaments(name)")
-        .order("created_at", { ascending: false })
-        .limit(300);
+      const [matchesRes, tournamentsRes] = await Promise.all([
+        supabase
+          .from("matches")
+          .select("*, tournaments(name), organizer:users!organizer_id(username)")
+          .order("created_at", { ascending: false })
+          .limit(300),
+        supabase
+          .from("tournaments")
+          .select("*, organizer:users!organizer_id(username)")
+          .order("created_at", { ascending: false })
+          .limit(100),
+      ]);
 
-      if (data) setMatches(data);
+      if (matchesRes.data) setMatches(matchesRes.data);
+      if (tournamentsRes.data) setTournaments(tournamentsRes.data);
     } catch (e) {
       console.warn("Error loading matches:", e);
     } finally {
@@ -115,9 +132,9 @@ export default function MatchesFeedScreen() {
     flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
   };
 
-  // Filter matches
+  // Filter & sort matches
   const filteredMatches = useMemo(() => {
-    return matches.filter((m) => {
+    const filtered = matches.filter((m) => {
       if (selectedSport !== "all" && m.sport_type?.toLowerCase() !== selectedSport.toLowerCase()) {
         return false;
       }
@@ -136,7 +153,12 @@ export default function MatchesFeedScreen() {
       }
       return true;
     });
-  }, [matches, selectedSport, statusFilter, searchQuery]);
+    return [...filtered].sort((a, b) => {
+      const tA = new Date(a.scheduled_at || a.created_at || 0).getTime();
+      const tB = new Date(b.scheduled_at || b.created_at || 0).getTime();
+      return sortOrder === "desc" ? tB - tA : tA - tB;
+    });
+  }, [matches, selectedSport, statusFilter, searchQuery, sortOrder]);
 
   const totalPages = Math.max(1, Math.ceil(filteredMatches.length / MATCHES_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
@@ -150,7 +172,7 @@ export default function MatchesFeedScreen() {
     if (loading) {
       return (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color="#4edea3" />
+          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
           <Text style={styles.loadingText}>{t("common.loading") || "Loading live data..."}</Text>
         </View>
       );
@@ -179,6 +201,7 @@ export default function MatchesFeedScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <MatchAtmosphereBackground sportType="random" mode="spectator" />
       {/* Top Application Bar */}
       <TopBar onSearchPress={() => {}} />
 
@@ -195,6 +218,22 @@ export default function MatchesFeedScreen() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         showViewToggle={true}
+        sortOrder={sortOrder}
+        onSortOrderChange={(order) => {
+          setSortOrder(order);
+          setCurrentPage(1);
+        }}
+        matches={matches}
+        tournaments={tournaments}
+        currentTab="matches"
+        primaryActionLabel={t("common.newMatch")}
+        onPrimaryAction={() => {
+          if (!user) {
+            setAuthModalVisible(true);
+          } else {
+            setCreateModalVisible(true);
+          }
+        }}
       />
 
       {/* Matches Feed List */}
@@ -228,13 +267,25 @@ export default function MatchesFeedScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#4edea3"
-            colors={["#4edea3"]}
+            tintColor={ScoreBoardTheme.onSurfaceVariant}
+            colors={[ScoreBoardTheme.onSurfaceVariant]}
           />
         }
       />
 
       <AuthModal visible={authModalVisible} onClose={() => setAuthModalVisible(false)} />
+      {user && (
+        <CreateMatchModal
+          visible={createModalVisible}
+          onClose={() => setCreateModalVisible(false)}
+          userId={user.id}
+          onCreateSuccess={(matchId?: string) => {
+            setCreateModalVisible(false);
+            fetchMatches();
+            if (matchId) router.push(`/match/${matchId}` as any);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -257,39 +308,35 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 12,
-    fontWeight: "700",
-    color: "rgba(220, 225, 251, 0.6)",
-    letterSpacing: 0.5,
+    fontWeight: "500",
+    color: ScoreBoardTheme.textMuted,
   },
   emptyTitle: {
-    fontSize: 16,
-    fontWeight: "800",
+    fontSize: 15,
+    fontWeight: "600",
     color: ScoreBoardTheme.onSurface,
     marginTop: 12,
-    letterSpacing: 0.2,
   },
   emptySubtitle: {
     fontSize: 12,
-    fontWeight: "500",
-    color: "rgba(220, 225, 251, 0.4)",
+    fontWeight: "400",
+    color: ScoreBoardTheme.textMuted,
     textAlign: "center",
-    marginTop: 6,
+    marginTop: 4,
     lineHeight: 18,
   },
   clearBtn: {
-    marginTop: 18,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    marginTop: 16,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
   },
   clearBtnText: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: "#ffffff",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    fontSize: 12,
+    fontWeight: "500",
+    color: ScoreBoardTheme.primary,
   },
 });

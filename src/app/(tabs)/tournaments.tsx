@@ -10,11 +10,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { TopBar } from "@/components/TopBar";
 import { FeedHeader } from "@/components/FeedHeader";
 import { TournamentCard } from "@/components/TournamentCard";
 import { Pagination } from "@/components/Pagination";
 import { AuthModal } from "@/components/AuthModal";
+import { CreateTournamentModal } from "@/components/tournament/CreateTournamentModal";
+import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
+import { useAuth } from "@/components/AuthProvider";
 import { useTranslation } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
 import { ScoreBoardTheme } from "@/constants/theme";
@@ -23,28 +27,42 @@ const TOURNAMENTS_PER_PAGE = 8;
 
 export default function TournamentsFeedScreen() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
 
+  const [viewMode, setViewMode] = useState<"list" | "cards">("list");
   const [selectedSport, setSelectedSport] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [authModalVisible, setAuthModalVisible] = useState(false);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
 
   const [tournaments, setTournaments] = useState<any[]>([]);
+  const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  // Fetch tournaments
+  // Fetch tournaments & matches (for quick-jump search)
   const fetchTournaments = useCallback(async () => {
     try {
-      const { data } = await supabase
-        .from("tournaments")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
+      const [tournamentsRes, matchesRes] = await Promise.all([
+        supabase
+          .from("tournaments")
+          .select("*, organizer:users!organizer_id(username)")
+          .order("created_at", { ascending: false })
+          .limit(100),
+        supabase
+          .from("matches")
+          .select("*, tournaments(name), organizer:users!organizer_id(username)")
+          .order("created_at", { ascending: false })
+          .limit(100),
+      ]);
 
-      if (data) setTournaments(data);
+      if (tournamentsRes.data) setTournaments(tournamentsRes.data);
+      if (matchesRes.data) setMatches(matchesRes.data);
     } catch (e) {
       console.warn("Error loading tournaments:", e);
     } finally {
@@ -113,9 +131,9 @@ export default function TournamentsFeedScreen() {
     flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
   };
 
-  // Filter tournaments
+  // Filter & sort tournaments
   const filteredTournaments = useMemo(() => {
-    return tournaments.filter((tItem) => {
+    const filtered = tournaments.filter((tItem) => {
       if (selectedSport !== "all" && tItem.sport_type?.toLowerCase() !== selectedSport.toLowerCase()) {
         return false;
       }
@@ -132,7 +150,12 @@ export default function TournamentsFeedScreen() {
       }
       return true;
     });
-  }, [tournaments, selectedSport, statusFilter, searchQuery]);
+    return [...filtered].sort((a, b) => {
+      const tA = new Date(a.start_date || a.created_at || 0).getTime();
+      const tB = new Date(b.start_date || b.created_at || 0).getTime();
+      return sortOrder === "desc" ? tB - tA : tA - tB;
+    });
+  }, [tournaments, selectedSport, statusFilter, searchQuery, sortOrder]);
 
   const totalPages = Math.max(1, Math.ceil(filteredTournaments.length / TOURNAMENTS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
@@ -146,7 +169,7 @@ export default function TournamentsFeedScreen() {
     if (loading) {
       return (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color="#4edea3" />
+          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
           <Text style={styles.loadingText}>{t("common.loading") || "Loading live data..."}</Text>
         </View>
       );
@@ -177,6 +200,7 @@ export default function TournamentsFeedScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <MatchAtmosphereBackground sportType="random" mode="spectator" />
       {/* Top Application Bar */}
       <TopBar onSearchPress={() => {}} />
 
@@ -190,7 +214,25 @@ export default function TournamentsFeedScreen() {
         onStatusChange={handleStatusChange}
         displayCount={filteredTournaments.length}
         countLabel={t("nav.tournaments") || "Tournaments"}
-        showViewToggle={false}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        showViewToggle={true}
+        sortOrder={sortOrder}
+        onSortOrderChange={(order) => {
+          setSortOrder(order);
+          setCurrentPage(1);
+        }}
+        matches={matches}
+        tournaments={tournaments}
+        currentTab="tournaments"
+        primaryActionLabel={t("common.newTournament")}
+        onPrimaryAction={() => {
+          if (!user) {
+            setAuthModalVisible(true);
+          } else {
+            setCreateModalVisible(true);
+          }
+        }}
       />
 
       {/* Tournaments Feed List */}
@@ -202,6 +244,7 @@ export default function TournamentsFeedScreen() {
         renderItem={({ item }) => (
           <TournamentCard
             tournament={item}
+            compact={viewMode === "list"}
             onAuthRequired={() => setAuthModalVisible(true)}
           />
         )}
@@ -220,13 +263,25 @@ export default function TournamentsFeedScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#4edea3"
-            colors={["#4edea3"]}
+            tintColor={ScoreBoardTheme.onSurfaceVariant}
+            colors={[ScoreBoardTheme.onSurfaceVariant]}
           />
         }
       />
 
       <AuthModal visible={authModalVisible} onClose={() => setAuthModalVisible(false)} />
+      {user && (
+        <CreateTournamentModal
+          visible={createModalVisible}
+          onClose={() => setCreateModalVisible(false)}
+          userId={user.id}
+          onCreateSuccess={(tournamentId: string) => {
+            setCreateModalVisible(false);
+            fetchTournaments();
+            if (tournamentId) router.push(`/tournament/${tournamentId}` as any);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }

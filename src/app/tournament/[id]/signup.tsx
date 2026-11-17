@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { TopBar } from "@/components/TopBar";
+import { ScoreBoardTheme } from "@/constants/theme";
 import { useLanguage } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
 
@@ -110,7 +111,7 @@ export default function TournamentSignupScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#4f46e5" />
+          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
         </View>
       </SafeAreaView>
     );
@@ -248,7 +249,7 @@ export default function TournamentSignupScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0c1324",
+    backgroundColor: ScoreBoardTheme.background,
   },
   centered: {
     flex: 1,
@@ -262,12 +263,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
+    borderBottomColor: ScoreBoardTheme.borderSubtle,
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
   },
   iconBtn: {
     padding: 4,
@@ -277,9 +278,9 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   banner: {
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
@@ -287,14 +288,14 @@ const styles = StyleSheet.create({
   bannerSport: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#a5b4fc",
+    color: ScoreBoardTheme.onSurfaceVariant,
     letterSpacing: 1,
     marginBottom: 4,
   },
   bannerTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
     marginBottom: 8,
   },
   slotsRow: {
@@ -304,7 +305,7 @@ const styles = StyleSheet.create({
   },
   slotsText: {
     fontSize: 13,
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
   formSection: {
     gap: 16,
@@ -313,19 +314,19 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
     fontSize: 14,
   },
   checkboxRow: {
@@ -336,25 +337,25 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: 13,
-    color: "#cbd5e1",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
   submitBtn: {
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.onSurface,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
     marginTop: 8,
   },
   submitBtnText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontSize: 14,
     fontWeight: "800",
     letterSpacing: 1,
   },
   successCard: {
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderWidth: 1,
-    borderColor: "rgba(78, 222, 163, 0.4)",
+    borderColor: "rgba(16, 185, 129, 0.4)",
     borderRadius: 20,
     padding: 32,
     alignItems: "center",
@@ -363,17 +364,17 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
   },
   successSubtitle: {
     fontSize: 14,
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
     textAlign: "center",
     lineHeight: 20,
   },
   backHomeBtn: {
     marginTop: 16,
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.onSurface,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 10,

@@ -18,6 +18,9 @@ import { supabase } from "@/lib/supabase/client";
 import { OfflineSyncBadge } from "@/components/OfflineSyncBadge";
 import { initOfflineNetworkSync } from "@/lib/offline/offlineQueue";
 
+import { ScoreBoardTheme } from "@/constants/theme";
+import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
+import { ScoreboardProvider } from "@/components/scoreboards/ScoreboardLayout";
 import { TennisScoreboard } from "@/components/scoreboards/TennisScoreboard";
 import { VolleyballScoreboard } from "@/components/scoreboards/VolleyballScoreboard";
 import { FootballScoreboard } from "@/components/scoreboards/FootballScoreboard";
@@ -95,8 +98,9 @@ export default function RefereeScoreboardScreen() {
 
     fetchMatch();
 
+    const channelId = `scoreboard:${matchIdStr}:${Math.random().toString(36).slice(2, 9)}`;
     const channel = supabase
-      .channel(`match:${matchIdStr}`)
+      .channel(channelId)
       .on("broadcast", { event: "score_update" }, (response: any) => {
         const payload = response?.payload;
         if (payload?.match_id === matchIdStr && payload.scores) {
@@ -144,7 +148,7 @@ export default function RefereeScoreboardScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#4edea3" />
+          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
           <Text style={styles.loadingText}>{t("scoreboard.preparingConsole") || "A preparar consola de arbitragem..."}</Text>
         </View>
       </SafeAreaView>
@@ -185,6 +189,11 @@ export default function RefereeScoreboardScreen() {
 
   return (
     <SafeAreaView testID="scoreboard-screen" style={styles.safeArea} edges={["top", "bottom", "left", "right"]}>
+      <MatchAtmosphereBackground
+        sportType={match.sport_type}
+        mode={canEdit ? "umpire" : "spectator"}
+        forcedOrientation="landscape"
+      />
       {/* Top Referee Bar */}
       <View style={styles.refereeHeader}>
         <TouchableOpacity testID="scoreboard-back-btn" style={styles.iconBtn} onPress={() => router.back()}>
@@ -216,7 +225,9 @@ export default function RefereeScoreboardScreen() {
         </View>
       )}
 
-      {renderScoreboard()}
+      <ScoreboardProvider onBack={() => router.back()}>
+        {renderScoreboard()}
+      </ScoreboardProvider>
     </SafeAreaView>
   );
 }
@@ -224,7 +235,7 @@ export default function RefereeScoreboardScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#080c14",
+    backgroundColor: ScoreBoardTheme.background,
   },
   centered: {
     flex: 1,
@@ -234,35 +245,37 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 14,
-    color: "#94a3b8",
+    color: ScoreBoardTheme.textMuted,
     fontSize: 14,
   },
   errorTitle: {
     fontSize: 16,
-    color: "#f8fafc",
-    fontWeight: "700",
+    color: ScoreBoardTheme.onSurface,
+    fontWeight: "600",
     marginTop: 12,
     marginBottom: 16,
   },
   backBtn: {
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
   },
   backBtnText: {
-    color: "#f8fafc",
-    fontWeight: "600",
+    color: ScoreBoardTheme.onSurface,
+    fontWeight: "500",
   },
   refereeHeader: {
-    height: 40,
+    height: 44,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
-    backgroundColor: "#0d1322",
+    borderBottomColor: ScoreBoardTheme.borderSubtle,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
   },
   iconBtn: {
     padding: 4,
@@ -273,43 +286,44 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   refereeTitle: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: "#4edea3",
-    letterSpacing: 1.2,
+    fontSize: 12,
+    fontWeight: "600",
+    color: ScoreBoardTheme.secondary,
   },
   headerSport: {
-    fontSize: 11,
-    color: "#94a3b8",
+    fontSize: 12,
+    color: ScoreBoardTheme.textMuted,
   },
   wakeLockBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(78, 222, 163, 0.12)",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
     gap: 4,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
   },
   wakeLockText: {
-    fontSize: 9,
-    fontWeight: "800",
-    color: "#4edea3",
+    fontSize: 11,
+    fontWeight: "500",
+    color: ScoreBoardTheme.secondary,
   },
   spectatorBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(251, 191, 36, 0.12)",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(251, 191, 36, 0.3)",
+    borderBottomColor: ScoreBoardTheme.borderSubtle,
     paddingHorizontal: 16,
     paddingVertical: 8,
     gap: 8,
   },
   spectatorBannerText: {
-    color: "#fbbf24",
-    fontSize: 11,
-    fontWeight: "600",
+    color: ScoreBoardTheme.tertiary,
+    fontSize: 12,
+    fontWeight: "500",
     flex: 1,
   },
 });

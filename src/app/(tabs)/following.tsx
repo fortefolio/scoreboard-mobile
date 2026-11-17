@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { TopBar } from "@/components/TopBar";
+import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
 import { FeedHeader } from "@/components/FeedHeader";
 import { MatchCard } from "@/components/MatchCard";
 import { MatchListItem } from "@/components/MatchListItem";
@@ -35,6 +36,7 @@ export default function FollowingFeedScreen() {
   const [selectedSport, setSelectedSport] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [authModalVisible, setAuthModalVisible] = useState(false);
 
@@ -48,12 +50,12 @@ export default function FollowingFeedScreen() {
       const [matchesRes, tournamentsRes] = await Promise.all([
         supabase
           .from("matches")
-          .select("*, tournaments(name)")
+          .select("*, tournaments(name), organizer:users!organizer_id(username)")
           .order("created_at", { ascending: false })
           .limit(200),
         supabase
           .from("tournaments")
-          .select("*")
+          .select("*, organizer:users!organizer_id(username)")
           .order("created_at", { ascending: false })
           .limit(100),
       ]);
@@ -116,7 +118,7 @@ export default function FollowingFeedScreen() {
 
     const combined = [...followedM, ...followedT];
 
-    return combined.filter((item) => {
+    const filtered = combined.filter((item) => {
       if (selectedSport !== "all" && item.sport_type?.toLowerCase() !== selectedSport.toLowerCase()) {
         return false;
       }
@@ -135,7 +137,12 @@ export default function FollowingFeedScreen() {
       }
       return true;
     });
-  }, [matches, tournaments, followedMatchIds, followedTournamentIds, selectedSport, statusFilter, searchQuery]);
+    return [...filtered].sort((a, b) => {
+      const tA = new Date(a.scheduled_at || a.start_date || a.created_at || 0).getTime();
+      const tB = new Date(b.scheduled_at || b.start_date || b.created_at || 0).getTime();
+      return sortOrder === "desc" ? tB - tA : tA - tB;
+    });
+  }, [matches, tournaments, followedMatchIds, followedTournamentIds, selectedSport, statusFilter, searchQuery, sortOrder]);
 
   const totalPages = Math.max(1, Math.ceil(followedItems.length / ITEMS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
@@ -149,7 +156,7 @@ export default function FollowingFeedScreen() {
     if (loading) {
       return (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color="#4edea3" />
+          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
           <Text style={styles.loadingText}>{t("common.loading") || "Loading live data..."}</Text>
         </View>
       );
@@ -195,6 +202,7 @@ export default function FollowingFeedScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <MatchAtmosphereBackground sportType="random" mode="spectator" />
       {/* Top Application Bar */}
       <TopBar onSearchPress={() => {}} />
 
@@ -211,6 +219,14 @@ export default function FollowingFeedScreen() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         showViewToggle={true}
+        sortOrder={sortOrder}
+        onSortOrderChange={(order) => {
+          setSortOrder(order);
+          setCurrentPage(1);
+        }}
+        matches={matches}
+        tournaments={tournaments}
+        currentTab="following"
       />
 
       {/* Following Feed List */}
@@ -223,6 +239,7 @@ export default function FollowingFeedScreen() {
           item._type === "tournament" ? (
             <TournamentCard
               tournament={item}
+              compact={viewMode === "list"}
               onAuthRequired={() => setAuthModalVisible(true)}
             />
           ) : viewMode === "list" ? (
@@ -249,8 +266,8 @@ export default function FollowingFeedScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#4edea3"
-            colors={["#4edea3"]}
+            tintColor={ScoreBoardTheme.onSurfaceVariant}
+            colors={[ScoreBoardTheme.onSurfaceVariant]}
           />
         }
       />
@@ -315,7 +332,7 @@ const styles = StyleSheet.create({
   },
   authBtn: {
     marginTop: 18,
-    backgroundColor: ScoreBoardTheme.primary,
+    backgroundColor: ScoreBoardTheme.onSurface,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 12,
@@ -323,7 +340,7 @@ const styles = StyleSheet.create({
   authBtnText: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     letterSpacing: 0.5,
   },
 });

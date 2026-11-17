@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "./AuthProvider";
 import { useLanguage } from "@/lib/i18n";
 import { validatePassword } from "@/lib/auth/passwordValidation";
-import { Colors, Spacing } from "@/constants/theme";
+import { Colors, ScoreBoardTheme, Spacing } from "@/constants/theme";
 
 interface AuthModalProps {
   visible: boolean;
@@ -240,7 +240,7 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
                         }}
                         style={{ alignSelf: "flex-end", marginTop: 6 }}
                       >
-                        <Text style={{ color: "#4edea3", fontSize: 12, fontWeight: "600" }}>
+                        <Text style={{ color: ScoreBoardTheme.onSurfaceVariant, fontSize: 12, fontWeight: "600" }}>
                           {t("auth.forgotPassword")}
                         </Text>
                       </TouchableOpacity>
@@ -328,10 +328,10 @@ const styles = StyleSheet.create({
   modalContent: {
     width: "100%",
     maxWidth: 420,
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     padding: Spacing.four,
     maxHeight: "85%",
   },
@@ -387,30 +387,30 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: "#0c1324",
+    backgroundColor: ScoreBoardTheme.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
     fontSize: 15,
   },
   helpText: {
     fontSize: 11,
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
     marginTop: 6,
     lineHeight: 15,
   },
   submitBtn: {
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.onSurface,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
     marginTop: Spacing.two,
   },
   submitBtnText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontSize: 15,
     fontWeight: "700",
     textTransform: "uppercase",
@@ -422,11 +422,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   switchModeText: {
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
     fontSize: 13,
   },
   switchModeAccent: {
-    color: "#4f46e5",
+    color: ScoreBoardTheme.onSurface,
     fontWeight: "700",
   },
   successContainer: {

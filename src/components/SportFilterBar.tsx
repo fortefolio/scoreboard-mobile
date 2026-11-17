@@ -48,7 +48,7 @@ export function SportFilterBar({ selectedSport, onSelectSport }: SportFilterBarP
               <SportIcon
                 sport={s.sportType}
                 size={14}
-                color={isSelected ? "#ffffff" : "rgba(195, 192, 255, 0.7)"}
+                color={isSelected ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
               />
             ) : null}
             <Text style={[styles.pillText, isSelected && styles.pillTextActive]}>
@@ -63,36 +63,36 @@ export function SportFilterBar({ selectedSport, onSelectSport }: SportFilterBarP
 
 const styles = StyleSheet.create({
   container: {
-    maxHeight: 46,
+    maxHeight: 44,
     marginVertical: 6,
   },
   scrollContent: {
     paddingHorizontal: 16,
-    gap: 8,
+    gap: 6,
     alignItems: "center",
   },
   pill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
-    borderRadius: 9999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: ScoreBoardTheme.borderGhost,
+    borderColor: ScoreBoardTheme.borderSubtle,
   },
   pillActive: {
-    backgroundColor: ScoreBoardTheme.primaryContainer,
-    borderColor: "rgba(195, 192, 255, 0.4)",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
+    borderColor: ScoreBoardTheme.onSurfaceVariant,
   },
   pillText: {
     fontSize: 12,
-    fontWeight: "700",
-    color: "rgba(220, 225, 251, 0.65)",
+    fontWeight: "500",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
   pillTextActive: {
-    color: "#ffffff",
-    fontWeight: "800",
+    color: ScoreBoardTheme.onSurface,
+    fontWeight: "600",
   },
 });

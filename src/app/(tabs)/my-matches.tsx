@@ -15,11 +15,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { TopBar } from "@/components/TopBar";
 import { MatchCard } from "@/components/MatchCard";
+import { MatchListItem } from "@/components/MatchListItem";
+import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
 import { CreateMatchModal } from "@/components/match/CreateMatchModal";
 import { AuthModal } from "@/components/AuthModal";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 export default function MyMatchesScreen() {
   const { t, locale } = useLanguage();
@@ -28,6 +31,8 @@ export default function MyMatchesScreen() {
   const isPt = locale === "pt";
 
   const [matches, setMatches] = useState<any[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"list" | "cards">("list");
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [createModalVisible, setCreateModalVisible] = useState<boolean>(false);
@@ -109,8 +114,13 @@ export default function MyMatchesScreen() {
     }
   };
 
+  const filteredMatches = matches.filter((m) =>
+    statusFilter === "all" ? true : m.status === statusFilter
+  );
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <MatchAtmosphereBackground sportType="random" mode="spectator" />
       <TopBar />
 
       <View style={styles.header}>
@@ -131,23 +141,77 @@ export default function MyMatchesScreen() {
         </View>
 
         {user && (
-          <TouchableOpacity
-            style={styles.createButtonHeader}
-            onPress={handleOpenCreate}
-            activeOpacity={0.8}
-            testID="header-create-match-btn"
-          >
-            <Ionicons name="add" size={18} color="#ffffff" />
-            <Text style={styles.createButtonHeaderText}>
-              {isPt ? "Criar" : "Create"}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.headerRightControls}>
+            <TouchableOpacity
+              style={styles.createButtonHeader}
+              onPress={handleOpenCreate}
+              activeOpacity={0.8}
+              testID="header-create-match-btn"
+            >
+              <Ionicons name="add" size={16} color={ScoreBoardTheme.surfaceContainerLowest} />
+              <Text style={styles.createButtonHeaderText}>
+                {t("common.newMatch")}
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 
+      {user && (
+        <View style={styles.filterToolbar}>
+          <View style={styles.statusTabsRow}>
+            {(["all", "ongoing", "scheduled", "completed"] as const).map((st) => {
+              const active = statusFilter === st;
+              const label =
+                st === "all"
+                  ? isPt ? "Todos" : "All"
+                  : st === "ongoing"
+                  ? t("status.live")
+                  : st === "scheduled"
+                  ? t("status.scheduled")
+                  : t("status.completed");
+              return (
+                <TouchableOpacity
+                  key={st}
+                  style={[styles.statusTab, active && styles.statusTabActive]}
+                  onPress={() => setStatusFilter(st)}
+                >
+                  <Text style={[styles.statusTabText, active && styles.statusTabTextActive]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <View style={styles.viewToggle}>
+            <TouchableOpacity
+              style={[styles.toggleBtn, viewMode === "list" && styles.toggleBtnActive]}
+              onPress={() => setViewMode("list")}
+            >
+              <Ionicons
+                name="reorder-four"
+                size={15}
+                color={viewMode === "list" ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleBtn, viewMode === "cards" && styles.toggleBtnActive]}
+              onPress={() => setViewMode("cards")}
+            >
+              <Ionicons
+                name="grid-outline"
+                size={14}
+                color={viewMode === "cards" ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#4f46e5" />
+          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
         </View>
       ) : !user ? (
         <View style={styles.centered}>
@@ -172,18 +236,22 @@ export default function MyMatchesScreen() {
         </View>
       ) : (
         <FlatList
-          data={matches}
+          data={filteredMatches}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <MatchCard
-              match={item}
-              canDelete={user ? item.organizer_id === user.id : false}
-              onDelete={handleDeleteMatch}
-            />
-          )}
+          renderItem={({ item }) =>
+            viewMode === "list" ? (
+              <MatchListItem match={item} />
+            ) : (
+              <MatchCard
+                match={item}
+                canDelete={user ? item.organizer_id === user.id : false}
+                onDelete={handleDeleteMatch}
+              />
+            )
+          }
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4f46e5" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ScoreBoardTheme.onSurfaceVariant} />
           }
           ListEmptyComponent={
             <View style={styles.centered}>
@@ -285,16 +353,16 @@ export default function MyMatchesScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#0c1324",
+    backgroundColor: ScoreBoardTheme.background,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
+    borderBottomColor: ScoreBoardTheme.borderSubtle,
   },
   headerTextCol: {
     flex: 1,
@@ -304,28 +372,87 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#f8fafc",
+    fontSize: 18,
+    fontWeight: "700",
+    color: ScoreBoardTheme.onSurface,
   },
   headerSubtitle: {
-    fontSize: 13,
-    color: "#94a3b8",
+    fontSize: 12,
+    color: ScoreBoardTheme.textMuted,
     marginTop: 2,
+  },
+  headerRightControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   createButtonHeader: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#4f46e5",
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    backgroundColor: ScoreBoardTheme.onSurface,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     borderRadius: 8,
     gap: 4,
   },
   createButtonHeaderText: {
-    color: "#ffffff",
-    fontWeight: "700",
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: "600",
+    color: ScoreBoardTheme.surfaceContainerLowest,
+  },
+  filterToolbar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: ScoreBoardTheme.borderSubtle,
+    gap: 8,
+  },
+  statusTabsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+  },
+  statusTab: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+  },
+  statusTabActive: {
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
+    borderColor: ScoreBoardTheme.onSurfaceVariant,
+  },
+  statusTabText: {
+    fontSize: 11,
+    fontWeight: "500",
+    color: ScoreBoardTheme.textMuted,
+  },
+  statusTabTextActive: {
+    color: ScoreBoardTheme.onSurface,
+    fontWeight: "600",
+  },
+  viewToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    padding: 2,
+    gap: 2,
+  },
+  toggleBtn: {
+    padding: 5,
+    borderRadius: 6,
+  },
+  toggleBtnActive: {
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
   },
   listContent: {
     paddingHorizontal: 16,
@@ -355,26 +482,26 @@ const styles = StyleSheet.create({
   emptyCreateButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.onSurface,
     paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 10,
     marginTop: 8,
   },
   emptyCreateButtonText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontSize: 14,
     fontWeight: "700",
   },
   signInButton: {
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.onSurface,
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 10,
     marginTop: 12,
   },
   signInButtonText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontSize: 14,
     fontWeight: "700",
   },
@@ -388,10 +515,10 @@ const styles = StyleSheet.create({
   deleteModalCard: {
     width: "100%",
     maxWidth: 340,
-    backgroundColor: "#0f172a",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     padding: 24,
     alignItems: "center",
   },
@@ -407,13 +534,13 @@ const styles = StyleSheet.create({
   deleteModalTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
     marginBottom: 8,
     textAlign: "center",
   },
   deleteModalMessage: {
     fontSize: 14,
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 20,
@@ -426,15 +553,15 @@ const styles = StyleSheet.create({
   cancelDeleteBtn: {
     flex: 1,
     height: 44,
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: ScoreBoardTheme.borderSubtle,
   },
   cancelDeleteBtnText: {
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
     fontSize: 14,
     fontWeight: "600",
   },

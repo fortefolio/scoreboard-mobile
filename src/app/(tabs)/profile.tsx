@@ -402,7 +402,7 @@ export default function ProfileScreen() {
               <View
                 style={[
                   styles.tierDot,
-                  { backgroundColor: subscriptionTier === "pro" ? "#34d399" : "#818cf8" },
+                  { backgroundColor: subscriptionTier === "pro" ? "#34d399" : ScoreBoardTheme.textMuted },
                 ]}
               />
               <Text style={styles.userRole}>
@@ -427,7 +427,7 @@ export default function ProfileScreen() {
 
         {profileLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={ScoreBoardTheme.primaryContainer} />
+            <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
           </View>
         ) : (
           <>
@@ -566,8 +566,8 @@ export default function ProfileScreen() {
                     setHapticsEnabled(val);
                     if (val) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }}
-                  trackColor={{ false: "#334155", true: "#0284c7" }}
-                  thumbColor={hapticsEnabled ? "#ffffff" : "#94a3b8"}
+                  trackColor={{ false: ScoreBoardTheme.surfaceContainerHighest, true: ScoreBoardTheme.onSurfaceVariant }}
+                  thumbColor={hapticsEnabled ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
                 />
               </View>
 
@@ -585,8 +585,8 @@ export default function ProfileScreen() {
                 <Switch
                   value={soundEnabled}
                   onValueChange={setSoundEnabled}
-                  trackColor={{ false: "#334155", true: "#0284c7" }}
-                  thumbColor={soundEnabled ? "#ffffff" : "#94a3b8"}
+                  trackColor={{ false: ScoreBoardTheme.surfaceContainerHighest, true: ScoreBoardTheme.onSurfaceVariant }}
+                  thumbColor={soundEnabled ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
                 />
               </View>
 
@@ -708,6 +708,19 @@ export default function ProfileScreen() {
                 <Text style={styles.signOutText}>{t("nav.signOut")}</Text>
               </TouchableOpacity>
             )}
+
+            {/* Telemetry Status Pill & Legal Footer */}
+            <View style={styles.footerSection}>
+              <View style={styles.statusPill}>
+                <View style={styles.statusDot} />
+                <Text style={styles.statusPillText}>{t("footer.statusOnline")}</Text>
+              </View>
+              <Text style={styles.footerTermsText}>{t("footer.terms")}</Text>
+              <Text style={styles.footerTagline}>{t("footer.tagline")}</Text>
+              <Text style={styles.footerCopyright}>
+                © {new Date().getFullYear()} ScoreBoard. {t("footer.allRightsReserved")}
+              </Text>
+            </View>
           </>
         )}
       </ScrollView>
@@ -895,7 +908,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 60,
+    paddingBottom: 90,
   },
   loadingContainer: {
     padding: 40,
@@ -915,12 +928,14 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: ScoreBoardTheme.primaryContainer,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.onSurface,
     fontSize: 22,
     fontWeight: "800",
   },
@@ -952,13 +967,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   loginCardBtn: {
-    backgroundColor: ScoreBoardTheme.primaryContainer,
+    backgroundColor: ScoreBoardTheme.onSurface,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
   },
   loginCardBtnText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontSize: 12,
     fontWeight: "800",
     textTransform: "uppercase",
@@ -1012,30 +1027,30 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   primaryButton: {
-    backgroundColor: ScoreBoardTheme.primaryContainer,
+    backgroundColor: ScoreBoardTheme.onSurface,
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",
     marginTop: 8,
   },
   primaryButtonText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontSize: 12,
     fontWeight: "800",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   savePrefsButton: {
-    backgroundColor: "rgba(14, 165, 233, 0.2)",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
     borderWidth: 1,
-    borderColor: "#0284c7",
+    borderColor: ScoreBoardTheme.onSurfaceVariant,
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",
     marginTop: 14,
   },
   savePrefsButtonText: {
-    color: "#38bdf8",
+    color: ScoreBoardTheme.onSurface,
     fontSize: 12,
     fontWeight: "800",
     textTransform: "uppercase",
@@ -1095,16 +1110,16 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.08)",
   },
   langPillActive: {
-    backgroundColor: ScoreBoardTheme.primaryContainer,
-    borderColor: ScoreBoardTheme.primaryContainer,
+    backgroundColor: ScoreBoardTheme.onSurface,
+    borderColor: ScoreBoardTheme.onSurface,
   },
   langPillText: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#94a3b8",
+    color: ScoreBoardTheme.textMuted,
   },
   langPillTextActive: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
   },
   dangerCard: {
     borderColor: "rgba(239, 68, 68, 0.3)",
@@ -1269,5 +1284,53 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textTransform: "uppercase",
     letterSpacing: 0.5,
+  },
+  footerSection: {
+    marginTop: 28,
+    marginBottom: 16,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: ScoreBoardTheme.borderSubtle,
+    alignItems: "center",
+    gap: 8,
+  },
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    marginBottom: 4,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#10b981",
+  },
+  statusPillText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: ScoreBoardTheme.onSurfaceVariant,
+    letterSpacing: 0.8,
+  },
+  footerTermsText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: ScoreBoardTheme.onSurfaceVariant,
+  },
+  footerTagline: {
+    fontSize: 11,
+    color: ScoreBoardTheme.textMuted,
+    textAlign: "center",
+  },
+  footerCopyright: {
+    fontSize: 11,
+    color: ScoreBoardTheme.textMuted,
+    textAlign: "center",
   },
 });

@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { Standing } from "@/lib/standings/groups";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 interface GroupStandingsProps {
   groups: Record<string, Standing[]>;
@@ -24,18 +25,18 @@ export function GroupStandingsView({ groups }: GroupStandingsProps) {
         return (
           <View key={label} style={styles.groupCard}>
             <View style={styles.groupHeader}>
-              <Text style={styles.groupTitle}>GRUPO {label}</Text>
+              <Text style={styles.groupTitle}>Grupo {label}</Text>
             </View>
 
             {/* Table Header */}
             <View style={styles.tableHeader}>
               <Text style={[styles.th, styles.thPos]}>#</Text>
-              <Text style={[styles.th, styles.thTeam]}>EQUIPA</Text>
+              <Text style={[styles.th, styles.thTeam]}>Equipa</Text>
               <Text style={[styles.th, styles.thStat]}>J</Text>
               <Text style={[styles.th, styles.thStat]}>V</Text>
               <Text style={[styles.th, styles.thStat]}>D</Text>
-              <Text style={[styles.th, styles.thStat]}>DIFF</Text>
-              <Text style={[styles.th, styles.thPts]}>SETS</Text>
+              <Text style={[styles.th, styles.thStat]}>+/-</Text>
+              <Text style={[styles.th, styles.thPts]}>Sets</Text>
             </View>
 
             {/* Table Rows */}
@@ -53,8 +54,8 @@ export function GroupStandingsView({ groups }: GroupStandingsProps) {
                     {team.team_name}
                   </Text>
                   <Text style={[styles.td, styles.thStat]}>{team.played}</Text>
-                  <Text style={[styles.td, styles.thStat, { color: "#4edea3" }]}>{team.wins}</Text>
-                  <Text style={[styles.td, styles.thStat, { color: "#ef4444" }]}>{team.losses}</Text>
+                  <Text style={[styles.td, styles.thStat, { color: ScoreBoardTheme.secondary }]}>{team.wins}</Text>
+                  <Text style={[styles.td, styles.thStat, { color: ScoreBoardTheme.error }]}>{team.losses}</Text>
                   <Text style={[styles.td, styles.thStat]}>
                     {team.point_diff > 0 ? `+${team.point_diff}` : team.point_diff}
                   </Text>
@@ -71,52 +72,51 @@ export function GroupStandingsView({ groups }: GroupStandingsProps) {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 16,
+    gap: 14,
   },
   emptyCard: {
-    backgroundColor: "#151b2d",
-    borderRadius: 14,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     padding: 24,
     alignItems: "center",
   },
   emptyText: {
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
     fontSize: 13,
   },
   groupCard: {
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderWidth: 1,
-    borderColor: "#232d4b",
-    borderRadius: 16,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    borderRadius: 12,
     overflow: "hidden",
   },
   groupHeader: {
-    backgroundColor: "#101626",
-    paddingHorizontal: 16,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
+    borderBottomColor: ScoreBoardTheme.borderSubtle,
   },
   groupTitle: {
-    color: "#4edea3",
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1.5,
+    color: ScoreBoardTheme.onSurface,
+    fontSize: 13,
+    fontWeight: "600",
   },
   tableHeader: {
     flexDirection: "row",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
-    backgroundColor: "#0d1322",
+    borderBottomColor: ScoreBoardTheme.borderSubtle,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
   },
   th: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: "#64748b",
+    fontSize: 11,
+    fontWeight: "500",
+    color: ScoreBoardTheme.textMuted,
     textAlign: "center",
   },
   thPos: {
@@ -135,30 +135,33 @@ const styles = StyleSheet.create({
   thPts: {
     width: 36,
     textAlign: "center",
-    fontWeight: "900",
-    color: "#f8fafc",
+    fontWeight: "600",
+    color: ScoreBoardTheme.onSurface,
   },
   tableRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 9,
   },
   tableRowAlt: {
     backgroundColor: "rgba(255, 255, 255, 0.02)",
   },
   td: {
     fontSize: 12,
-    color: "#cbd5e1",
-    fontWeight: "600",
+    color: ScoreBoardTheme.onSurface,
+    fontWeight: "500",
+    fontVariant: ["tabular-nums"],
   },
   tdPos: {
     fontSize: 12,
-    fontWeight: "700",
-    color: "#64748b",
+    fontWeight: "500",
+    color: ScoreBoardTheme.textMuted,
     textAlign: "center",
+    fontVariant: ["tabular-nums"],
   },
   tdPosTop: {
-    color: "#4edea3",
+    color: ScoreBoardTheme.secondary,
+    fontWeight: "600",
   },
 });

@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 export interface FeedbackModalProps {
   visible: boolean;
@@ -30,12 +31,12 @@ export function FeedbackModal({
     ? "alert-circle"
     : "information-circle";
 
-  const iconColor = isSuccess ? "#22c55e" : isError ? "#ef4444" : "#6366f1";
+  const iconColor = isSuccess ? "#22c55e" : isError ? "#ef4444" : ScoreBoardTheme.onSurface;
   const iconBg = isSuccess
     ? "rgba(34, 197, 94, 0.15)"
     : isError
     ? "rgba(239, 68, 68, 0.15)"
-    : "rgba(99, 102, 241, 0.15)";
+    : ScoreBoardTheme.surfaceContainerHighest;
 
   return (
     <Modal
@@ -78,10 +79,10 @@ const styles = StyleSheet.create({
   dialogCard: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#0f172a",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     padding: 24,
     alignItems: "center",
     shadowColor: "#000",
@@ -101,13 +102,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
     marginBottom: 8,
     textAlign: "center",
   },
   message: {
     fontSize: 14,
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 24,
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
   confirmBtn: {
     width: "100%",
     height: 48,
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.onSurface,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
@@ -123,6 +124,6 @@ const styles = StyleSheet.create({
   confirmBtnText: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
   },
 });

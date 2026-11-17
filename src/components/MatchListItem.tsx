@@ -57,14 +57,13 @@ export function MatchListItem({ match }: MatchListItemProps) {
     >
       {/* Sport Icon Pill */}
       <View style={styles.iconBox}>
-        <SportIcon sport={match.sport_type} size={15} color="#c3c0ff" />
+        <SportIcon sport={match.sport_type} size={15} color={ScoreBoardTheme.onSurfaceVariant} />
       </View>
 
       {/* Teams & Vertically Aligned Scores */}
       <View style={styles.contentCol}>
         <View style={styles.teamRow}>
           <View style={styles.teamLine}>
-            <View style={[styles.teamDot, { backgroundColor: ScoreBoardTheme.primary }]} />
             <Text style={styles.teamName} numberOfLines={1}>
               {name0}
             </Text>
@@ -74,7 +73,6 @@ export function MatchListItem({ match }: MatchListItemProps) {
 
         <View style={styles.teamRow}>
           <View style={styles.teamLine}>
-            <View style={[styles.teamDot, { backgroundColor: ScoreBoardTheme.secondary }]} />
             <Text style={styles.teamName} numberOfLines={1}>
               {name1}
             </Text>
@@ -90,28 +88,28 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
-    borderRadius: 14,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: ScoreBoardTheme.borderGhost,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     marginBottom: 6,
-    gap: 12,
+    gap: 10,
   },
   iconBox: {
     width: 28,
     height: 28,
-    borderRadius: 8,
-    backgroundColor: "rgba(79, 70, 229, 0.15)",
+    borderRadius: 6,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
-    borderColor: "rgba(79, 70, 229, 0.3)",
+    borderColor: ScoreBoardTheme.borderSubtle,
     justifyContent: "center",
     alignItems: "center",
   },
   contentCol: {
     flex: 1,
-    gap: 6,
+    gap: 4,
   },
   teamRow: {
     flexDirection: "row",
@@ -132,19 +130,16 @@ const styles = StyleSheet.create({
     borderRadius: 2.5,
   },
   teamName: {
-    fontSize: 12,
-    fontWeight: "800",
+    fontSize: 13,
+    fontWeight: "500",
     color: ScoreBoardTheme.onSurface,
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
   },
   scoreText: {
-    fontFamily: "Digital7",
+    fontFamily: "Digital7Mono",
     fontSize: 18,
-    fontWeight: "900",
-    color: ScoreBoardTheme.secondary,
+    color: ScoreBoardTheme.onSurface,
     textAlign: "right",
-    minWidth: 20,
-    letterSpacing: 0.5,
+    minWidth: 22,
+    fontVariant: ["tabular-nums"],
   },
 });

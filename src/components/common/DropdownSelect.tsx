@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Keyboard } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 export interface DropdownOption {
   value: string;
@@ -125,7 +126,7 @@ export function DropdownSelect({
               </View>
 
               {isSelected && (
-                <Ionicons name="checkmark-circle" size={18} color="#6366f1" />
+                <Ionicons name="checkmark-circle" size={18} color={ScoreBoardTheme.onSurface} />
               )}
             </TouchableOpacity>
           );
@@ -142,16 +143,16 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
     textTransform: "uppercase",
     letterSpacing: 0.8,
     marginBottom: 8,
   },
   trigger: {
     height: 48,
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: ScoreBoardTheme.borderSubtle,
     borderRadius: 12,
     paddingHorizontal: 14,
     flexDirection: "row",
@@ -159,7 +160,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   triggerOpen: {
-    borderColor: "#6366f1",
+    borderColor: ScoreBoardTheme.onSurfaceVariant,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
   },
@@ -178,16 +179,16 @@ const styles = StyleSheet.create({
   triggerText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
   },
   placeholderText: {
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
   },
   optionsList: {
-    backgroundColor: "#0f172a",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderWidth: 1,
     borderTopWidth: 0,
-    borderColor: "#6366f1",
+    borderColor: ScoreBoardTheme.onSurfaceVariant,
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
     overflow: "hidden",
@@ -199,10 +200,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
+    borderBottomColor: ScoreBoardTheme.borderSubtle,
   },
   optionItemSelected: {
-    backgroundColor: "rgba(99, 102, 241, 0.12)",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
   },
   optionLeft: {
     flexDirection: "row",
@@ -219,14 +220,14 @@ const styles = StyleSheet.create({
   optionLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#e2e8f0",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
   optionLabelSelected: {
-    color: "#818cf8",
+    color: ScoreBoardTheme.onSurface,
   },
   optionDesc: {
     fontSize: 11,
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
     marginTop: 2,
   },
 });

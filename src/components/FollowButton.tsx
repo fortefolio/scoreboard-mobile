@@ -3,6 +3,7 @@ import { TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/components/AuthProvider";
 import { useFollow } from "@/lib/hooks/useFollow";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 interface FollowButtonProps {
   entityId: string;
@@ -40,12 +41,12 @@ export function FollowButton({
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
       {isUpdating ? (
-        <ActivityIndicator size="small" color="#fbbf24" />
+        <ActivityIndicator size="small" color={ScoreBoardTheme.onSurface} />
       ) : (
         <Ionicons
           name={following ? "star" : "star-outline"}
           size={size}
-          color={following ? "#fbbf24" : "rgba(220, 225, 251, 0.4)"}
+          color={following ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
         />
       )}
     </TouchableOpacity>
@@ -56,15 +57,15 @@ const styles = StyleSheet.create({
   btn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 8,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: ScoreBoardTheme.borderSubtle,
     justifyContent: "center",
     alignItems: "center",
   },
   btnActive: {
-    backgroundColor: "rgba(245, 158, 11, 0.15)",
-    borderColor: "rgba(245, 158, 11, 0.35)",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
+    borderColor: ScoreBoardTheme.onSurfaceVariant,
   },
 });

@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLanguage } from "@/lib/i18n";
-import { Colors, Spacing } from "@/constants/theme";
+import { Colors, ScoreBoardTheme, Spacing } from "@/constants/theme";
 
 interface RuleModalProps {
   visible: boolean;
@@ -292,10 +292,10 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 420,
     maxHeight: "85%",
-    backgroundColor: "#151b2d",
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     padding: Spacing.four,
   },
   header: {
@@ -332,13 +332,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
-    backgroundColor: "#0c1324",
+    backgroundColor: ScoreBoardTheme.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
     fontSize: 14,
   },
   pillRow: {
@@ -347,24 +347,24 @@ const styles = StyleSheet.create({
   },
   pill: {
     flex: 1,
-    backgroundColor: "#0c1324",
+    backgroundColor: ScoreBoardTheme.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: "#232d4b",
+    borderColor: ScoreBoardTheme.borderSubtle,
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: "center",
   },
   pillActive: {
-    backgroundColor: "#4f46e5",
-    borderColor: "#6366f1",
+    backgroundColor: ScoreBoardTheme.onSurface,
+    borderColor: ScoreBoardTheme.onSurface,
   },
   pillText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#94a3b8",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
   pillTextActive: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontWeight: "700",
   },
   footer: {
@@ -375,24 +375,24 @@ const styles = StyleSheet.create({
   cancelBtn: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
     borderRadius: 10,
     alignItems: "center",
   },
   cancelText: {
-    color: "#cbd5e1",
+    color: ScoreBoardTheme.onSurfaceVariant,
     fontSize: 14,
     fontWeight: "600",
   },
   saveBtn: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.onSurface,
     borderRadius: 10,
     alignItems: "center",
   },
   saveText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontSize: 14,
     fontWeight: "700",
   },

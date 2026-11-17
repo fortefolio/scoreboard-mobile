@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/lib/i18n";
 import { recordMatchEventAtomic } from "@/lib/scoring/atomicScoring";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 interface VolleyballScoreboardProps {
   matchData: any;
@@ -271,7 +272,6 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
       {/* Column 1: Team Home */}
       <View style={styles.teamColumn}>
         <View style={styles.teamHeaderRow}>
-          <View style={[styles.teamDot, { backgroundColor: "#818cf8" }]} />
           <Text style={styles.teamName} numberOfLines={1}>
             {teamA}
           </Text>
@@ -297,7 +297,7 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
         </View>
 
         {/* Big Home Rally Score in Digital Font */}
-        <Text style={[styles.scoreDigital, { color: "#818cf8" }]}>{currentPoints[0]}</Text>
+        <Text style={[styles.scoreDigital, { color: ScoreBoardTheme.onSurface }]}>{currentPoints[0]}</Text>
 
         {/* Home Controls */}
         {canEdit && (
@@ -388,7 +388,6 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
           <Text style={styles.teamName} numberOfLines={1}>
             {teamB}
           </Text>
-          <View style={[styles.teamDot, { backgroundColor: "#4edea3" }]} />
         </View>
 
         {/* Stats Badges */}
@@ -406,7 +405,7 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
         </View>
 
         {/* Big Away Rally Score in Digital Font */}
-        <Text style={[styles.scoreDigital, { color: "#4edea3" }]}>{currentPoints[1]}</Text>
+        <Text style={[styles.scoreDigital, { color: ScoreBoardTheme.onSurface }]}>{currentPoints[1]}</Text>
 
         {/* Away Controls */}
         {canEdit && (
@@ -423,7 +422,7 @@ export function VolleyballScoreboard({ matchData, rules, canEdit }: VolleyballSc
                 style={[styles.btn, styles.btnPoint, styles.btnPointAway]}
                 onPress={() => handlePoint(1)}
               >
-                <Ionicons name="add" size={16} color="#ffffff" />
+                <Ionicons name="add" size={16} color={ScoreBoardTheme.surfaceContainerLowest} />
                 <Text style={styles.btnPointText}>{t("scoreboard.point") || "PONTO"}</Text>
               </TouchableOpacity>
             </View>
@@ -450,7 +449,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: "#080c14",
+    backgroundColor: "transparent",
     alignItems: "stretch",
     gap: 8,
     position: "relative",
@@ -564,12 +563,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   digitalBadgeNum: {
-    fontFamily: "Digital7",
+    fontFamily: "Digital7Mono",
     fontSize: 12,
     color: "#f8fafc",
   },
   scoreDigital: {
-    fontFamily: "Digital7",
+    fontFamily: "Digital7Mono",
     fontSize: 52,
     lineHeight: 56,
   },
@@ -592,23 +591,23 @@ const styles = StyleSheet.create({
   btnPoint: {
     flex: 2,
     flexDirection: "row",
-    backgroundColor: "#4f46e5",
+    backgroundColor: ScoreBoardTheme.onSurface,
     gap: 4,
   },
   btnPointAway: {
-    backgroundColor: "#059669",
+    backgroundColor: ScoreBoardTheme.onSurface,
   },
   btnPointText: {
-    color: "#ffffff",
+    color: ScoreBoardTheme.surfaceContainerLowest,
     fontSize: 13,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   btnUndo: {
     flex: 1,
     flexDirection: "row",
-    backgroundColor: "#1e293b",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: ScoreBoardTheme.borderSubtle,
     gap: 2,
   },
   btnUndoText: {
@@ -665,7 +664,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   targetDigital: {
-    fontFamily: "Digital7",
+    fontFamily: "Digital7Mono",
     fontSize: 22,
     color: "#ffffff",
   },
