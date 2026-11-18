@@ -129,7 +129,7 @@ describe("Guest Landing Experience (!user)", () => {
     vi.clearAllMocks();
   });
 
-  it("GuestLandingHero renders headline, SLB vs FCP 128:127 live bug, and triggers CTAs", () => {
+  it("GuestLandingHero renders updated headline, telemetry badge, and triggers CTAs", () => {
     const onGetStarted = vi.fn();
     const onWatchLiveFeeds = vi.fn();
 
@@ -142,11 +142,8 @@ describe("Guest Landing Experience (!user)", () => {
       </LanguageProvider>
     );
 
-    expect(screen.getByText(/Don't just follow\./)).toBeInTheDocument();
-    expect(screen.getByText("SLB")).toBeInTheDocument();
-    expect(screen.getByText("FCP")).toBeInTheDocument();
-    expect(screen.getByText("128")).toBeInTheDocument();
-    expect(screen.getByText("127")).toBeInTheDocument();
+    expect(screen.getByText(/Don't just follow the score\./)).toBeInTheDocument();
+    expect(screen.getByText(/Real-time telemetry sync|Sincronização em tempo real/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("guest-get-started-btn"));
     expect(onGetStarted).toHaveBeenCalledTimes(1);
@@ -155,7 +152,7 @@ describe("Guest Landing Experience (!user)", () => {
     expect(onWatchLiveFeeds).toHaveBeenCalledTimes(1);
   });
 
-  it("TechnicalCapabilitiesSection renders divider and all 3 capability cards", () => {
+  it("TechnicalCapabilitiesSection renders divider, Crowd Overview row, and stadium OBS bug", () => {
     render(
       <LanguageProvider>
         <TechnicalCapabilitiesSection />
@@ -164,8 +161,15 @@ describe("Guest Landing Experience (!user)", () => {
 
     expect(screen.getByText(/TECHNICAL CAPABILITIES|CAPACIDADES TÉCNICAS/)).toBeInTheDocument();
     expect(screen.getByText(/Umpire-to-Crowd Instant Sync|Sincronização Instantânea/)).toBeInTheDocument();
+    expect(screen.getByText(/Crowd Overview|Vista do Público/)).toBeInTheDocument();
+    expect(screen.getByText("S1 · 4-3")).toBeInTheDocument();
     expect(screen.getByText(/Automated Tournament Engine|Motor de Torneios Automático/)).toBeInTheDocument();
     expect(screen.getByText(/Broadcast Overlays \(OBS \/ vMix\)|Overlays de Transmissão/)).toBeInTheDocument();
+    expect(screen.getByText("SLB")).toBeInTheDocument();
+    expect(screen.getByText("FCP")).toBeInTheDocument();
+    expect(screen.getByText("128")).toBeInTheDocument();
+    expect(screen.getByText("127")).toBeInTheDocument();
+    expect(screen.getByText("/match/[id]/overlay")).toBeInTheDocument();
   });
 
   it("MatchesFeedScreen (!user) shows flat 1-per-tournament feed capped at 6 with showFavorite=false and no FeedHeader/Pagination", async () => {

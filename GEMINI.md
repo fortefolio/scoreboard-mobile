@@ -260,3 +260,9 @@ Keep this list updated whenever routes or shared UI components are added or remo
 - **Match & Scoreboards:** `match/CreateMatchModal.tsx`, `match/MatchAtmosphereBackground.tsx`, `match/PlayByPlayTable.tsx`, `scoreboards/ScoreboardLayout.tsx`, `scoreboards/TennisScoreboard.tsx`, `scoreboards/VolleyballScoreboard.tsx`, `scoreboards/FootballScoreboard.tsx`, `scoreboards/BasketballScoreboard.tsx`
 - **Tournament:** `tournament/CreateTournamentModal.tsx`, `tournament/GroupStandingsView.tsx`, `tournament/TournamentBracketView.tsx`, `tournament/TournamentSettingsModal.tsx`
 - **Modals & Inputs:** `AuthModal.tsx`, `RuleModal.tsx`, `common/DropdownSelect.tsx`, `common/FeedbackModal.tsx`
+
+---
+
+## Zero-Downtime & Breaking Changes (Expand-and-Contract)
+- Mobile clients update asynchronously (App Store / Play Store review + delayed user updates). Never assume all users are on the latest binary.
+- When shipping breaking backend/API/Realtime changes, follow Expand-and-Contract: keep legacy backend contracts working while rolling out Mobile (`EAS Update` for JS-only changes on the same `runtimeVersion`, or a store build + `min_supported_version` gate for native/contract breaks), and only clean up legacy backend code after old mobile versions are retired (see `../scoreboard-backend/docs/04-zero-downtime-deployments.md`).

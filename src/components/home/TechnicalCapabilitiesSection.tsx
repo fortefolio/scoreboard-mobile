@@ -1,6 +1,8 @@
 import React from "react";
-import { View, Text, StyleSheet, Platform } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { SportIcon } from "@/components/SportIcon";
 import { useTranslation } from "@/lib/i18n";
 
@@ -16,6 +18,7 @@ export function SectionDivider({ label }: { label: string }) {
 
 export function TechnicalCapabilitiesSection() {
   const { locale } = useTranslation();
+  const router = useRouter();
   const isPt = locale === "pt";
 
   return (
@@ -101,6 +104,31 @@ export function TechnicalCapabilitiesSection() {
               <View style={styles.miniBtnSecondary}>
                 <Text style={styles.miniBtnSecondaryText}>-1</Text>
               </View>
+            </View>
+          </View>
+
+          {/* Crowd Overview Connector & Read-Only Spectator Row */}
+          <View style={styles.crowdDividerRow}>
+            <Text style={styles.crowdDividerLabel}>
+              {isPt ? "Vista do Público" : "Crowd Overview"}
+            </Text>
+            <View style={styles.crowdSyncedPill}>
+              <View style={styles.crimsonDot} />
+              <Text style={styles.crowdSyncedText}>
+                {isPt ? "Em direto" : "Synced live"}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.crowdRowCard}>
+            <View style={styles.crowdTeamsCol}>
+              <Text style={styles.crowdTeamText}>Braga</Text>
+              <Text style={styles.crowdTeamText}>Évora</Text>
+            </View>
+            <Text style={styles.crowdSetMeta}>S1 · 4-3</Text>
+            <View style={styles.crowdScoresCol}>
+              <Text style={styles.crowdScoreMono}>15</Text>
+              <Text style={styles.crowdScoreMono}>40</Text>
             </View>
           </View>
         </View>
@@ -206,27 +234,80 @@ export function TechnicalCapabilitiesSection() {
           <Ionicons name="radio-outline" size={18} color="#7a8296" />
         </View>
 
-        <View style={[styles.previewBox, styles.overlayPreviewBox]}>
-          <View style={styles.lowerThirdCard}>
-            <View style={styles.lowerThirdTop}>
-              <Text style={styles.lowerThirdBrand}>SCORE:BOARD</Text>
-              <View style={styles.inlineLive}>
+        <View style={styles.overlayCourtPreview}>
+          <Image
+            source={require("../../../assets/backgrounds/basketball-landscape.webp")}
+            contentFit="cover"
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.overlayCourtScrim} />
+
+          {/* Floating Broadcast Score Bug */}
+          <View style={styles.broadcastBug}>
+            <View style={styles.broadcastTeamLeft}>
+              <View style={styles.broadcastSportBox}>
+                <SportIcon sport="Basketball" size={12} color="#eef0f5" />
+              </View>
+              <Text style={styles.broadcastTeamAbbr}>SLB</Text>
+            </View>
+
+            <View style={styles.broadcastCenter}>
+              <Text style={styles.broadcastScoreMono}>128</Text>
+              <Text style={styles.broadcastScoreColon}>:</Text>
+              <Text style={styles.broadcastScoreMono}>127</Text>
+              <View style={styles.miniLivePill}>
                 <View style={styles.crimsonDot} />
-                <Text style={styles.lowerThirdClock}>72:14</Text>
+                <Text style={styles.miniLiveText}>
+                  {isPt ? "Direto" : "Live"}
+                </Text>
               </View>
             </View>
-            <View style={styles.lowerThirdBody}>
-              <Text style={styles.lowerThirdTeam}>MCI</Text>
-              <View style={styles.lowerThirdScoreBox}>
-                <Text style={styles.lowerThirdScoreMono}>2 - 1</Text>
-              </View>
-              <Text style={styles.lowerThirdTeam}>RMA</Text>
+
+            <View style={styles.broadcastTeamRight}>
+              <Text style={styles.broadcastTeamAbbr}>FCP</Text>
+              <Text style={styles.broadcastQuarterMono}>Q4</Text>
             </View>
           </View>
-          <Text style={styles.overlayPathText}>
-            /match/[id]/overlay?pos=bottom
-          </Text>
+
+          <View style={styles.overlayBottomRow}>
+            <Text style={styles.overlayPathText}>/match/[id]/overlay</Text>
+            <Text style={styles.overlayWatermark}>SCORE:BOARD</Text>
+          </View>
         </View>
+      </View>
+
+      {/* Guest Footer */}
+      <View style={styles.guestFooter}>
+        <Text style={styles.guestFooterBrand}>SCOREBOARD</Text>
+        <Text style={styles.guestFooterTagline}>
+          {isPt
+            ? "Plataforma de pontuação em direto e gestão de torneios."
+            : "Live scoring & tournament platform built for competitive play."}
+        </Text>
+        <View style={styles.guestFooterLinks}>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/tournaments" as any)}>
+            <Text style={styles.guestFooterLink}>
+              {isPt ? "Torneios" : "Tournaments"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="guest-terms-link"
+            onPress={() => router.push("/terms" as any)}
+          >
+            <Text style={styles.guestFooterLink}>
+              {isPt ? "Termos & Privacidade" : "Terms & Privacy"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/profile" as any)}>
+            <Text style={styles.guestFooterLink}>
+              {isPt ? "Definições" : "Settings"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.guestFooterCopy}>
+          © {new Date().getFullYear()} ScoreBoard ·{" "}
+          {isPt ? "Todos os direitos reservados." : "All rights reserved."}
+        </Text>
       </View>
     </View>
   );
@@ -528,61 +609,190 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "rgba(238, 240, 245, 0.16)",
   },
-  overlayPreviewBox: {
-    padding: 16,
+  crowdDividerRow: {
+    flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    justifyContent: "space-between",
+    paddingTop: 8,
+    marginTop: 2,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(238, 240, 245, 0.06)",
   },
-  lowerThirdCard: {
-    width: "100%",
+  crowdDividerLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#7a8296",
+  },
+  crowdSyncedPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  crowdSyncedText: {
+    fontSize: 10,
+    fontWeight: "500",
+    color: "#a3a9b8",
+  },
+  crowdRowCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: "#11141c",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(238, 240, 245, 0.08)",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  crowdTeamsCol: {
+    flex: 1,
+    gap: 2,
+  },
+  crowdTeamText: {
+    fontSize: 11,
+    fontWeight: "500",
+    color: "#eef0f5",
+  },
+  crowdSetMeta: {
+    fontSize: 10,
+    color: "#7a8296",
+    fontWeight: "500",
+  },
+  crowdScoresCol: {
+    alignItems: "flex-end",
+    gap: 2,
+  },
+  crowdScoreMono: {
+    fontFamily: "Digital7Mono",
+    fontSize: 13,
+    lineHeight: 15,
+    color: "#eef0f5",
+    fontVariant: ["tabular-nums"],
+  },
+  overlayCourtPreview: {
+    height: 150,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(238, 240, 245, 0.08)",
+    backgroundColor: "#0b0d14",
+    padding: 10,
+    justifyContent: "space-between",
+  },
+  overlayCourtScrim: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: "rgba(7, 8, 13, 0.56)",
+  },
+  broadcastBug: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(11, 13, 20, 0.88)",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(238, 240, 245, 0.10)",
-    padding: 10,
-    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
   },
-  lowerThirdTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  lowerThirdBrand: {
-    fontFamily: "Digital7",
-    fontSize: 11,
-    color: "#7a8296",
-  },
-  lowerThirdClock: {
-    fontFamily: "Digital7Mono",
-    fontSize: 12,
-    color: "#eef0f5",
-  },
-  lowerThirdBody: {
+  broadcastTeamLeft: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 6,
   },
-  lowerThirdTeam: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#eef0f5",
-  },
-  lowerThirdScoreBox: {
+  broadcastSportBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
     backgroundColor: "#161a24",
     borderWidth: 1,
     borderColor: "rgba(238, 240, 245, 0.08)",
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  lowerThirdScoreMono: {
+  broadcastTeamAbbr: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#eef0f5",
+  },
+  broadcastCenter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  broadcastScoreMono: {
     fontFamily: "Digital7Mono",
     fontSize: 18,
     color: "#eef0f5",
+    fontVariant: ["tabular-nums"],
+  },
+  broadcastScoreColon: {
+    fontFamily: "Digital7Mono",
+    fontSize: 16,
+    color: "#7a8296",
+  },
+  broadcastTeamRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  broadcastQuarterMono: {
+    fontFamily: "Digital7Mono",
+    fontSize: 11,
+    color: "#7a8296",
+  },
+  overlayBottomRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   overlayPathText: {
     fontFamily: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }),
     fontSize: 10,
+    color: "#a3a9b8",
+  },
+  overlayWatermark: {
+    fontFamily: "Digital7",
+    fontSize: 12,
+    color: "rgba(238, 240, 245, 0.65)",
+  },
+  guestFooter: {
+    marginTop: 18,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(238, 240, 245, 0.08)",
+    alignItems: "center",
+    gap: 8,
+  },
+  guestFooterBrand: {
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+    color: "#eef0f5",
+  },
+  guestFooterTagline: {
+    fontSize: 11,
     color: "#7a8296",
+    textAlign: "center",
+  },
+  guestFooterLinks: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    marginTop: 4,
+  },
+  guestFooterLink: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#a3a9b8",
+  },
+  guestFooterCopy: {
+    fontSize: 10,
+    color: "#7a8296",
+    marginTop: 4,
   },
 });
