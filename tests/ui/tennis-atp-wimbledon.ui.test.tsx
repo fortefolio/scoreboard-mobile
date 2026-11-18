@@ -97,14 +97,14 @@ describe("Mobile Tennis UI Interaction Tests — 2023 Wimbledon Final (Alcaraz v
 
     render(<TennisScoreboard matchData={matchInProgress} canEdit={true} />);
 
-    const addPointButtons = screen.getAllByText("PONTO");
+    const addPointButtons = screen.getAllByText("Pt");
     const alcarazAddPoint = addPointButtons[0];
     const djokovicAddPoint = addPointButtons[1];
 
-    const aceButtons = screen.getAllByText("Ás (Ace)");
+    const aceButtons = screen.getAllByText("Ace");
     const djokovicAceBtn = aceButtons[1];
 
-    const dfButtons = screen.getAllByText("Falta Dupla");
+    const dfButtons = screen.getAllByText("FD");
     const djokovicDfBtn = dfButtons[1];
 
     // Rally 1: Alcaraz hits return winner -> 15-0
@@ -184,7 +184,7 @@ describe("Mobile Tennis UI Interaction Tests — 2023 Wimbledon Final (Alcaraz v
 
     render(<TennisScoreboard matchData={matchData} canEdit={true} />);
 
-    const toggleServerBtn = screen.getByText("Alternar Servidor");
+    const toggleServerBtn = screen.getByTestId("toggle-server-btn");
     fireEvent.click(toggleServerBtn);
 
     expect(updateMock).toHaveBeenCalledWith(

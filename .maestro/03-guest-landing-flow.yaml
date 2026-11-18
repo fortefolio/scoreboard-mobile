@@ -1,0 +1,31 @@
+appId: dev.goncaloforte.scoreboard
+---
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible:
+      text: "SCORE:BOARD"
+    timeout: 30000
+
+# 1. Verify TopBar guest state and Hero section
+- assertVisible:
+    id: "topbar-signin-btn"
+- assertVisible:
+    id: "guest-get-started-btn"
+- assertVisible:
+    id: "guest-watch-live-btn"
+- assertVisible: ".*LIVE & RECENT MATCHES.*"
+
+# 2. Verify bottom tab bar is hidden when logged out on Home
+- assertNotVisible:
+    text: "Notifications"
+
+# 3. Scroll down to Technical Capabilities section
+- scrollUntilVisible:
+    element:
+      text: ".*TECHNICAL CAPABILITIES.*"
+    direction: DOWN
+- assertVisible: ".*Umpire-to-Crowd Instant Sync.*"
+- assertVisible: ".*Automated Tournament Engine.*"
+- assertVisible: ".*Broadcast Overlays.*"

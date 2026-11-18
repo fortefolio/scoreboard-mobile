@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -14,8 +14,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { TopBar } from "@/components/TopBar";
+import { WorkspaceTabs } from "@/components/WorkspaceTabs";
+import { FeedHeader } from "@/components/FeedHeader";
 import { MatchCard } from "@/components/MatchCard";
-import { MatchListItem } from "@/components/MatchListItem";
+import { GroupedMatchList } from "@/components/GroupedMatchList";
+import { Pagination } from "@/components/Pagination";
 import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
 import { CreateMatchModal } from "@/components/match/CreateMatchModal";
 import { AuthModal } from "@/components/AuthModal";
@@ -24,15 +27,22 @@ import { useLanguage } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
 import { ScoreBoardTheme } from "@/constants/theme";
 
+const ITEMS_PER_PAGE = 12;
+
 export default function MyMatchesScreen() {
   const { t, locale } = useLanguage();
   const { user } = useAuth();
   const router = useRouter();
+  const flatListRef = useRef<FlatList>(null);
   const isPt = locale === "pt";
 
   const [matches, setMatches] = useState<any[]>([]);
+  const [selectedSport, setSelectedSport] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [viewMode, setViewMode] = useState<"list" | "cards">("list");
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [createModalVisible, setCreateModalVisible] = useState<boolean>(false);
@@ -75,8 +85,8 @@ export default function MyMatchesScreen() {
     try {
       const { data, error } = await supabase
         .from("matches")
-        .select("*, tournaments(name)")
-        .or(`organizer_id.eq.${user.id},umpire_id.eq.${user.id}`)
+        .select("*, tournaments(name), organizer:users!organizer_id(username)")
+        .eq("organizer_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -114,99 +124,88 @@ export default function MyMatchesScreen() {
     }
   };
 
-  const filteredMatches = matches.filter((m) =>
-    statusFilter === "all" ? true : m.status === statusFilter
-  );
+  const filteredMatches = useMemo(() => {
+    const filtered = matches.filter((m) => {
+      if (
+        selectedSport !== "all" &&
+        m.sport_type?.toLowerCase() !== selectedSport.toLowerCase()
+      ) {
+        return false;
+      }
+      if (statusFilter !== "all" && m.status?.toLowerCase() !== statusFilter.toLowerCase()) {
+        return false;
+      }
+      if (searchQuery.trim().length > 0) {
+        const q = searchQuery.toLowerCase();
+        const p1 = m.participants?.[0]?.name?.toLowerCase() || "";
+        const p2 = m.participants?.[1]?.name?.toLowerCase() || "";
+        const tName = m.tournaments?.name?.toLowerCase() || "";
+        const court = m.court?.toLowerCase() || "";
+        if (!p1.includes(q) && !p2.includes(q) && !tName.includes(q) && !court.includes(q)) {
+          return false;
+        }
+      }
+      return true;
+    });
+    return [...filtered].sort((a, b) => {
+      const tA = new Date(a.scheduled_at || a.created_at || 0).getTime();
+      const tB = new Date(b.scheduled_at || b.created_at || 0).getTime();
+      return sortOrder === "desc" ? tB - tA : tA - tB;
+    });
+  }, [matches, selectedSport, statusFilter, searchQuery, sortOrder]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredMatches.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedMatches = useMemo(() => {
+    const start = (safePage - 1) * ITEMS_PER_PAGE;
+    return filteredMatches.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredMatches, safePage]);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <MatchAtmosphereBackground sportType="random" mode="spectator" />
       <TopBar />
-
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerBackBtn}
-          onPress={() => router.push("/(tabs)" as any)}
-          activeOpacity={0.7}
-          testID="header-back-btn"
-        >
-          <Ionicons name="arrow-back" size={24} color="#f8fafc" />
-        </TouchableOpacity>
-
-        <View style={styles.headerTextCol}>
-          <Text style={styles.headerTitle}>{t("nav.myMatches") || "Os Meus Jogos"}</Text>
-          <Text style={styles.headerSubtitle}>
-            {isPt ? "Jogos organizados ou arbitrados por si" : "Matches organized or umpired by you"}
-          </Text>
-        </View>
-
-        {user && (
-          <View style={styles.headerRightControls}>
-            <TouchableOpacity
-              style={styles.createButtonHeader}
-              onPress={handleOpenCreate}
-              activeOpacity={0.8}
-              testID="header-create-match-btn"
-            >
-              <Ionicons name="add" size={16} color={ScoreBoardTheme.surfaceContainerLowest} />
-              <Text style={styles.createButtonHeaderText}>
-                {t("common.newMatch")}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+      <WorkspaceTabs activeTab="my-matches" />
 
       {user && (
-        <View style={styles.filterToolbar}>
-          <View style={styles.statusTabsRow}>
-            {(["all", "ongoing", "scheduled", "completed"] as const).map((st) => {
-              const active = statusFilter === st;
-              const label =
-                st === "all"
-                  ? isPt ? "Todos" : "All"
-                  : st === "ongoing"
-                  ? t("status.live")
-                  : st === "scheduled"
-                  ? t("status.scheduled")
-                  : t("status.completed");
-              return (
-                <TouchableOpacity
-                  key={st}
-                  style={[styles.statusTab, active && styles.statusTabActive]}
-                  onPress={() => setStatusFilter(st)}
-                >
-                  <Text style={[styles.statusTabText, active && styles.statusTabTextActive]}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          <View style={styles.viewToggle}>
-            <TouchableOpacity
-              style={[styles.toggleBtn, viewMode === "list" && styles.toggleBtnActive]}
-              onPress={() => setViewMode("list")}
-            >
-              <Ionicons
-                name="reorder-four"
-                size={15}
-                color={viewMode === "list" ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.toggleBtn, viewMode === "cards" && styles.toggleBtnActive]}
-              onPress={() => setViewMode("cards")}
-            >
-              <Ionicons
-                name="grid-outline"
-                size={14}
-                color={viewMode === "cards" ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
+        <FeedHeader
+          selectedSport={selectedSport}
+          onSportChange={(s) => {
+            setSelectedSport(s);
+            setCurrentPage(1);
+          }}
+          searchQuery={searchQuery}
+          onSearchChange={(q) => {
+            setSearchQuery(q);
+            setCurrentPage(1);
+          }}
+          statusFilter={statusFilter}
+          onStatusChange={(st) => {
+            setStatusFilter(st);
+            setCurrentPage(1);
+          }}
+          displayCount={filteredMatches.length}
+          countLabel={t("nav.matches") || "Matches"}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          showViewToggle={true}
+          sortOrder={sortOrder}
+          onSortOrderChange={(order) => {
+            setSortOrder(order);
+            setCurrentPage(1);
+          }}
+          matches={matches}
+          currentTab="matches"
+          primaryActionLabel={t("common.newMatch")}
+          primaryActionTestID="header-create-match-btn"
+          onPrimaryAction={handleOpenCreate}
+        />
       )}
 
       {loading ? (
@@ -215,7 +214,7 @@ export default function MyMatchesScreen() {
         </View>
       ) : !user ? (
         <View style={styles.centered}>
-          <Ionicons name="lock-closed-outline" size={48} color="#475569" />
+          <Ionicons name="lock-closed-outline" size={48} color={ScoreBoardTheme.textMuted} />
           <Text style={styles.emptyTitle}>
             {isPt ? "Inicie Sessão" : "Sign In Required"}
           </Text>
@@ -236,11 +235,67 @@ export default function MyMatchesScreen() {
         </View>
       ) : (
         <FlatList
-          data={filteredMatches}
+          ref={flatListRef}
+          data={
+            viewMode === "list"
+              ? paginatedMatches.length > 0
+                ? [{ id: "__grouped__" }]
+                : []
+              : paginatedMatches
+          }
           keyExtractor={(item) => item.id}
+          keyboardShouldPersistTaps="handled"
           renderItem={({ item }) =>
             viewMode === "list" ? (
-              <MatchListItem match={item} />
+              <GroupedMatchList
+                matches={paginatedMatches}
+                showOrganizer={false}
+                renderRowActions={(m) => (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    {m.status !== "completed" && (
+                      <TouchableOpacity
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 7,
+                          backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+                          borderWidth: 1,
+                          borderColor: ScoreBoardTheme.borderSubtle,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                        onPress={() => router.push(`/match/${m.id}/scoreboard` as any)}
+                        activeOpacity={0.75}
+                      >
+                        <Ionicons
+                          name="play-outline"
+                          size={14}
+                          color={ScoreBoardTheme.onSurface}
+                        />
+                      </TouchableOpacity>
+                    )}
+                    {user && m.organizer_id === user.id && (
+                      <TouchableOpacity
+                        testID={`match-delete-btn-${m.id}`}
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 7,
+                          backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+                          borderWidth: 1,
+                          borderColor: "rgba(244, 63, 94, 0.25)",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                        onPress={() => handleDeleteMatch(m.id)}
+                        activeOpacity={0.75}
+                      >
+                        <Ionicons name="trash-outline" size={14} color="#f43f5e" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              />
             ) : (
               <MatchCard
                 match={item}
@@ -251,18 +306,31 @@ export default function MyMatchesScreen() {
           }
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ScoreBoardTheme.onSurfaceVariant} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={ScoreBoardTheme.onSurfaceVariant}
+            />
+          }
+          ListFooterComponent={
+            filteredMatches.length > 0 ? (
+              <Pagination
+                currentPage={safePage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            ) : undefined
           }
           ListEmptyComponent={
             <View style={styles.centered}>
-              <Ionicons name="tennisball-outline" size={48} color="#334155" />
+              <Ionicons name="tennisball-outline" size={48} color={ScoreBoardTheme.textMuted} />
               <Text style={styles.emptyTitle}>
                 {isPt ? "Nenhum jogo criado" : "No matches created"}
               </Text>
               <Text style={styles.emptySubtitle}>
                 {isPt
-                  ? "Ainda não organizou nem foi designado como árbitro de nenhum jogo."
-                  : "You haven't organized or been assigned as referee to any matches yet."}
+                  ? "Ainda não organizou nenhum jogo na plataforma ScoreBoard."
+                  : "You haven't organized any matches yet."}
               </Text>
               <TouchableOpacity
                 style={styles.emptyCreateButton}
@@ -270,7 +338,12 @@ export default function MyMatchesScreen() {
                 activeOpacity={0.8}
                 testID="empty-create-match-btn"
               >
-                <Ionicons name="add-circle-outline" size={18} color="#ffffff" style={{ marginRight: 6 }} />
+                <Ionicons
+                  name="add-circle-outline"
+                  size={18}
+                  color={ScoreBoardTheme.surfaceContainerLowest}
+                  style={{ marginRight: 6 }}
+                />
                 <Text style={styles.emptyCreateButtonText}>
                   {isPt ? "Criar Primeiro Jogo" : "Create First Match"}
                 </Text>
@@ -298,26 +371,24 @@ export default function MyMatchesScreen() {
               </Text>
               <Text style={styles.deleteModalMessage}>
                 {isPt
-                  ? "Tem a certeza que deseja eliminar este jogo? Esta ação é irreversível."
-                  : "Are you sure you want to delete this match? This action cannot be undone."}
+                  ? `Tem a certeza que pretende eliminar o jogo ${matchToDelete.participants?.[0]?.name || "Equipa A"} vs ${matchToDelete.participants?.[1]?.name || "Equipa B"}? Esta ação é irreversível.`
+                  : `Are you sure you want to delete ${matchToDelete.participants?.[0]?.name || "Team A"} vs ${matchToDelete.participants?.[1]?.name || "Team B"}? This cannot be undone.`}
               </Text>
+
               <View style={styles.deleteButtonsRow}>
                 <TouchableOpacity
                   style={styles.cancelDeleteBtn}
                   onPress={() => setMatchToDelete(null)}
                   disabled={deletingMatch}
-                  testID="cancel-delete-match-btn"
                 >
                   <Text style={styles.cancelDeleteBtnText}>
                     {isPt ? "Cancelar" : "Cancel"}
                   </Text>
                 </TouchableOpacity>
-
                 <TouchableOpacity
                   style={styles.confirmDeleteBtn}
                   onPress={confirmDeleteMatch}
                   disabled={deletingMatch}
-                  testID="confirm-delete-match-btn"
                 >
                   {deletingMatch ? (
                     <ActivityIndicator size="small" color="#ffffff" />
@@ -355,109 +426,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: ScoreBoardTheme.background,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: ScoreBoardTheme.borderSubtle,
-  },
-  headerTextCol: {
-    flex: 1,
-  },
-  headerBackBtn: {
-    marginRight: 12,
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: ScoreBoardTheme.onSurface,
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: ScoreBoardTheme.textMuted,
-    marginTop: 2,
-  },
-  headerRightControls: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  createButtonHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: ScoreBoardTheme.onSurface,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    gap: 4,
-  },
-  createButtonHeaderText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: ScoreBoardTheme.surfaceContainerLowest,
-  },
-  filterToolbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: ScoreBoardTheme.borderSubtle,
-    gap: 8,
-  },
-  statusTabsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    flex: 1,
-  },
-  statusTab: {
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 6,
-    backgroundColor: ScoreBoardTheme.surfaceContainer,
-    borderWidth: 1,
-    borderColor: ScoreBoardTheme.borderSubtle,
-  },
-  statusTabActive: {
-    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
-    borderColor: ScoreBoardTheme.onSurfaceVariant,
-  },
-  statusTabText: {
-    fontSize: 11,
-    fontWeight: "500",
-    color: ScoreBoardTheme.textMuted,
-  },
-  statusTabTextActive: {
-    color: ScoreBoardTheme.onSurface,
-    fontWeight: "600",
-  },
-  viewToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: ScoreBoardTheme.surfaceContainer,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: ScoreBoardTheme.borderSubtle,
-    padding: 2,
-    gap: 2,
-  },
-  toggleBtn: {
-    padding: 5,
-    borderRadius: 6,
-  },
-  toggleBtnActive: {
-    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
-  },
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 24,
+    paddingTop: 8,
+    paddingBottom: 28,
   },
   centered: {
     flex: 1,
@@ -468,13 +440,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
     marginTop: 14,
     marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
     textAlign: "center",
     lineHeight: 18,
     marginBottom: 16,

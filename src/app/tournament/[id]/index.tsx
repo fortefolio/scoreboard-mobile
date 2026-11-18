@@ -17,7 +17,8 @@ import { useLanguage } from "@/lib/i18n";
 import { useFollow } from "@/lib/hooks/useFollow";
 import { MatchCard } from "@/components/MatchCard";
 import { TopBar } from "@/components/TopBar";
-import { FollowButton } from "@/components/FollowButton";
+import { SportFavoriteButton } from "@/components/FollowButton";
+import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
 import { GroupStandingsView } from "@/components/tournament/GroupStandingsView";
 import { TournamentBracketView } from "@/components/tournament/TournamentBracketView";
 import { TournamentSettingsModal } from "@/components/tournament/TournamentSettingsModal";
@@ -45,8 +46,11 @@ export default function TournamentDetailScreen() {
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [generatingBracket, setGeneratingBracket] = useState(false);
 
-  // Tabs: matches, standings, bracket
-  const [activeTab, setActiveTab] = useState<"matches" | "standings" | "bracket">("matches");
+  // Tabs: matches, group_matches, standings, bracket
+  const [activeTab, setActiveTab] = useState<
+    "matches" | "group_matches" | "standings" | "bracket"
+  >("matches");
+  const hasGroups = Object.keys(groups).length > 0;
 
   const fetchTournamentData = useCallback(async () => {
     if (!tournamentId) return;
@@ -230,61 +234,63 @@ export default function TournamentDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <MatchAtmosphereBackground sportType={tournament.sport_type} mode="spectator" />
       {/* Main Global TopBar */}
       <TopBar />
 
       {/* Top Navigation */}
       <View style={styles.topNav}>
         <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color="#dce1fb" />
+          <Ionicons name="arrow-back" size={18} color={ScoreBoardTheme.onSurface} />
         </TouchableOpacity>
 
         <Text style={styles.navTitle} numberOfLines={1}>
           {tournament.name}
         </Text>
 
-        <View style={styles.navActions}>
-          <FollowButton
-            entityId={tournamentId}
-            entityType="tournament"
-            size={16}
-          />
-
-          <TouchableOpacity style={styles.iconBtn} onPress={handleShare}>
-            <Ionicons name="share-social-outline" size={20} color="#dce1fb" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.iconBtn} onPress={handleShare}>
+          <Ionicons name="share-outline" size={18} color={ScoreBoardTheme.onSurfaceVariant} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Tournament Hero Card */}
         <View style={styles.heroCard}>
           <View style={styles.metaRow}>
-            <View style={styles.sportBadge}>
-              <Text style={styles.sportBadgeText}>{tournament.sport_type}</Text>
+            <View style={styles.metaLeft}>
+              <View style={styles.sportBadge}>
+                <Text style={styles.sportBadgeText}>{tournament.sport_type}</Text>
+              </View>
+
+              {isOngoing ? (
+                <View style={styles.liveIndicator}>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.liveText}>{t("status.live") || "A DECORRER"}</Text>
+                </View>
+              ) : (
+                <Text style={styles.statusBadge}>
+                  {tournament.status === "completed"
+                    ? t("status.completed") || "TERMINADO"
+                    : t("status.scheduled") || "INSCRIÇÕES ABERTAS"}
+                </Text>
+              )}
+
+              {isOrganizer && (
+                <View style={styles.organizerBadge}>
+                  <Ionicons name="shield-checkmark" size={12} color={ScoreBoardTheme.onSurfaceVariant} style={{ marginRight: 4 }} />
+                  <Text style={styles.organizerBadgeText}>
+                    {isPt ? "ORGANIZADOR" : "ORGANIZER"}
+                  </Text>
+                </View>
+              )}
             </View>
 
-            {isOrganizer && (
-              <View style={styles.organizerBadge}>
-                <Ionicons name="shield-checkmark" size={13} color={ScoreBoardTheme.onSurfaceVariant} style={{ marginRight: 4 }} />
-                <Text style={styles.organizerBadgeText}>
-                  {isPt ? "ORGANIZADOR" : "ORGANIZER"}
-                </Text>
-              </View>
-            )}
-
-            {isOngoing ? (
-              <View style={styles.liveIndicator}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>{t("status.live") || "A DECORRER"}</Text>
-              </View>
-            ) : (
-              <Text style={styles.statusBadge}>
-                {tournament.status === "completed"
-                  ? t("status.completed") || "TERMINADO"
-                  : t("status.scheduled") || "INSCRIÇÕES ABERTAS"}
-              </Text>
-            )}
+            <SportFavoriteButton
+              entityId={tournamentId}
+              entityType="tournament"
+              sport={tournament.sport_type}
+              size="sm"
+            />
           </View>
 
           <Text style={styles.title}>{tournament.name}</Text>
@@ -296,7 +302,7 @@ export default function TournamentDetailScreen() {
                 style={styles.signupActionBtn}
                 onPress={() => router.push(`/tournament/${tournamentId}/signup` as any)}
               >
-                <Ionicons name="person-add" size={16} color="#ffffff" />
+                <Ionicons name="person-add" size={15} color={ScoreBoardTheme.surfaceContainerLowest} />
                 <Text style={styles.signupActionText}>{t("tournament.registerTeam") || "Inscrever Equipa"}</Text>
               </TouchableOpacity>
             )}
@@ -305,9 +311,9 @@ export default function TournamentDetailScreen() {
               style={styles.teamsActionBtn}
               onPress={() => router.push(`/tournament/${tournamentId}/teams` as any)}
             >
-              <Ionicons name="people" size={16} color="#a5b4fc" />
+              <Ionicons name="people" size={15} color={ScoreBoardTheme.onSurfaceVariant} />
               <Text style={styles.teamsActionText}>
-                {participantCount} Equipas
+                {participantCount} {isPt ? "Equipas" : "Teams"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -376,16 +382,27 @@ export default function TournamentDetailScreen() {
             onPress={() => setActiveTab("matches")}
           >
             <Text style={[styles.tabText, activeTab === "matches" && styles.tabTextActive]}>
-              Jogos ({matches.length})
+              {isPt ? `Jogos (${matches.length})` : `Matches (${matches.length})`}
             </Text>
           </TouchableOpacity>
+
+          {hasGroups && (
+            <TouchableOpacity
+              style={[styles.tabBtn, activeTab === "group_matches" && styles.tabBtnActive]}
+              onPress={() => setActiveTab("group_matches")}
+            >
+              <Text style={[styles.tabText, activeTab === "group_matches" && styles.tabTextActive]}>
+                {isPt ? "Grupos" : "Group Matches"}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[styles.tabBtn, activeTab === "standings" && styles.tabBtnActive]}
             onPress={() => setActiveTab("standings")}
           >
             <Text style={[styles.tabText, activeTab === "standings" && styles.tabTextActive]}>
-              Classificação
+              {isPt ? "Classificação" : "Standings"}
             </Text>
           </TouchableOpacity>
 
@@ -394,7 +411,7 @@ export default function TournamentDetailScreen() {
             onPress={() => setActiveTab("bracket")}
           >
             <Text style={[styles.tabText, activeTab === "bracket" && styles.tabTextActive]}>
-              Chave (Brackets)
+              {isPt ? "Chave" : "Bracket"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -404,7 +421,7 @@ export default function TournamentDetailScreen() {
           <View style={styles.tabContent}>
             {matches.length === 0 ? (
               <View style={styles.emptyCard}>
-                <Ionicons name="tennisball-outline" size={40} color="#475569" />
+                <Ionicons name="tennisball-outline" size={40} color={ScoreBoardTheme.textMuted} />
                 <Text style={styles.emptyTitle}>{t("tournament.noScheduledMatches") || "Nenhum jogo agendado"}</Text>
                 <Text style={styles.emptySubtitle}>
                   O calendário de jogos deste torneio ainda não foi publicado.
@@ -413,6 +430,31 @@ export default function TournamentDetailScreen() {
             ) : (
               matches.map((m) => <MatchCard key={m.id} match={m} />)
             )}
+          </View>
+        )}
+
+        {/* TAB 1B: GROUP MATCHES */}
+        {activeTab === "group_matches" && (
+          <View style={styles.tabContent}>
+            {Object.keys(groups)
+              .sort()
+              .map((grp) => {
+                const grpMatches = matches.filter((m) => m.group_label === grp);
+                return (
+                  <View key={grp} style={{ marginBottom: 16 }}>
+                    <Text style={styles.groupHeading}>{grp}</Text>
+                    {grpMatches.length === 0 ? (
+                      <View style={styles.emptyCard}>
+                        <Text style={styles.emptySubtitle}>
+                          {isPt ? "Sem jogos neste grupo." : "No matches in this group."}
+                        </Text>
+                      </View>
+                    ) : (
+                      grpMatches.map((m) => <MatchCard key={m.id} match={m} />)
+                    )}
+                  </View>
+                );
+              })}
           </View>
         )}
 
@@ -471,11 +513,26 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: ScoreBoardTheme.onSurface,
-    maxWidth: "60%",
+    flex: 1,
+    paddingHorizontal: 10,
     textAlign: "center",
   },
   iconBtn: {
-    padding: 4,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  metaLeft: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
   },
   navActions: {
     flexDirection: "row",
@@ -543,11 +600,11 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   title: {
-    fontSize: 22,
+    fontSize: 19,
     fontWeight: "800",
-    color: "#f8fafc",
-    marginBottom: 16,
-    lineHeight: 28,
+    color: ScoreBoardTheme.onSurface,
+    marginBottom: 12,
+    lineHeight: 24,
   },
   actionButtonsRow: {
     flexDirection: "row",
@@ -687,6 +744,15 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     marginTop: 4,
+  },
+  groupHeading: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: ScoreBoardTheme.onSurfaceVariant,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 8,
+    marginLeft: 2,
   },
   emptyCard: {
     backgroundColor: ScoreBoardTheme.surfaceContainer,

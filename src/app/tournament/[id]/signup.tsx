@@ -125,7 +125,7 @@ export default function TournamentSignupScreen() {
       {/* Top Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#f8fafc" />
+          <Ionicons name="arrow-back" size={18} color={ScoreBoardTheme.onSurface} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
           Inscrição de Equipa
@@ -271,7 +271,14 @@ const styles = StyleSheet.create({
     color: ScoreBoardTheme.onSurface,
   },
   iconBtn: {
-    padding: 4,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    alignItems: "center",
+    justifyContent: "center",
   },
   scroll: {
     padding: 16,

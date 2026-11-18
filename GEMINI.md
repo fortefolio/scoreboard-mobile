@@ -227,3 +227,36 @@ Referee consoles operate in noisy sporting environments with intermittent cellul
 4. **Secret Management & Push Protection:**
    - NEVER hardcode Supabase Secret Keys or service role tokens (`sb_secret_*`) in any files.
    - Always read keys exclusively through environment variables. Secrets belong strictly in gitignored `.env` files.
+
+---
+
+## 6. Pages, Views & Components Inventory (UI Audit Checklist)
+
+Keep this list updated whenever routes or shared UI components are added or removed so full-app UI/UX passes cover every screen.
+
+### Expo Router Screens (`src/app/`)
+- `src/app/_layout.tsx` — Root Stack, font loading (`Digital7`, `Digital7Mono`), portrait lock
+- `src/app/(tabs)/_layout.tsx` — Bottom Tab bar (5 visible tabs + 3 hidden workspace routes)
+- `src/app/(tabs)/index.tsx` — Matches Feed
+- `src/app/(tabs)/tournaments.tsx` — Tournaments Feed
+- `src/app/(tabs)/following.tsx` — Following / Favorites Feed
+- `src/app/(tabs)/notifications.tsx` — Notifications Feed
+- `src/app/(tabs)/profile.tsx` — User Profile & Settings
+- `src/app/(tabs)/my-matches.tsx` — My Events: Matches (hidden tab)
+- `src/app/(tabs)/my-tournaments.tsx` — My Events: Tournaments (hidden tab)
+- `src/app/(tabs)/umpiring.tsx` — My Events: Umpiring (hidden tab)
+- `src/app/match/[id].tsx` — Match Overview (`PlayByPlayTable`, Rules, Official assignment)
+- `src/app/match/[id]/scoreboard.tsx` — Live Referee/Spectator Scoreboard (Landscape-locked)
+- `src/app/tournament/[id]/index.tsx` — Tournament Overview (`Matches`, `Standings`, `Bracket`, Organizer Controls)
+- `src/app/tournament/[id]/signup.tsx` — Tournament Team Registration
+- `src/app/tournament/[id]/teams.tsx` — Tournament Teams Roster
+- `src/app/user/[username].tsx` — Public Organizer Profile
+- `src/app/settings.tsx` — Redirects to `/(tabs)/profile`
+- `src/app/auth/reset-password.tsx` — Password Recovery
+
+### Shared UI Components (`src/components/`)
+- **Shell & Navigation:** `TopBar.tsx`, `FeedHeader.tsx`, `WorkspaceTabs.tsx`, `SportFilterBar.tsx`, `Pagination.tsx`, `OfflineSyncBadge.tsx`, `AuthProvider.tsx`
+- **Cards & Lists:** `MatchCard.tsx`, `MatchListItem.tsx`, `GroupedMatchList.tsx`, `TournamentCard.tsx`, `FollowButton.tsx`, `SportIcon.tsx`
+- **Match & Scoreboards:** `match/CreateMatchModal.tsx`, `match/MatchAtmosphereBackground.tsx`, `match/PlayByPlayTable.tsx`, `scoreboards/ScoreboardLayout.tsx`, `scoreboards/TennisScoreboard.tsx`, `scoreboards/VolleyballScoreboard.tsx`, `scoreboards/FootballScoreboard.tsx`, `scoreboards/BasketballScoreboard.tsx`
+- **Tournament:** `tournament/CreateTournamentModal.tsx`, `tournament/GroupStandingsView.tsx`, `tournament/TournamentBracketView.tsx`, `tournament/TournamentSettingsModal.tsx`
+- **Modals & Inputs:** `AuthModal.tsx`, `RuleModal.tsx`, `common/DropdownSelect.tsx`, `common/FeedbackModal.tsx`

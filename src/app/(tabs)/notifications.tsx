@@ -10,9 +10,10 @@ import { supabase } from "@/lib/supabase/client";
 import { ScoreBoardTheme } from "@/constants/theme";
 
 export default function NotificationsScreen() {
-  const { t } = useLanguage();
+  const { locale } = useLanguage();
   const { user } = useAuth();
   const router = useRouter();
+  const isPt = locale === "pt";
 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -104,20 +105,79 @@ export default function NotificationsScreen() {
     }
   };
 
+  const deleteNotification = async (id: string) => {
+    try {
+      await supabase.from("notifications").delete().eq("id", id);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    } catch (e) {
+      console.warn("Failed to delete notification:", e);
+    }
+  };
+
+  const clearAll = async () => {
+    if (!user) return;
+    try {
+      await supabase.from("notifications").delete().eq("user_id", user.id);
+      setNotifications([]);
+    } catch (e) {
+      console.warn("Failed to clear notifications:", e);
+    }
+  };
+
+  const handleUmpireResponse = async (
+    notifId: string,
+    matchId: string,
+    status: "accepted" | "declined"
+  ) => {
+    try {
+      await supabase
+        .from("matches")
+        .update({ umpire_invite_status: status })
+        .eq("id", matchId);
+      await markAsRead(notifId);
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === notifId
+            ? { ...n, data: { ...(n.data || {}), response_status: status } }
+            : n
+        )
+      );
+    } catch (e) {
+      console.warn("Failed to respond to umpire invite:", e);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <TopBar />
 
       <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Notificações</Text>
-          <Text style={styles.headerSubtitle}>Alertas de jogos e torneios em tempo real</Text>
+        <View style={{ flex: 1, paddingRight: 8 }}>
+          <Text style={styles.headerTitle}>
+            {isPt ? "Notificações" : "Notifications"}
+          </Text>
+          <Text style={styles.headerSubtitle}>
+            {isPt
+              ? "Alertas de jogos e torneios em tempo real"
+              : "Real-time match and tournament alerts"}
+          </Text>
         </View>
 
-        {user && notifications.some((n) => !n.read_at) && (
-          <TouchableOpacity style={styles.markAllBtn} onPress={markAllAsRead}>
-            <Text style={styles.markAllText}>Marcar todas lidas</Text>
-          </TouchableOpacity>
+        {user && notifications.length > 0 && (
+          <View style={styles.headerActions}>
+            {notifications.some((n) => !n.read_at) && (
+              <TouchableOpacity style={styles.markAllBtn} onPress={markAllAsRead}>
+                <Text style={styles.markAllText}>
+                  {isPt ? "Marcar lidas" : "Mark read"}
+                </Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.markAllBtn} onPress={clearAll}>
+              <Text style={styles.markAllText}>
+                {isPt ? "Limpar" : "Clear all"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 
@@ -175,7 +235,33 @@ export default function NotificationsScreen() {
                       })}
                     </Text>
                   </View>
-                  {isUnread && <View style={styles.unreadDot} />}
+                  <View style={styles.itemMetaRight}>
+                    {isUnread && <View style={styles.unreadDot} />}
+                    {isUnread && (
+                      <TouchableOpacity
+                        onPress={() => markAsRead(item.id)}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                        accessibilityLabel="Mark as read"
+                      >
+                        <Ionicons
+                          name="checkmark-done-outline"
+                          size={15}
+                          color={ScoreBoardTheme.onSurfaceVariant}
+                        />
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                      onPress={() => deleteNotification(item.id)}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      accessibilityLabel="Delete"
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={14}
+                        color={ScoreBoardTheme.textMuted}
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 <Text
@@ -184,6 +270,27 @@ export default function NotificationsScreen() {
                 >
                   {item.title}
                 </Text>
+
+                {isInvitation && matchId && !data.response_status && (
+                  <View style={styles.inviteActionsRow}>
+                    <TouchableOpacity
+                      style={styles.acceptBtn}
+                      onPress={() => handleUmpireResponse(item.id, matchId, "accepted")}
+                    >
+                      <Text style={styles.acceptBtnText}>
+                        {isPt ? "Aceitar" : "Accept"}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.declineBtn}
+                      onPress={() => handleUmpireResponse(item.id, matchId, "declined")}
+                    >
+                      <Text style={styles.declineBtnText}>
+                        {isPt ? "Recusar" : "Decline"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </TouchableOpacity>
             );
           }}
@@ -233,6 +340,46 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: ScoreBoardTheme.borderSubtle,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  itemMetaRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  inviteActionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 10,
+  },
+  acceptBtn: {
+    backgroundColor: ScoreBoardTheme.onSurface,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  acceptBtnText: {
+    color: ScoreBoardTheme.surfaceContainerLowest,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  declineBtn: {
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  declineBtnText: {
+    color: ScoreBoardTheme.onSurfaceVariant,
+    fontSize: 12,
+    fontWeight: "500",
   },
   markAllText: {
     color: ScoreBoardTheme.onSurface,

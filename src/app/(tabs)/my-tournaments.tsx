@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -13,8 +13,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { TopBar } from "@/components/TopBar";
+import { WorkspaceTabs } from "@/components/WorkspaceTabs";
+import { FeedHeader } from "@/components/FeedHeader";
 import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
 import { TournamentCard } from "@/components/TournamentCard";
+import { Pagination } from "@/components/Pagination";
 import { CreateTournamentModal } from "@/components/tournament/CreateTournamentModal";
 import { AuthModal } from "@/components/AuthModal";
 import { useAuth } from "@/components/AuthProvider";
@@ -22,14 +25,23 @@ import { ScoreBoardTheme } from "@/constants/theme";
 import { useLanguage } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
 
+const TOURNAMENTS_PER_PAGE = 9;
+
 export default function MyTournamentsScreen() {
   const { t, locale } = useLanguage();
   const { user } = useAuth();
   const router = useRouter();
+  const flatListRef = useRef<FlatList>(null);
   const isPt = locale === "pt";
 
   const [tournaments, setTournaments] = useState<any[]>([]);
   const [subscriptionTier, setSubscriptionTier] = useState<string>("free");
+  const [selectedSport, setSelectedSport] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+  const [viewMode, setViewMode] = useState<"list" | "cards">("list");
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [createModalVisible, setCreateModalVisible] = useState<boolean>(false);
@@ -48,7 +60,7 @@ export default function MyTournamentsScreen() {
       const [tRes, uRes] = await Promise.all([
         supabase
           .from("tournaments")
-          .select("*")
+          .select("*, organizer:users!organizer_id(username)")
           .eq("organizer_id", user.id)
           .order("created_at", { ascending: false }),
         supabase
@@ -96,7 +108,6 @@ export default function MyTournamentsScreen() {
       );
       return;
     }
-
     setCreateModalVisible(true);
   };
 
@@ -106,42 +117,87 @@ export default function MyTournamentsScreen() {
     router.push(`/tournament/${tournamentId}` as any);
   };
 
+  const filteredTournaments = useMemo(() => {
+    const filtered = tournaments.filter((tItem) => {
+      if (
+        selectedSport !== "all" &&
+        tItem.sport_type?.toLowerCase() !== selectedSport.toLowerCase()
+      ) {
+        return false;
+      }
+      if (statusFilter !== "all" && tItem.status?.toLowerCase() !== statusFilter.toLowerCase()) {
+        return false;
+      }
+      if (searchQuery.trim().length > 0) {
+        const q = searchQuery.toLowerCase();
+        const name = tItem.name?.toLowerCase() || "";
+        const sport = tItem.sport_type?.toLowerCase() || "";
+        if (!name.includes(q) && !sport.includes(q)) {
+          return false;
+        }
+      }
+      return true;
+    });
+    return [...filtered].sort((a, b) => {
+      const tA = new Date(a.start_date || a.created_at || 0).getTime();
+      const tB = new Date(b.start_date || b.created_at || 0).getTime();
+      return sortOrder === "desc" ? tB - tA : tA - tB;
+    });
+  }, [tournaments, selectedSport, statusFilter, searchQuery, sortOrder]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTournaments.length / TOURNAMENTS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedTournaments = useMemo(() => {
+    const start = (safePage - 1) * TOURNAMENTS_PER_PAGE;
+    return filteredTournaments.slice(start, start + TOURNAMENTS_PER_PAGE);
+  }, [filteredTournaments, safePage]);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <MatchAtmosphereBackground sportType="random" mode="spectator" />
       <TopBar />
+      <WorkspaceTabs activeTab="my-tournaments" />
 
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerBackBtn}
-          onPress={() => router.push("/(tabs)" as any)}
-          activeOpacity={0.7}
-          testID="header-back-btn"
-        >
-          <Ionicons name="arrow-back" size={24} color={ScoreBoardTheme.onSurface} />
-        </TouchableOpacity>
-
-        <View style={styles.headerTextCol}>
-          <Text style={styles.headerTitle}>{t("nav.myTournaments") || "Os Meus Torneios"}</Text>
-          <Text style={styles.headerSubtitle}>
-            {isPt ? "Torneios organizados por si" : "Tournaments organized by you"}
-          </Text>
-        </View>
-
-        {user && (
-          <TouchableOpacity
-            style={styles.createButtonHeader}
-            onPress={handleOpenCreate}
-            activeOpacity={0.8}
-            testID="header-create-tournament-btn"
-          >
-            <Ionicons name="add" size={18} color={ScoreBoardTheme.surfaceContainerLowest} />
-            <Text style={styles.createButtonHeaderText}>
-              {t("common.newTournament")}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      {user && (
+        <FeedHeader
+          selectedSport={selectedSport}
+          onSportChange={(s) => {
+            setSelectedSport(s);
+            setCurrentPage(1);
+          }}
+          searchQuery={searchQuery}
+          onSearchChange={(q) => {
+            setSearchQuery(q);
+            setCurrentPage(1);
+          }}
+          statusFilter={statusFilter}
+          onStatusChange={(st) => {
+            setStatusFilter(st);
+            setCurrentPage(1);
+          }}
+          displayCount={filteredTournaments.length}
+          countLabel={t("nav.tournaments") || "Tournaments"}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          showViewToggle={true}
+          sortOrder={sortOrder}
+          onSortOrderChange={(order) => {
+            setSortOrder(order);
+            setCurrentPage(1);
+          }}
+          tournaments={tournaments}
+          currentTab="tournaments"
+          primaryActionLabel={t("common.newTournament")}
+          primaryActionTestID="header-create-tournament-btn"
+          onPrimaryAction={handleOpenCreate}
+        />
+      )}
 
       {loading ? (
         <View style={styles.centered}>
@@ -170,9 +226,13 @@ export default function MyTournamentsScreen() {
         </View>
       ) : (
         <FlatList
-          data={tournaments}
+          ref={flatListRef}
+          data={paginatedTournaments}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <TournamentCard tournament={item} />}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item }) => (
+            <TournamentCard tournament={item} compact={viewMode === "list"} />
+          )}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl
@@ -180,6 +240,15 @@ export default function MyTournamentsScreen() {
               onRefresh={onRefresh}
               tintColor={ScoreBoardTheme.onSurfaceVariant}
             />
+          }
+          ListFooterComponent={
+            filteredTournaments.length > 0 ? (
+              <Pagination
+                currentPage={safePage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            ) : undefined
           }
           ListEmptyComponent={
             <View style={styles.centered}>
@@ -235,50 +304,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: ScoreBoardTheme.background,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: ScoreBoardTheme.borderSubtle,
-  },
-  headerTextCol: {
-    flex: 1,
-  },
-  headerBackBtn: {
-    marginRight: 12,
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: ScoreBoardTheme.onSurface,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: ScoreBoardTheme.onSurfaceVariant,
-    marginTop: 2,
-  },
-  createButtonHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: ScoreBoardTheme.onSurface,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    gap: 4,
-  },
-  createButtonHeaderText: {
-    color: ScoreBoardTheme.surfaceContainerLowest,
-    fontWeight: "700",
-    fontSize: 13,
-  },
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 24,
+    paddingTop: 8,
+    paddingBottom: 28,
   },
   centered: {
     flex: 1,

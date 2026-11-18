@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation, getSportTranslation } from "@/lib/i18n";
 import { SportIcon } from "@/components/SportIcon";
-import { FollowButton } from "@/components/FollowButton";
+import { SportFavoriteButton } from "@/components/FollowButton";
 import { countSetsWon, extractSetsData } from "@/lib/scoring/sets";
 import { formatTeamOrPlayerName, getInitials } from "@/lib/utils/formatName";
 import { ScoreBoardTheme } from "@/constants/theme";
@@ -126,10 +126,11 @@ export function MatchCard({
             </Text>
           )}
 
-          <FollowButton
+          <SportFavoriteButton
             entityId={match.id}
             entityType="match"
-            size={16}
+            sport={match.sport_type}
+            size="sm"
             onAuthRequired={onAuthRequired}
           />
 

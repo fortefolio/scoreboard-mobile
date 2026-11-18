@@ -28,8 +28,18 @@ appId: dev.goncaloforte.scoreboard
       - tapOn:
           id: "auth-submit-btn"
 
-# Assert login succeeded and avatar is visible
+# Assert login succeeded and hamburger menu button is visible
 - extendedWaitUntil:
     visible:
       id: "topbar-avatar-btn"
     timeout: 10000
+- tapOn:
+    id: "topbar-avatar-btn"
+- assertVisible:
+    id: "menu-settings-btn"
+- assertVisible:
+    id: "menu-my-matches-btn"
+- assertVisible:
+    id: "menu-logout-btn"
+- tapOn:
+    id: "topbar-avatar-btn"

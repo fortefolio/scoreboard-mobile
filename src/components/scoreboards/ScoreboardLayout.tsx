@@ -13,6 +13,7 @@ import { ScoreBoardTheme } from "@/constants/theme";
 interface ScoreboardChromeContextValue {
   onBack?: () => void;
   onOpenObs?: () => void;
+  offlineBadge?: React.ReactNode;
 }
 
 const ScoreboardChromeContext = createContext<ScoreboardChromeContextValue>({});
@@ -20,10 +21,11 @@ const ScoreboardChromeContext = createContext<ScoreboardChromeContextValue>({});
 export function ScoreboardProvider({
   onBack,
   onOpenObs,
+  offlineBadge,
   children,
 }: ScoreboardChromeContextValue & { children: React.ReactNode }) {
   return (
-    <ScoreboardChromeContext.Provider value={{ onBack, onOpenObs }}>
+    <ScoreboardChromeContext.Provider value={{ onBack, onOpenObs, offlineBadge }}>
       {children}
     </ScoreboardChromeContext.Provider>
   );
@@ -53,7 +55,7 @@ export function ScoreboardMainCard({
   rightActions?: React.ReactNode;
   compactHeader?: CompactHeaderConfig;
 }) {
-  const { onBack, onOpenObs } = useContext(ScoreboardChromeContext);
+  const { onBack, onOpenObs, offlineBadge } = useContext(ScoreboardChromeContext);
 
   return (
     <View style={styles.mainCard}>
@@ -62,6 +64,7 @@ export function ScoreboardMainCard({
           <View style={styles.compactHeaderLeft}>
             {onBack && (
               <TouchableOpacity
+                testID="scoreboard-back-btn"
                 style={styles.compactIconBtn}
                 onPress={onBack}
                 activeOpacity={0.75}
@@ -96,6 +99,7 @@ export function ScoreboardMainCard({
                 </Text>
               </View>
             )}
+            {offlineBadge}
             {onOpenObs && (
               <TouchableOpacity
                 style={styles.compactActionBtn}
@@ -112,6 +116,7 @@ export function ScoreboardMainCard({
             )}
             {compactHeader.onFinish && (
               <TouchableOpacity
+                testID="end-match-btn"
                 style={styles.compactFinishBtn}
                 onPress={compactHeader.onFinish}
                 activeOpacity={0.75}
@@ -237,8 +242,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: ScoreBoardTheme.borderSubtle,
-    padding: 12,
+    padding: 10,
     justifyContent: "space-between",
+    overflow: "hidden",
   },
   compactHeader: {
     flexDirection: "row",

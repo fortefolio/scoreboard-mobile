@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Modal } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "./AuthProvider";
-import { useTranslation, Locale } from "@/lib/i18n";
-import { AuthModal } from "./AuthModal";
+import { useTranslation } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
-import { ScoreBoardTheme, Spacing } from "@/constants/theme";
+import { AuthModal } from "./AuthModal";
+import { ScoreBoardTheme } from "@/constants/theme";
 
 interface TopBarProps {
   onSearchPress?: () => void;
@@ -16,55 +17,39 @@ export function TopBar({ onSearchPress }: TopBarProps) {
   const { locale, setLocale, t } = useTranslation();
   const { user, signOut } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [langModalVisible, setLangModalVisible] = useState(false);
   const [authModalVisible, setAuthModalVisible] = useState(false);
   const [userMenuVisible, setUserMenuVisible] = useState(false);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [subscriptionTier, setSubscriptionTier] = useState<string>("free");
 
-  // Fetch unread notifications
   useEffect(() => {
-    if (!user) {
-      setUnreadCount(0);
+    let active = true;
+    if (!user?.id) {
+      setSubscriptionTier("free");
       return;
     }
-
-    const fetchUnread = async () => {
+    (async () => {
       try {
-        const { count } = await supabase
-          .from("notifications")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .is("read_at", null);
-        setUnreadCount(count || 0);
-      } catch (e) {
-        // Silently fail if table or network is unavailable
-      }
-    };
-
-    fetchUnread();
-
-    const channelId = `user-notifications-count-${user.id}-${Math.random().toString(36).slice(2, 9)}`;
-    const channel = supabase
-      .channel(channelId)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          fetchUnread();
+        const { data } = await supabase
+          .from("users")
+          .select("subscription_tier")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (active && data?.subscription_tier) {
+          setSubscriptionTier(data.subscription_tier);
         }
-      )
-      .subscribe();
-
+      } catch {
+        // Ignore tier fetch errors in offline/test environments
+      }
+    })();
     return () => {
-      supabase.removeChannel(channel);
+      active = false;
     };
-  }, [user]);
+  }, [user?.id]);
+
+  const isPro = subscriptionTier === "pro";
 
   return (
     <>
@@ -89,37 +74,20 @@ export function TopBar({ onSearchPress }: TopBarProps) {
             <Text style={styles.langBadge}>{locale === "pt" ? "PT" : "EN"}</Text>
           </TouchableOpacity>
 
-          {/* Notifications Bell */}
-          {user && (
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={() => router.push("/(tabs)/notifications")}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="notifications-outline" size={19} color="#dce1fb" />
-              {unreadCount > 0 && (
-                <View style={styles.badgeCircle}>
-                  <Text style={styles.badgeText}>
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          )}
-
-          {/* User Avatar or Sign In Button */}
+          {/* Hamburger Menu or Sign In Button */}
           {user ? (
             <TouchableOpacity
               testID="topbar-avatar-btn"
-              style={styles.avatarBtn}
-              onPress={() => setUserMenuVisible(true)}
+              style={styles.menuBtn}
+              onPress={() => setUserMenuVisible((prev) => !prev)}
               activeOpacity={0.8}
+              accessibilityLabel="Menu"
             >
-              <View style={styles.avatarCircle}>
-                <Text style={styles.avatarInitial}>
-                  {(user.email?.[0] || "U").toUpperCase()}
-                </Text>
-              </View>
+              <Ionicons
+                name={userMenuVisible ? "close" : "menu"}
+                size={19}
+                color={ScoreBoardTheme.onSurface}
+              />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -197,77 +165,75 @@ export function TopBar({ onSearchPress }: TopBarProps) {
         onRequestClose={() => setUserMenuVisible(false)}
       >
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={styles.userMenuOverlay}
           activeOpacity={1}
           onPress={() => setUserMenuVisible(false)}
         >
-          <View style={styles.userMenuCard}>
+          <View
+            style={[styles.userMenuCard, { top: insets.top + 56 }]}
+            onStartShouldSetResponder={() => true}
+          >
             <View style={styles.userMenuHeader}>
-              <Text style={styles.userMenuLabel}>{t("nav.signedInAs")}</Text>
+              <View style={styles.userMenuTopRow}>
+                <Text style={styles.userMenuLabel}>
+                  {t("nav.signedInAs") || (locale === "pt" ? "Sessão iniciada como" : "Signed in as")}
+                </Text>
+                <View style={styles.tierBadge}>
+                  <Text style={[styles.tierBadgeText, isPro ? styles.tierBadgeTextPro : styles.tierBadgeTextFree]}>
+                    {isPro ? "PRO" : "FREE"}
+                  </Text>
+                </View>
+              </View>
               <Text style={styles.userMenuEmail} numberOfLines={1}>
                 {user?.email}
               </Text>
             </View>
 
-            <View style={styles.menuDivider} />
+            <View style={styles.menuItemsGroup}>
+              <TouchableOpacity
+                testID="menu-settings-btn"
+                style={styles.menuItem}
+                onPress={() => {
+                  setUserMenuVisible(false);
+                  setTimeout(() => {
+                    router.push("/(tabs)/profile" as any);
+                  }, 100);
+                }}
+              >
+                <Ionicons name="settings-outline" size={16} color="#a3a9b8" />
+                <Text style={styles.menuItemText}>{t("nav.settings")}</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              testID="menu-settings-btn"
-              style={styles.menuItem}
-              onPress={() => {
-                setUserMenuVisible(false);
-                setTimeout(() => {
-                  router.push("/(tabs)/profile" as any);
-                }, 100);
-              }}
-            >
-              <Ionicons name="person-outline" size={18} color="#dce1fb" />
-              <Text style={styles.menuItemText}>{t("nav.settings")}</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                testID="menu-my-matches-btn"
+                style={styles.menuItem}
+                onPress={() => {
+                  setUserMenuVisible(false);
+                  setTimeout(() => {
+                    router.push("/(tabs)/my-matches" as any);
+                  }, 100);
+                }}
+              >
+                <Ionicons name="grid-outline" size={16} color="#a3a9b8" />
+                <Text style={styles.menuItemText}>
+                  {locale === "pt" ? "Os Meus Eventos" : "My Events"}
+                </Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              testID="menu-my-matches-btn"
-              style={styles.menuItem}
-              onPress={() => {
-                setUserMenuVisible(false);
-                setTimeout(() => {
-                  router.push("/(tabs)/my-matches" as any);
-                }, 100);
-              }}
-            >
-              <Ionicons name="trophy-outline" size={18} color="#dce1fb" />
-              <Text style={styles.menuItemText}>{t("nav.myMatches")}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              testID="menu-my-tournaments-btn"
-              style={styles.menuItem}
-              onPress={() => {
-                setUserMenuVisible(false);
-                setTimeout(() => {
-                  router.push("/(tabs)/my-tournaments" as any);
-                }, 100);
-              }}
-            >
-              <Ionicons name="ribbon-outline" size={18} color="#dce1fb" />
-              <Text style={styles.menuItemText}>{t("nav.myTournaments")}</Text>
-            </TouchableOpacity>
-
-            <View style={styles.menuDivider} />
-
-            <TouchableOpacity
-              testID="menu-logout-btn"
-              style={[styles.menuItem, { marginTop: 4 }]}
-              onPress={async () => {
-                setUserMenuVisible(false);
-                await signOut();
-              }}
-            >
-              <Ionicons name="log-out-outline" size={18} color="#ffb4ab" />
-              <Text style={[styles.menuItemText, { color: "#ffb4ab" }]}>
-                {t("nav.signOut")}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                testID="menu-logout-btn"
+                style={styles.menuItem}
+                onPress={async () => {
+                  setUserMenuVisible(false);
+                  await signOut();
+                }}
+              >
+                <Ionicons name="log-out-outline" size={16} color="#e5484d" />
+                <Text style={[styles.menuItemText, { color: "#e5484d" }]}>
+                  {t("nav.signOut")}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -316,7 +282,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: ScoreBoardTheme.onSurfaceVariant,
   },
-  actionBtn: {
+  menuBtn: {
     width: 32,
     height: 32,
     borderRadius: 8,
@@ -325,42 +291,6 @@ const styles = StyleSheet.create({
     borderColor: ScoreBoardTheme.borderSubtle,
     justifyContent: "center",
     alignItems: "center",
-    position: "relative",
-  },
-  badgeCircle: {
-    position: "absolute",
-    top: -2,
-    right: -2,
-    backgroundColor: ScoreBoardTheme.error,
-    borderRadius: 7,
-    minWidth: 14,
-    height: 14,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 2,
-  },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: "600",
-    color: "#ffffff",
-  },
-  avatarBtn: {
-    padding: 2,
-  },
-  avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
-    borderWidth: 1,
-    borderColor: ScoreBoardTheme.borderSubtle,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarInitial: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: ScoreBoardTheme.onSurfaceVariant,
   },
   signInBtn: {
     backgroundColor: ScoreBoardTheme.onSurface,
@@ -428,54 +358,80 @@ const styles = StyleSheet.create({
     color: ScoreBoardTheme.onSurface,
     flex: 1,
   },
+  userMenuOverlay: {
+    flex: 1,
+    backgroundColor: "transparent",
+  },
   userMenuCard: {
-    width: 240,
-    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
-    borderRadius: 20,
+    width: 208,
+    backgroundColor: "#11141c",
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: ScoreBoardTheme.borderGhost,
-    padding: 12,
+    borderColor: "rgba(238, 240, 245, 0.10)",
+    overflow: "hidden",
     position: "absolute",
-    top: 70,
     right: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.4,
     shadowRadius: 16,
-    elevation: 8,
+    elevation: 10,
   },
   userMenuHeader: {
-    padding: 8,
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(238, 240, 245, 0.08)",
+    backgroundColor: "rgba(22, 26, 36, 0.4)",
+  },
+  userMenuTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+    gap: 8,
   },
   userMenuLabel: {
-    fontSize: 9,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    color: "rgba(220, 225, 251, 0.5)",
-    marginBottom: 2,
+    fontSize: 12,
+    color: ScoreBoardTheme.textMuted,
+  },
+  tierBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "rgba(238, 240, 245, 0.12)",
+    backgroundColor: "rgba(22, 26, 36, 0.7)",
+  },
+  tierBadgeText: {
+    fontFamily: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }),
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  tierBadgeTextPro: {
+    color: "#eef0f5",
+  },
+  tierBadgeTextFree: {
+    color: "#7a8296",
   },
   userMenuEmail: {
     fontSize: 12,
-    fontWeight: "700",
-    color: ScoreBoardTheme.onSurface,
+    fontWeight: "500",
+    color: "#eef0f5",
   },
-  menuDivider: {
-    height: 1,
-    backgroundColor: ScoreBoardTheme.borderGhost,
-    marginVertical: 4,
+  menuItemsGroup: {
+    padding: 6,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderRadius: 8,
   },
   menuItemText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: ScoreBoardTheme.onSurface,
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#a3a9b8",
   },
 });

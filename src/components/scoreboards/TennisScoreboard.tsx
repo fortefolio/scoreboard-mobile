@@ -12,6 +12,11 @@ import { supabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/lib/i18n";
 import { recordMatchEventAtomic } from "@/lib/scoring/atomicScoring";
 import { ScoreBoardTheme } from "@/constants/theme";
+import {
+  ScoreboardMainCard,
+  ScoreboardTeamColumn,
+  ScoreboardActionButton,
+} from "@/components/scoreboards/ScoreboardLayout";
 
 const TENNIS_PTS = ["0", "15", "30", "40"];
 
@@ -22,7 +27,7 @@ interface TennisScoreboardProps {
 }
 
 export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboardProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const isPadel = matchData.sport_type === "Padel";
   const defaultMaxSets = rules?.max_sets || 3;
   const noAd = rules?.no_ad ?? (isPadel ? true : false);
@@ -244,534 +249,479 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
     );
   };
 
+  const eventName =
+    matchData.tournaments?.name ||
+    t("match.singleMatch") ||
+    "Single Match";
+
+  const renderServerSubLabel = (isServing: boolean) =>
+    isServing ? (
+      <View style={styles.servingPill}>
+        <View style={styles.servingDot} />
+        <Text style={styles.servingPillText}>
+          {t("scoreboard.serving") || "SERVING"}
+        </Text>
+      </View>
+    ) : (
+      <Text style={styles.receiverText}>
+        {(locale === "pt" ? "Recetor" : "Receiver")}
+      </Text>
+    );
+
   return (
-    <View style={styles.landscapeContainer}>
-      {/* Coin Toss / Server Selection Overlay */}
+    <View style={styles.shell}>
+      {/* Coin Toss / Server Selection Modal */}
       {serverIdx === null && (
-        <View style={styles.tossOverlay}>
-          <Text style={styles.tossTitle}>{t("scoreboard.tennis.selectFirstServer") || "SELECIONE QUEM SERVE PRIMEIRO"}</Text>
-          <View style={styles.tossButtonsRow}>
-            <TouchableOpacity
-              style={styles.tossBtn}
-              onPress={() => handleToss(0)}
-              disabled={tossing}
-            >
-              <Text style={styles.tossBtnText}>{teamA}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.tossBtn}
-              onPress={() => handleToss(1)}
-              disabled={tossing}
-            >
-              <Text style={styles.tossBtnText}>{teamB}</Text>
-            </TouchableOpacity>
+        <View style={styles.tossBackdrop}>
+          <View style={styles.tossCard}>
+            <View style={styles.tossIconBox}>
+              <Ionicons
+                name="logo-usd"
+                size={18}
+                color={ScoreBoardTheme.onSurface}
+              />
+            </View>
+            <Text style={styles.tossTitle}>
+              {t("scoreboard.tennis.selectFirstServer") ||
+                "SELECIONE QUEM SERVE PRIMEIRO"}
+            </Text>
+            <Text style={styles.tossSubtitle}>
+              {(locale === "pt" ? "Escolhe quem serve primeiro para iniciar o jogo" : "Choose who serves first to start the match")}
+            </Text>
+            <View style={styles.tossButtonsRow}>
+              <TouchableOpacity
+                testID="toss-home-btn"
+                style={styles.tossBtn}
+                onPress={() => handleToss(0)}
+                disabled={tossing}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.tossBtnText} numberOfLines={1}>
+                  {teamA}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                testID="toss-away-btn"
+                style={styles.tossBtn}
+                onPress={() => handleToss(1)}
+                disabled={tossing}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.tossBtnText} numberOfLines={1}>
+                  {teamB}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       )}
 
-      {/* Column 1: Team Home */}
-      <View style={styles.teamColumn}>
-        <View style={styles.teamHeaderRow}>
-          <Text style={styles.teamName} numberOfLines={1}>
-            {teamA}
-          </Text>
-          {serverIdx === 0 && (
-            <View style={styles.servingBadge}>
-              <Text style={styles.servingText}>{t("scoreboard.serving") || "A SERVIR"}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Stats Badges */}
-        <View style={styles.statsBadgesRow}>
-          <View style={styles.badgePill}>
-            <Text style={styles.badgeText}>
-              {t("scoreboard.setsShort") || "Sets:"} <Text style={styles.digitalBadgeNum}>{setsWonA}</Text>
-            </Text>
-          </View>
-          <View style={styles.badgePill}>
-            <Text style={styles.badgeText}>
-              {t("scoreboard.gamesShort") || "Jogos:"} <Text style={styles.digitalBadgeNum}>{games[0]}</Text>
-            </Text>
-          </View>
-        </View>
-
-        {/* Big Home Point in Digital Font */}
-        <Text style={[styles.scoreDigital, { color: ScoreBoardTheme.onSurface }]}>
-          {formatPoints(points[0], points[1])}
-        </Text>
-
-        {/* Home Controls */}
-        {canEdit && (
-          <View style={styles.controlsBlock}>
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnPoint]}
+      <ScoreboardMainCard
+        compactHeader={{
+          sportType: matchData.sport_type,
+          sportLabel: matchData.sport_type,
+          eventName,
+          statusBadge: isTiebreak
+            ? "Tie-Break"
+            : `${"Set"} ${sets.length + 1}`,
+          onFinish: canEdit ? handleFinalizeMatch : undefined,
+          finishLabel: t("scoreboard.endMatch") || "Terminar",
+        }}
+        leftActions={
+          canEdit ? (
+            <>
+              <ScoreboardActionButton
+                testID="btn-point-home"
+                variant="primary"
+                icon="add"
+                label={"Pt"}
                 onPress={() => handlePoint(0)}
-              >
-                <Ionicons name="add" size={15} color="#ffffff" />
-                <Text style={styles.btnPointText}>{t("scoreboard.point") || "PONTO"}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnUndo]}
+              />
+              <ScoreboardActionButton
+                testID="btn-undo-home"
+                variant="secondary"
+                icon="arrow-undo"
+                label={t("scoreboard.undo") || "-1"}
                 onPress={() => handleCorrectPoint(0)}
-              >
-                <Ionicons name="arrow-undo" size={13} color="#94a3b8" />
-                <Text style={styles.btnUndoText}>{t("scoreboard.undo") || "-1"}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnSubAction]}
+              />
+              <ScoreboardActionButton
+                testID="btn-ace-home"
+                variant="secondary"
+                icon="flash"
+                label={"Ace"}
                 onPress={() => handleAce(0)}
                 disabled={serverIdx !== 0}
-              >
-                <Text style={styles.btnSubText}>{t("scoreboard.tennis.ace") || "Ás (Ace)"}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnSubAction]}
+                style={serverIdx !== 0 ? styles.btnDisabled : undefined}
+              />
+              <ScoreboardActionButton
+                testID="btn-df-home"
+                variant="secondary"
+                icon="close"
+                label={(locale === "pt" ? "FD" : "DF")}
                 onPress={() => handleDoubleFault(0)}
                 disabled={serverIdx !== 0}
-              >
-                <Text style={styles.btnSubText}>{t("scoreboard.tennis.doubleFault") || "Falta Dupla"}</Text>
-              </TouchableOpacity>
+                style={serverIdx !== 0 ? styles.btnDisabled : undefined}
+              />
+            </>
+          ) : undefined
+        }
+        left={
+          <ScoreboardTeamColumn
+            teamName={teamA}
+            subLabel={renderServerSubLabel(serverIdx === 0)}
+            score={formatPoints(points[0], points[1])}
+            pills={
+              <>
+                <View style={styles.badgePill}>
+                  <Text style={styles.badgeText}>
+                    {t("scoreboard.setsShort") || "Sets:"}{" "}
+                    <Text style={styles.digitalBadgeNum}>{setsWonA}</Text>
+                  </Text>
+                </View>
+                <View style={styles.badgePill}>
+                  <Text style={styles.badgeText}>
+                    {t("scoreboard.gamesShort") || "Jogos:"}{" "}
+                    <Text style={styles.digitalBadgeNum}>{games[0]}</Text>
+                  </Text>
+                </View>
+              </>
+            }
+          />
+        }
+        center={
+          <View style={styles.centerColumn}>
+            <Text style={styles.centerSetGameText}>
+              {isTiebreak
+                ? "TIE-BREAK"
+                : `${"Set"} ${sets.length + 1} • ${
+                    (locale === "pt" ? "Jogo" : "Game")
+                  } ${games[0] + games[1] + 1}`}
+            </Text>
+
+            <View style={styles.gamesBox}>
+              <Text style={styles.gamesLabel}>
+                {t("scoreboard.gamesUpper") || "JOGOS"}
+              </Text>
+              <Text style={styles.gamesDigital}>
+                {games[0]} - {games[1]}
+              </Text>
             </View>
-          </View>
-        )}
-      </View>
 
-      {/* Column 2: Center Info, Games Board, Server Side & Technical Alerts */}
-      <View style={styles.centerColumn}>
-        <View style={styles.periodPill}>
-          <Text style={styles.periodPillText}>
-            {isTiebreak ? "TIE-BREAK" : `SET ${sets.length + 1}`}
-          </Text>
-        </View>
-
-        {/* Games Board in Digital Font */}
-        <View style={styles.gamesBox}>
-          <Text style={styles.gamesLabel}>{t("scoreboard.gamesUpper") || "JOGOS"}</Text>
-          <Text style={styles.gamesDigital}>
-            {games[0]} - {games[1]}
-          </Text>
-        </View>
-
-        {/* Court Side */}
-        <View style={styles.courtSideRow}>
-          <Ionicons name="swap-horizontal" size={11} color="#60a5fa" />
-          <Text style={styles.courtSideText}>
-            {isDeuceCourt ? (t("scoreboard.tennis.rightDeuceSide") || "Lado Direito") : (t("scoreboard.tennis.leftAdvantageSide") || "Lado Esquerdo")}
-          </Text>
-        </View>
-
-        {/* Context Alerts */}
-        {isBreakPoint && (
-          <View style={styles.alertPillBreak}>
-            <Text style={styles.alertTextBreak}>{t("scoreboard.tennis.breakPoint") || "BREAK POINT"}</Text>
-          </View>
-        )}
-        {isDeuceAlert && (
-          <View style={styles.alertPillDeuce}>
-            <Text style={styles.alertTextDeuce}>
-              {noAd ? (t("scoreboard.tennis.goldenPoint") || "PONTO DE OURO") : (t("scoreboard.tennis.deuce") || "DEUCE")}
-            </Text>
-          </View>
-        )}
-        {isChangeOfEnds && (
-          <View style={styles.alertPillSwitch}>
-            <Text style={styles.alertTextSwitch}>{t("scoreboard.courtSwitch") || "TROCA DE CAMPO"}</Text>
-          </View>
-        )}
-
-        {/* Toggle Server */}
-        {canEdit && (
-          <TouchableOpacity style={styles.serverToggleBtn} onPress={toggleServer}>
-            <Ionicons name="sync" size={11} color="#60a5fa" />
-            <Text style={styles.serverToggleText}>{t("scoreboard.tennis.toggleServer") || "Alternar Servidor"}</Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Finalize Match */}
-        {canEdit && (
-          <TouchableOpacity style={styles.endMatchBtn} onPress={handleFinalizeMatch}>
-            <Ionicons name="checkmark-circle-outline" size={13} color="#f87171" />
-            <Text style={styles.endMatchText}>{t("scoreboard.endMatch") || "Terminar"}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Column 3: Team Away */}
-      <View style={styles.teamColumn}>
-        <View style={styles.teamHeaderRow}>
-          {serverIdx === 1 && (
-            <View style={styles.servingBadgeAway}>
-              <Text style={styles.servingTextAway}>{t("scoreboard.serving") || "A SERVIR"}</Text>
+            <View style={styles.courtSideRow}>
+              <Ionicons
+                name="swap-horizontal"
+                size={12}
+                color={ScoreBoardTheme.onSurfaceVariant}
+              />
+              <Text style={styles.courtSideText} numberOfLines={1}>
+                {isDeuceCourt
+                  ? t("scoreboard.tennis.rightDeuceSide") ||
+                    "Right Side (Deuce)"
+                  : t("scoreboard.tennis.leftAdvantageSide") ||
+                    "Left Side (Ad)"}
+              </Text>
             </View>
-          )}
-          <Text style={styles.teamName} numberOfLines={1}>
-            {teamB}
-          </Text>
-        </View>
 
-        {/* Stats Badges */}
-        <View style={styles.statsBadgesRow}>
-          <View style={styles.badgePill}>
-            <Text style={styles.badgeText}>
-              {t("scoreboard.gamesShort") || "Jogos:"} <Text style={styles.digitalBadgeNum}>{games[1]}</Text>
-            </Text>
-          </View>
-          <View style={styles.badgePill}>
-            <Text style={styles.badgeText}>
-              {t("scoreboard.setsShort") || "Sets:"} <Text style={styles.digitalBadgeNum}>{setsWonB}</Text>
-            </Text>
-          </View>
-        </View>
+            {isBreakPoint && (
+              <View style={styles.alertPill}>
+                <Text style={styles.alertText}>
+                  {t("scoreboard.tennis.breakPoint") || "BREAK POINT"}
+                </Text>
+              </View>
+            )}
+            {isDeuceAlert && (
+              <View style={styles.alertPill}>
+                <Text style={styles.alertText}>
+                  {noAd
+                    ? t("scoreboard.tennis.goldenPoint") || "PONTO DE OURO"
+                    : t("scoreboard.tennis.deuce") || "DEUCE"}
+                </Text>
+              </View>
+            )}
+            {isChangeOfEnds && (
+              <View style={styles.alertPill}>
+                <Text style={styles.alertText}>
+                  {t("scoreboard.courtSwitch") || "TROCA DE CAMPO"}
+                </Text>
+              </View>
+            )}
 
-        {/* Big Away Point in Digital Font */}
-        <Text style={[styles.scoreDigital, { color: ScoreBoardTheme.onSurface }]}>
-          {formatPoints(points[1], points[0])}
-        </Text>
-
-        {/* Away Controls */}
-        {canEdit && (
-          <View style={styles.controlsBlock}>
-            <View style={styles.buttonRow}>
+            {canEdit && (
               <TouchableOpacity
-                style={[styles.btn, styles.btnUndo]}
-                onPress={() => handleCorrectPoint(1)}
+                testID="toggle-server-btn"
+                style={styles.serverToggleBtn}
+                onPress={toggleServer}
+                activeOpacity={0.75}
               >
-                <Ionicons name="arrow-undo" size={13} color="#94a3b8" />
-                <Text style={styles.btnUndoText}>{t("scoreboard.undo") || "-1"}</Text>
+                <Ionicons
+                  name="sync"
+                  size={12}
+                  color={ScoreBoardTheme.onSurfaceVariant}
+                />
+                <Text style={styles.serverToggleText}>
+                  {t("scoreboard.tennis.toggleServer") || "Alternar Servidor"}
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnPoint, styles.btnPointAway]}
+            )}
+          </View>
+        }
+        right={
+          <ScoreboardTeamColumn
+            teamName={teamB}
+            subLabel={renderServerSubLabel(serverIdx === 1)}
+            score={formatPoints(points[1], points[0])}
+            pills={
+              <>
+                <View style={styles.badgePill}>
+                  <Text style={styles.badgeText}>
+                    {t("scoreboard.setsShort") || "Sets:"}{" "}
+                    <Text style={styles.digitalBadgeNum}>{setsWonB}</Text>
+                  </Text>
+                </View>
+                <View style={styles.badgePill}>
+                  <Text style={styles.badgeText}>
+                    {t("scoreboard.gamesShort") || "Jogos:"}{" "}
+                    <Text style={styles.digitalBadgeNum}>{games[1]}</Text>
+                  </Text>
+                </View>
+              </>
+            }
+          />
+        }
+        rightActions={
+          canEdit ? (
+            <>
+              <ScoreboardActionButton
+                testID="btn-point-away"
+                variant="primary"
+                icon="add"
+                label={"Pt"}
                 onPress={() => handlePoint(1)}
-              >
-                <Ionicons name="add" size={15} color={ScoreBoardTheme.surfaceContainerLowest} />
-                <Text style={styles.btnPointText}>{t("scoreboard.point") || "PONTO"}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnSubAction]}
-                onPress={() => handleDoubleFault(1)}
-                disabled={serverIdx !== 1}
-              >
-                <Text style={styles.btnSubText}>{t("scoreboard.tennis.doubleFault") || "Falta Dupla"}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnSubAction]}
+              />
+              <ScoreboardActionButton
+                testID="btn-undo-away"
+                variant="secondary"
+                icon="arrow-undo"
+                label={t("scoreboard.undo") || "-1"}
+                onPress={() => handleCorrectPoint(1)}
+              />
+              <ScoreboardActionButton
+                testID="btn-ace-away"
+                variant="secondary"
+                icon="flash"
+                label={"Ace"}
                 onPress={() => handleAce(1)}
                 disabled={serverIdx !== 1}
-              >
-                <Text style={styles.btnSubText}>{t("scoreboard.tennis.ace") || "Ás (Ace)"}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </View>
+                style={serverIdx !== 1 ? styles.btnDisabled : undefined}
+              />
+              <ScoreboardActionButton
+                testID="btn-df-away"
+                variant="secondary"
+                icon="close"
+                label={(locale === "pt" ? "FD" : "DF")}
+                onPress={() => handleDoubleFault(1)}
+                disabled={serverIdx !== 1}
+                style={serverIdx !== 1 ? styles.btnDisabled : undefined}
+              />
+            </>
+          ) : undefined
+        }
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  landscapeContainer: {
+  shell: {
     flex: 1,
-    flexDirection: "row",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "transparent",
-    alignItems: "stretch",
-    gap: 8,
     position: "relative",
   },
-  tossOverlay: {
+  tossBackdrop: {
     position: "absolute",
-    top: 6,
-    left: 12,
-    right: 12,
-    zIndex: 20,
-    backgroundColor: "#101626",
-    borderWidth: 1,
-    borderColor: "#4f46e5",
-    borderRadius: 12,
-    padding: 10,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 30,
+    backgroundColor: "rgba(7, 8, 13, 0.86)",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 8,
+    justifyContent: "center",
+    padding: 16,
+  },
+  tossCard: {
+    width: "90%",
+    maxWidth: 400,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    padding: 20,
+    alignItems: "center",
+  },
+  tossIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
   },
   tossTitle: {
-    fontSize: 10,
-    fontWeight: "900",
-    color: "#818cf8",
-    letterSpacing: 1,
-    marginBottom: 6,
+    fontSize: 16,
+    fontWeight: "700",
+    color: ScoreBoardTheme.onSurface,
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  tossSubtitle: {
+    fontSize: 12,
+    color: ScoreBoardTheme.textMuted,
+    textAlign: "center",
+    marginBottom: 16,
   },
   tossButtonsRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: 10,
     width: "100%",
-    maxWidth: 320,
   },
   tossBtn: {
     flex: 1,
-    backgroundColor: "#4f46e5",
-    paddingVertical: 7,
-    borderRadius: 8,
+    backgroundColor: ScoreBoardTheme.onSurface,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 10,
     alignItems: "center",
   },
   tossBtnText: {
-    color: "#ffffff",
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  teamColumn: {
-    flex: 1,
-    backgroundColor: ScoreBoardTheme.surfaceContainer,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: ScoreBoardTheme.borderSubtle,
-    padding: 10,
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  teamHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  teamDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  teamName: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: "#f8fafc",
-    maxWidth: 110,
-  },
-  servingBadge: {
-    backgroundColor: "rgba(129, 140, 248, 0.2)",
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 4,
-  },
-  servingText: {
-    fontSize: 8,
-    fontWeight: "900",
-    color: "#818cf8",
-  },
-  servingBadgeAway: {
-    backgroundColor: "rgba(78, 222, 163, 0.2)",
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 4,
-  },
-  servingTextAway: {
-    fontSize: 8,
-    fontWeight: "900",
-    color: "#4edea3",
-  },
-  statsBadgesRow: {
-    flexDirection: "row",
-    gap: 6,
-    marginVertical: 2,
-  },
-  badgePill: {
-    backgroundColor: "#151e33",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: "#1e293b",
-  },
-  badgeText: {
-    fontSize: 9,
-    color: "#94a3b8",
-    fontWeight: "700",
-  },
-  digitalBadgeNum: {
-    fontFamily: "Digital7Mono",
-    fontSize: 12,
-    color: "#f8fafc",
-  },
-  scoreDigital: {
-    fontFamily: "Digital7Mono",
-    fontSize: 52,
-    lineHeight: 56,
-  },
-  controlsBlock: {
-    width: "100%",
-    gap: 5,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    gap: 5,
-    width: "100%",
-  },
-  btn: {
-    flex: 1,
-    paddingVertical: 7,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  btnPoint: {
-    flex: 2,
-    flexDirection: "row",
-    backgroundColor: ScoreBoardTheme.onSurface,
-    gap: 4,
-  },
-  btnPointAway: {
-    backgroundColor: ScoreBoardTheme.onSurface,
-  },
-  btnPointText: {
     color: ScoreBoardTheme.surfaceContainerLowest,
     fontSize: 13,
     fontWeight: "700",
   },
-  btnUndo: {
-    flex: 1,
+  servingPill: {
     flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
     backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
     borderColor: ScoreBoardTheme.borderSubtle,
-    gap: 2,
   },
-  btnUndoText: {
-    color: "#94a3b8",
-    fontSize: 11,
-    fontWeight: "800",
+  servingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: ScoreBoardTheme.onSurface,
   },
-  btnSubAction: {
-    backgroundColor: "#161f36",
-    borderWidth: 1,
-    borderColor: "#222f50",
-    paddingVertical: 5,
-  },
-  btnSubText: {
-    color: "#cbd5e1",
-    fontSize: 9,
+  servingPillText: {
+    fontSize: 10,
     fontWeight: "700",
+    color: ScoreBoardTheme.onSurface,
+    letterSpacing: 0.5,
+  },
+  receiverText: {
+    fontSize: 11,
+    color: ScoreBoardTheme.textMuted,
+    fontWeight: "500",
+  },
+  badgePill: {
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+  },
+  badgeText: {
+    fontSize: 10,
+    color: ScoreBoardTheme.textMuted,
+    fontWeight: "600",
+  },
+  digitalBadgeNum: {
+    fontFamily: "Digital7Mono",
+    fontSize: 12,
+    color: ScoreBoardTheme.onSurface,
+    fontVariant: ["tabular-nums"],
+  },
+  btnDisabled: {
+    opacity: 0.35,
   },
   centerColumn: {
-    width: 140,
-    backgroundColor: "#0b101c",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#1e293b",
-    padding: 8,
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 4,
   },
-  periodPill: {
-    backgroundColor: "rgba(251, 191, 36, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(251, 191, 36, 0.3)",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  periodPillText: {
-    fontSize: 10,
-    fontWeight: "900",
-    color: "#fbbf24",
+  centerSetGameText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: ScoreBoardTheme.textMuted,
+    textAlign: "center",
   },
   gamesBox: {
     alignItems: "center",
-    backgroundColor: "#141c2e",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
-    borderColor: "#222f50",
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 8,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 10,
   },
   gamesLabel: {
     fontSize: 8,
-    color: "#94a3b8",
+    color: ScoreBoardTheme.textMuted,
     fontWeight: "700",
+    letterSpacing: 0.6,
   },
   gamesDigital: {
     fontFamily: "Digital7Mono",
-    fontSize: 22,
-    color: "#ffffff",
+    fontSize: 24,
+    lineHeight: 28,
+    color: ScoreBoardTheme.onSurface,
+    fontVariant: ["tabular-nums"],
   },
   courtSideRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
+    gap: 4,
   },
   courtSideText: {
+    fontSize: 10,
+    color: ScoreBoardTheme.onSurfaceVariant,
+    fontWeight: "500",
+  },
+  alertPill: {
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  alertText: {
     fontSize: 9,
-    color: "#94a3b8",
     fontWeight: "700",
-  },
-  alertPillBreak: {
-    backgroundColor: "rgba(244, 63, 94, 0.2)",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  alertTextBreak: {
-    fontSize: 8,
-    fontWeight: "900",
-    color: "#f43f5e",
-  },
-  alertPillDeuce: {
-    backgroundColor: "rgba(251, 191, 36, 0.2)",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  alertTextDeuce: {
-    fontSize: 9,
-    fontWeight: "900",
-    color: "#fbbf24",
-  },
-  alertPillSwitch: {
-    backgroundColor: "rgba(96, 165, 250, 0.2)",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  alertTextSwitch: {
-    fontSize: 9,
-    fontWeight: "900",
-    color: "#60a5fa",
+    color: ScoreBoardTheme.onSurface,
+    letterSpacing: 0.5,
   },
   serverToggleBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
-    backgroundColor: "#141c2e",
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 6,
+    gap: 5,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
   },
   serverToggleText: {
-    fontSize: 9,
-    fontWeight: "800",
-    color: "#94a3b8",
-  },
-  endMatchBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(244, 63, 94, 0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(244, 63, 94, 0.25)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  endMatchText: {
-    fontSize: 9,
-    fontWeight: "800",
-    color: "#f87171",
+    fontSize: 11,
+    fontWeight: "600",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
 });

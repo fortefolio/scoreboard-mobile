@@ -15,11 +15,18 @@ import { TopBar } from "@/components/TopBar";
 import { FeedHeader } from "@/components/FeedHeader";
 import { MatchCard } from "@/components/MatchCard";
 import { MatchListItem } from "@/components/MatchListItem";
+import { GroupedMatchList } from "@/components/GroupedMatchList";
 import { Pagination } from "@/components/Pagination";
 import { AuthModal } from "@/components/AuthModal";
 import { CreateMatchModal } from "@/components/match/CreateMatchModal";
 import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
+import { GuestLandingHero } from "@/components/home/GuestLandingHero";
+import {
+  TechnicalCapabilitiesSection,
+  SectionDivider,
+} from "@/components/home/TechnicalCapabilitiesSection";
 import { useAuth } from "@/components/AuthProvider";
+import { useSafeRefresh } from "@/lib/hooks/useSafeRefresh";
 import { useTranslation } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
 import { ScoreBoardTheme } from "@/constants/theme";
@@ -27,10 +34,12 @@ import { ScoreBoardTheme } from "@/constants/theme";
 const MATCHES_PER_PAGE = 12;
 
 export default function MatchesFeedScreen() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { user } = useAuth();
   const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
+  const feedDividerYRef = useRef<number>(0);
+  const { refreshEnabled, scrollHandlers } = useSafeRefresh();
 
   const [viewMode, setViewMode] = useState<"list" | "cards">("list");
   const [selectedSport, setSelectedSport] = useState<string>("all");
@@ -39,6 +48,7 @@ export default function MatchesFeedScreen() {
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [authModalVisible, setAuthModalVisible] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<"login" | "signup">("login");
   const [createModalVisible, setCreateModalVisible] = useState(false);
 
   const [matches, setMatches] = useState<any[]>([]);
@@ -168,12 +178,79 @@ export default function MatchesFeedScreen() {
     return filteredMatches.slice(start, start + MATCHES_PER_PAGE);
   }, [filteredMatches, safePage]);
 
+  const guestMatches = useMemo(() => {
+    const getPriority = (status?: string) => {
+      const s = status?.toLowerCase();
+      if (s === "ongoing" || s === "live") return 0;
+      if (s === "scheduled" || s === "upcoming") return 1;
+      return 2;
+    };
+
+    const sorted = [...matches].sort((a, b) => {
+      const pDiff = getPriority(a.status) - getPriority(b.status);
+      if (pDiff !== 0) return pDiff;
+      const tA = new Date(a.scheduled_at || a.created_at || 0).getTime();
+      const tB = new Date(b.scheduled_at || b.created_at || 0).getTime();
+      return tB - tA;
+    });
+
+    const seenTournaments = new Set<string>();
+    const picked: any[] = [];
+    for (const m of sorted) {
+      if (m.tournament_id) {
+        if (seenTournaments.has(m.tournament_id)) continue;
+        seenTournaments.add(m.tournament_id);
+      }
+      picked.push(m);
+      if (picked.length >= 6) break;
+    }
+    return picked;
+  }, [matches]);
+
+  const openAuthModal = (mode: "login" | "signup" = "login") => {
+    setAuthModalMode(mode);
+    setAuthModalVisible(true);
+  };
+
   const renderEmpty = () => {
     if (loading) {
       return (
         <View style={styles.emptyContainer}>
           <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
           <Text style={styles.loadingText}>{t("common.loading") || "Loading live data..."}</Text>
+        </View>
+      );
+    }
+
+    if (!user) {
+      return (
+        <View style={styles.guestEmptyCard}>
+          <View style={styles.guestEmptyIconBox}>
+            <Ionicons name="trophy-outline" size={24} color={ScoreBoardTheme.textMuted} />
+          </View>
+          <Text style={styles.emptyTitle}>
+            {t("home.noMatchesFound") || "No matches found"}
+          </Text>
+          <Text style={styles.emptySubtitle}>
+            {locale === "pt"
+              ? "Ainda não existem jogos em direto ou recentes disponíveis."
+              : "No live or recent matches are available right now."}
+          </Text>
+          <View style={styles.guestEmptyActions}>
+            <TouchableOpacity
+              style={styles.clearBtn}
+              onPress={() => router.push("/(tabs)/tournaments" as any)}
+            >
+              <Text style={styles.clearBtnText}>
+                {t("nav.tournaments") || "Tournaments"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.clearBtn} onPress={clearFilters}>
+              <Text style={styles.clearBtnText}>
+                {t("common.clearFilters") || "Clear Filters"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       );
     }
@@ -205,55 +282,95 @@ export default function MatchesFeedScreen() {
       {/* Top Application Bar */}
       <TopBar onSearchPress={() => {}} />
 
-      {/* Persistent Filters & Search (Placed outside FlatList so TextInput never loses focus) */}
-      <FeedHeader
-        selectedSport={selectedSport}
-        onSportChange={handleSportChange}
-        searchQuery={searchQuery}
-        onSearchChange={handleSearchChange}
-        statusFilter={statusFilter}
-        onStatusChange={handleStatusChange}
-        displayCount={filteredMatches.length}
-        countLabel={t("nav.matches") || "Matches"}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        showViewToggle={true}
-        sortOrder={sortOrder}
-        onSortOrderChange={(order) => {
-          setSortOrder(order);
-          setCurrentPage(1);
-        }}
-        matches={matches}
-        tournaments={tournaments}
-        currentTab="matches"
-        primaryActionLabel={t("common.newMatch")}
-        onPrimaryAction={() => {
-          if (!user) {
-            setAuthModalVisible(true);
-          } else {
-            setCreateModalVisible(true);
-          }
-        }}
-      />
+      {/* Persistent Filters & Search (Authenticated only) */}
+      {user && (
+        <FeedHeader
+          selectedSport={selectedSport}
+          onSportChange={handleSportChange}
+          searchQuery={searchQuery}
+          onSearchChange={handleSearchChange}
+          statusFilter={statusFilter}
+          onStatusChange={handleStatusChange}
+          displayCount={filteredMatches.length}
+          countLabel={t("nav.matches") || "Matches"}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          showViewToggle={true}
+          sortOrder={sortOrder}
+          onSortOrderChange={(order) => {
+            setSortOrder(order);
+            setCurrentPage(1);
+          }}
+          matches={matches}
+          tournaments={tournaments}
+          currentTab="matches"
+          primaryActionLabel={t("common.newMatch")}
+          onPrimaryAction={() => setCreateModalVisible(true)}
+        />
+      )}
 
       {/* Matches Feed List */}
       <FlatList
         ref={flatListRef}
-        data={paginatedData}
+        data={
+          !user
+            ? guestMatches
+            : viewMode === "list"
+            ? paginatedData.length > 0
+              ? [{ id: "__grouped__" }]
+              : []
+            : paginatedData
+        }
         keyExtractor={(item) => item.id}
         keyboardShouldPersistTaps="handled"
+        ListHeaderComponent={
+          !user ? (
+            <>
+              <GuestLandingHero
+                onGetStarted={() => openAuthModal("signup")}
+                onWatchLiveFeeds={() =>
+                  flatListRef.current?.scrollToOffset({
+                    offset: feedDividerYRef.current,
+                    animated: true,
+                  })
+                }
+              />
+              <View
+                onLayout={(e) => {
+                  feedDividerYRef.current = e.nativeEvent.layout.y;
+                }}
+              >
+                <SectionDivider
+                  label={
+                    locale === "pt"
+                      ? "JOGOS EM DIRETO E RECENTES"
+                      : "LIVE & RECENT MATCHES"
+                  }
+                />
+              </View>
+            </>
+          ) : undefined
+        }
         renderItem={({ item }) =>
-          viewMode === "list" ? (
+          !user ? (
             <MatchListItem
               match={item}
-              onAuthRequired={() => setAuthModalVisible(true)}
+              showFavorite={false}
+              onAuthRequired={() => openAuthModal("login")}
+            />
+          ) : viewMode === "list" ? (
+            <GroupedMatchList
+              matches={paginatedData}
+              onAuthRequired={() => openAuthModal("login")}
             />
           ) : (
-            <MatchCard match={item} onAuthRequired={() => setAuthModalVisible(true)} />
+            <MatchCard match={item} onAuthRequired={() => openAuthModal("login")} />
           )
         }
         ListFooterComponent={
-          filteredMatches.length > 0 ? (
+          !user ? (
+            <TechnicalCapabilitiesSection />
+          ) : filteredMatches.length > 0 ? (
             <Pagination
               currentPage={safePage}
               totalPages={totalPages}
@@ -263,17 +380,24 @@ export default function MatchesFeedScreen() {
         }
         ListEmptyComponent={renderEmpty()}
         contentContainerStyle={styles.listContent}
+        overScrollMode="never"
+        {...scrollHandlers}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
+            enabled={refreshEnabled}
             tintColor={ScoreBoardTheme.onSurfaceVariant}
             colors={[ScoreBoardTheme.onSurfaceVariant]}
           />
         }
       />
 
-      <AuthModal visible={authModalVisible} onClose={() => setAuthModalVisible(false)} />
+      <AuthModal
+        visible={authModalVisible}
+        initialMode={authModalMode}
+        onClose={() => setAuthModalVisible(false)}
+      />
       {user && (
         <CreateMatchModal
           visible={createModalVisible}
@@ -338,5 +462,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "500",
     color: ScoreBoardTheme.primary,
+  },
+  guestEmptyCard: {
+    backgroundColor: "#11141c",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(238, 240, 245, 0.08)",
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    marginVertical: 8,
+  },
+  guestEmptyIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#161a24",
+    borderWidth: 1,
+    borderColor: "rgba(238, 240, 245, 0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  guestEmptyActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
   },
 });

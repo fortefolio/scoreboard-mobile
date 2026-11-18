@@ -57,13 +57,13 @@ describe("Mobile Football UI Interaction Tests — Official Match (Sporting CP v
     expect(screen.getAllByText("Sporting CP")[0]).toBeInTheDocument();
     expect(screen.getAllByText("AC. Viseu")[0]).toBeInTheDocument();
     expect(screen.getByText("25:00")).toBeInTheDocument();
-    expect(screen.getByText("1ª Parte")).toBeInTheDocument();
+    expect(screen.getAllByText("1ª Parte").length).toBeGreaterThan(0);
   });
 
   it("registers a goal (+1 GOLO) and handles VAR goal cancellation (-1)", async () => {
     render(<FootballScoreboard matchData={mockFootballMatch} canEdit={true} />);
 
-    const goalBtns = screen.getAllByText("+1 GOLO");
+    const goalBtns = screen.getAllByText("Golo");
     const sportingGoalBtn = goalBtns[0];
 
     // Sporting scores
@@ -97,8 +97,8 @@ describe("Mobile Football UI Interaction Tests — Official Match (Sporting CP v
   it("registers yellow and red disciplinary cards on the UI", async () => {
     render(<FootballScoreboard matchData={mockFootballMatch} canEdit={true} />);
 
-    const yellowBtns = screen.getAllByText("Amarelo");
-    const redBtns = screen.getAllByText("Vermelho");
+    const yellowBtns = screen.getAllByText("CA");
+    const redBtns = screen.getAllByText("CV");
 
     // AC Viseu yellow card
     fireEvent.click(yellowBtns[1]);
@@ -128,8 +128,8 @@ describe("Mobile Football UI Interaction Tests — Official Match (Sporting CP v
   it("registers match statistics (+Canto and +Falta)", async () => {
     render(<FootballScoreboard matchData={mockFootballMatch} canEdit={true} />);
 
-    const cornerBtns = screen.getAllByText("+Canto");
-    const foulBtns = screen.getAllByText("+Falta");
+    const cornerBtns = screen.getAllByText("+C");
+    const foulBtns = screen.getAllByText("+F");
 
     // Corner for Sporting
     fireEvent.click(cornerBtns[0]);
@@ -176,7 +176,7 @@ describe("Mobile Football UI Interaction Tests — Official Match (Sporting CP v
   it("changes match period to Intervalo (pausing clock) when period pill is clicked", async () => {
     render(<FootballScoreboard matchData={mockFootballMatch} canEdit={true} />);
 
-    const periodBtn = screen.getByText("1ª Parte");
+    const periodBtn = screen.getByTestId("period-cycle-btn");
     fireEvent.click(periodBtn);
 
     await waitFor(() => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,22 +11,36 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { MatchCard } from "@/components/MatchCard";
+import { GroupedMatchList } from "@/components/GroupedMatchList";
 import { TournamentCard } from "@/components/TournamentCard";
 import { TopBar } from "@/components/TopBar";
+import { FeedHeader } from "@/components/FeedHeader";
+import { Pagination } from "@/components/Pagination";
+import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
 import { ScoreBoardTheme } from "@/constants/theme";
 import { useLanguage } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
 
+const ITEMS_PER_PAGE = 10;
+
 export default function PublicUserProfileScreen() {
   const { username } = useLocalSearchParams<{ username: string }>();
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const isPt = locale === "pt";
 
   const [profileUser, setProfileUser] = useState<any | null>(null);
   const [matches, setMatches] = useState<any[]>([]);
   const [tournaments, setTournaments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"matches" | "tournaments">("matches");
+
+  const [selectedSport, setSelectedSport] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+  const [viewMode, setViewMode] = useState<"list" | "cards">("list");
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   const usernameStr = (Array.isArray(username) ? username[0] : username) || "";
 
@@ -39,14 +53,16 @@ export default function PublicUserProfileScreen() {
           usernameStr
         );
 
-        let query = supabase.from("users").select("id, username, email, subscription_tier, created_at");
+        let query = supabase
+          .from("users")
+          .select("id, username, subscription_tier, created_at");
         if (isUuid) {
           query = query.or(`id.eq.${usernameStr},username.ilike.${usernameStr}`);
         } else {
           query = query.ilike("username", usernameStr);
         }
 
-        const { data: uData, error: uErr } = await query.maybeSingle();
+        const { data: uData } = await query.maybeSingle();
 
         if (uData) {
           setProfileUser(uData);
@@ -57,13 +73,13 @@ export default function PublicUserProfileScreen() {
               .select("*, tournaments(name)")
               .eq("organizer_id", uData.id)
               .order("created_at", { ascending: false })
-              .limit(50),
+              .limit(100),
             supabase
               .from("tournaments")
               .select("*")
               .eq("organizer_id", uData.id)
               .order("created_at", { ascending: false })
-              .limit(50),
+              .limit(100),
           ]);
 
           if (mRes.data) setMatches(mRes.data);
@@ -79,9 +95,56 @@ export default function PublicUserProfileScreen() {
     fetchUserProfile();
   }, [usernameStr]);
 
+  const filteredItems = useMemo(() => {
+    const source = activeTab === "matches" ? matches : tournaments;
+    const filtered = source.filter((item) => {
+      if (
+        selectedSport !== "all" &&
+        item.sport_type?.toLowerCase() !== selectedSport.toLowerCase()
+      ) {
+        return false;
+      }
+      if (statusFilter !== "all" && item.status?.toLowerCase() !== statusFilter.toLowerCase()) {
+        return false;
+      }
+      if (searchQuery.trim().length > 0) {
+        const q = searchQuery.toLowerCase();
+        const p1 = item.participants?.[0]?.name?.toLowerCase() || "";
+        const p2 = item.participants?.[1]?.name?.toLowerCase() || "";
+        const name = item.name?.toLowerCase() || "";
+        const tName = item.tournaments?.name?.toLowerCase() || "";
+        const sport = item.sport_type?.toLowerCase() || "";
+        if (
+          !p1.includes(q) &&
+          !p2.includes(q) &&
+          !name.includes(q) &&
+          !tName.includes(q) &&
+          !sport.includes(q)
+        ) {
+          return false;
+        }
+      }
+      return true;
+    });
+    return [...filtered].sort((a, b) => {
+      const tA = new Date(a.scheduled_at || a.start_date || a.created_at || 0).getTime();
+      const tB = new Date(b.scheduled_at || b.start_date || b.created_at || 0).getTime();
+      return sortOrder === "desc" ? tB - tA : tA - tB;
+    });
+  }, [activeTab, matches, tournaments, selectedSport, statusFilter, searchQuery, sortOrder]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedItems = useMemo(() => {
+    const start = (safePage - 1) * ITEMS_PER_PAGE;
+    return filteredItems.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredItems, safePage]);
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
+        <MatchAtmosphereBackground sportType="random" mode="spectator" />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
         </View>
@@ -92,104 +155,172 @@ export default function PublicUserProfileScreen() {
   if (!profileUser) {
     return (
       <SafeAreaView style={styles.safeArea}>
+        <MatchAtmosphereBackground sportType="random" mode="spectator" />
         <View style={styles.centered}>
           <Ionicons name="person-remove-outline" size={48} color="#ef4444" />
-          <Text style={styles.emptyTitle}>Utilizador não encontrado</Text>
+          <Text style={styles.emptyTitle}>
+            {isPt ? "Utilizador não encontrado" : "User not found"}
+          </Text>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={styles.backBtnText}>{t("common.back") || "Voltar"}</Text>
+            <Text style={styles.backBtnText}>{t("common.back") || "Back"}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 
+  const displayUsername =
+    profileUser.username || profileUser.email?.split("@")[0] || "user";
+  const memberSince = profileUser.created_at
+    ? new Date(profileUser.created_at).toLocaleDateString(
+        isPt ? "pt-PT" : "en-US",
+        { month: "short", year: "numeric" }
+      )
+    : null;
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      {/* Main Global TopBar */}
+      <MatchAtmosphereBackground sportType="random" mode="spectator" />
       <TopBar />
 
       {/* Top Bar */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#f8fafc" />
+          <Ionicons name="arrow-back" size={18} color={ScoreBoardTheme.onSurface} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
-          Perfil Público
+          {isPt ? "Perfil Público" : "Public Profile"}
         </Text>
         <View style={{ width: 32 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* User Profile Card */}
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        {/* Compact User Profile Card */}
         <View style={styles.profileCard}>
-          <View style={styles.avatarLarge}>
-            <Text style={styles.avatarText}>
-              {(profileUser.username?.[0] || profileUser.email?.[0] || "U").toUpperCase()}
-            </Text>
-          </View>
-
-          <Text style={styles.usernameText}>
-            @{profileUser.username || profileUser.email?.split("@")[0]}
-          </Text>
-
-          <View style={styles.tierBadge}>
-            <Ionicons name="shield-checkmark" size={14} color="#4edea3" />
-            <Text style={styles.tierText}>
-              {profileUser.subscription_tier === "pro" ? "PRO ORGANIZER" : "SCOREBOARD MEMBER"}
-            </Text>
-          </View>
-
-          {/* Quick Stats Grid */}
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Text style={styles.statNum}>{matches.length}</Text>
-              <Text style={styles.statLabel}>Jogos</Text>
+          <View style={styles.profileTopRow}>
+            <View style={styles.usernamePill}>
+              <Ionicons name="person-outline" size={13} color={ScoreBoardTheme.textMuted} />
+              <Text style={styles.usernamePillText} numberOfLines={1}>
+                @{displayUsername}
+              </Text>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statBox}>
-              <Text style={styles.statNum}>{tournaments.length}</Text>
-              <Text style={styles.statLabel}>Torneios</Text>
+
+            <View style={styles.tierBadge}>
+              <Text style={styles.tierText}>
+                {profileUser.subscription_tier === "pro"
+                  ? "PRO"
+                  : isPt
+                  ? "ORGANIZADOR"
+                  : "ORGANIZER"}
+              </Text>
             </View>
           </View>
+
+          {memberSince && (
+            <View style={styles.memberSinceRow}>
+              <Ionicons name="calendar-outline" size={12} color={ScoreBoardTheme.textMuted} />
+              <Text style={styles.memberSinceText}>
+                {isPt ? `Membro desde ${memberSince}` : `Member since ${memberSince}`}
+              </Text>
+            </View>
+          )}
         </View>
 
-        {/* Tab Switcher */}
+        {/* Tab Switcher with Counts */}
         <View style={styles.tabsRow}>
           <TouchableOpacity
             style={[styles.tabBtn, activeTab === "matches" && styles.tabBtnActive]}
-            onPress={() => setActiveTab("matches")}
+            onPress={() => {
+              setActiveTab("matches");
+              setCurrentPage(1);
+            }}
           >
             <Text style={[styles.tabText, activeTab === "matches" && styles.tabTextActive]}>
-              Jogos Criados ({matches.length})
+              {isPt ? `Jogos (${matches.length})` : `Matches (${matches.length})`}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.tabBtn, activeTab === "tournaments" && styles.tabBtnActive]}
-            onPress={() => setActiveTab("tournaments")}
+            onPress={() => {
+              setActiveTab("tournaments");
+              setCurrentPage(1);
+            }}
           >
             <Text style={[styles.tabText, activeTab === "tournaments" && styles.tabTextActive]}>
-              Torneios ({tournaments.length})
+              {isPt ? `Torneios (${tournaments.length})` : `Tournaments (${tournaments.length})`}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Content */}
-        {activeTab === "matches" ? (
-          matches.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyCardText}>Nenhum jogo público criado por este utilizador.</Text>
-            </View>
-          ) : (
-            matches.map((m) => <MatchCard key={m.id} match={m} />)
-          )
-        ) : tournaments.length === 0 ? (
+        {/* Unified FeedHeader */}
+        <View style={{ marginHorizontal: -16, marginBottom: 4 }}>
+          <FeedHeader
+            selectedSport={selectedSport}
+            onSportChange={(s) => {
+              setSelectedSport(s);
+              setCurrentPage(1);
+            }}
+            searchQuery={searchQuery}
+            onSearchChange={(q) => {
+              setSearchQuery(q);
+              setCurrentPage(1);
+            }}
+            statusFilter={statusFilter}
+            onStatusChange={(st) => {
+              setStatusFilter(st);
+              setCurrentPage(1);
+            }}
+            displayCount={filteredItems.length}
+            countLabel={activeTab}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            showViewToggle={true}
+            sortOrder={sortOrder}
+            onSortOrderChange={(order) => {
+              setSortOrder(order);
+              setCurrentPage(1);
+            }}
+            matches={matches}
+            tournaments={tournaments}
+            currentTab={activeTab}
+          />
+        </View>
+
+        {/* Filtered & Paginated Content */}
+        {paginatedItems.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyCardText}>Nenhum torneio público organizado.</Text>
+            <Text style={styles.emptyCardText}>
+              {activeTab === "matches"
+                ? isPt
+                  ? "Nenhum jogo público encontrado."
+                  : "No public matches found."
+                : isPt
+                ? "Nenhum torneio público encontrado."
+                : "No public tournaments found."}
+            </Text>
           </View>
+        ) : activeTab === "matches" ? (
+          viewMode === "list" ? (
+            <GroupedMatchList matches={paginatedItems} showOrganizer={false} />
+          ) : (
+            paginatedItems.map((m) => <MatchCard key={m.id} match={m} />)
+          )
         ) : (
-          tournaments.map((t) => <TournamentCard key={t.id} tournament={t} />)
+          paginatedItems.map((tItem) => (
+            <TournamentCard
+              key={tItem.id}
+              tournament={tItem}
+              compact={viewMode === "list"}
+            />
+          ))
         )}
+
+        <Pagination
+          currentPage={safePage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -212,118 +343,100 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: ScoreBoardTheme.borderSubtle,
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: ScoreBoardTheme.onSurface,
   },
   iconBtn: {
-    padding: 4,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    alignItems: "center",
+    justifyContent: "center",
   },
   scroll: {
     padding: 16,
+    paddingTop: 4,
     paddingBottom: 40,
   },
   profileCard: {
     backgroundColor: ScoreBoardTheme.surfaceContainer,
     borderWidth: 1,
     borderColor: ScoreBoardTheme.borderSubtle,
-    borderRadius: 20,
-    padding: 24,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 14,
+    gap: 10,
+  },
+  profileTopRow: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    justifyContent: "space-between",
+    gap: 10,
   },
-  avatarLarge: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
-    borderWidth: 1,
-    borderColor: ScoreBoardTheme.borderSubtle,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  avatarText: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: ScoreBoardTheme.onSurface,
-  },
-  usernameText: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: ScoreBoardTheme.onSurface,
-    marginBottom: 8,
-  },
-  tierBadge: {
+  usernamePill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "rgba(16, 185, 129, 0.12)",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
-    borderColor: "rgba(16, 185, 129, 0.3)",
+    borderColor: ScoreBoardTheme.borderSubtle,
     paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    flexShrink: 1,
+  },
+  usernamePillText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: ScoreBoardTheme.onSurface,
+  },
+  tierBadge: {
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    paddingHorizontal: 9,
     paddingVertical: 4,
-    borderRadius: 9999,
-    marginBottom: 20,
+    borderRadius: 6,
   },
   tierText: {
     fontSize: 10,
-    fontWeight: "800",
-    color: "#10b981",
-    letterSpacing: 1,
+    fontWeight: "700",
+    color: ScoreBoardTheme.onSurfaceVariant,
+    letterSpacing: 0.8,
   },
-  statsRow: {
+  memberSinceRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    borderTopWidth: 1,
-    borderTopColor: ScoreBoardTheme.borderSubtle,
-    paddingTop: 16,
+    gap: 6,
   },
-  statBox: {
-    flex: 1,
-    alignItems: "center",
-  },
-  statNum: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: ScoreBoardTheme.onSurface,
-  },
-  statLabel: {
-    fontSize: 11,
+  memberSinceText: {
+    fontSize: 12,
     color: ScoreBoardTheme.textMuted,
-    marginTop: 2,
-    textTransform: "uppercase",
-  },
-  statDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: ScoreBoardTheme.borderSubtle,
   },
   tabsRow: {
     flexDirection: "row",
     backgroundColor: ScoreBoardTheme.surfaceContainer,
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 16,
+    borderRadius: 10,
+    padding: 3,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: ScoreBoardTheme.borderSubtle,
+    gap: 3,
   },
   tabBtn: {
     flex: 1,
-    paddingVertical: 9,
+    paddingVertical: 8,
     alignItems: "center",
-    borderRadius: 8,
+    borderRadius: 7,
   },
   tabBtnActive: {
     backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
-    borderWidth: 1,
-    borderColor: ScoreBoardTheme.onSurfaceVariant,
   },
   tabText: {
     fontSize: 12,

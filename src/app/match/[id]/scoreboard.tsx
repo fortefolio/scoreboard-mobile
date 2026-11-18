@@ -194,40 +194,24 @@ export default function RefereeScoreboardScreen() {
         mode={canEdit ? "umpire" : "spectator"}
         forcedOrientation="landscape"
       />
-      {/* Top Referee Bar */}
-      <View style={styles.refereeHeader}>
-        <TouchableOpacity testID="scoreboard-back-btn" style={styles.iconBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="#f8fafc" />
-        </TouchableOpacity>
-
-        <View style={styles.headerTitleBox}>
-          <Text style={styles.refereeTitle}>{t("scoreboard.refereeConsole") || "CONSOLA DE ÁRBITRO"}</Text>
-          <Text style={styles.headerSport} numberOfLines={1}>
-            {match.sport_type} • {match.court || t("scoreboard.mainCourt") || "Campo Principal"}
-          </Text>
-        </View>
-
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <OfflineSyncBadge matchId={match.id} />
-          <View style={styles.wakeLockBadge}>
-            <Ionicons name="flash" size={14} color="#4edea3" />
-            <Text style={styles.wakeLockText}>{t("scoreboard.screenActive") || "ECRÃ ATIVO"}</Text>
-          </View>
-        </View>
-      </View>
 
       {!canEdit && (
         <View style={styles.spectatorBanner}>
-          <Ionicons name="eye-outline" size={18} color="#fbbf24" />
-          <Text style={styles.spectatorBannerText}>
+          <Ionicons name="eye-outline" size={16} color="#fbbf24" />
+          <Text style={styles.spectatorBannerText} numberOfLines={1}>
             {t("scoreboard.spectatorModeNotice") || "Modo Visualização: Apenas o árbitro designado ou o organizador podem registar pontos."}
           </Text>
         </View>
       )}
 
-      <ScoreboardProvider onBack={() => router.back()}>
-        {renderScoreboard()}
-      </ScoreboardProvider>
+      <View style={styles.scoreboardShell}>
+        <ScoreboardProvider
+          onBack={() => router.back()}
+          offlineBadge={<OfflineSyncBadge matchId={match.id} />}
+        >
+          {renderScoreboard()}
+        </ScoreboardProvider>
+      </View>
     </SafeAreaView>
   );
 }
@@ -267,48 +251,10 @@ const styles = StyleSheet.create({
     color: ScoreBoardTheme.onSurface,
     fontWeight: "500",
   },
-  refereeHeader: {
-    height: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: ScoreBoardTheme.borderSubtle,
-    backgroundColor: ScoreBoardTheme.surfaceContainer,
-  },
-  iconBtn: {
-    padding: 4,
-  },
-  headerTitleBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  refereeTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: ScoreBoardTheme.secondary,
-  },
-  headerSport: {
-    fontSize: 12,
-    color: ScoreBoardTheme.textMuted,
-  },
-  wakeLockBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: ScoreBoardTheme.borderSubtle,
-  },
-  wakeLockText: {
-    fontSize: 11,
-    fontWeight: "500",
-    color: ScoreBoardTheme.secondary,
+  scoreboardShell: {
+    flex: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   spectatorBanner: {
     flexDirection: "row",
@@ -316,8 +262,8 @@ const styles = StyleSheet.create({
     backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderBottomWidth: 1,
     borderBottomColor: ScoreBoardTheme.borderSubtle,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     gap: 8,
   },
   spectatorBannerText: {

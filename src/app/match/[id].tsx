@@ -9,15 +9,16 @@ import {
   Share,
   Alert,
   TextInput,
+  Modal,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/lib/i18n";
 import { useFollow } from "@/lib/hooks/useFollow";
 import { TopBar } from "@/components/TopBar";
-import { FollowButton } from "@/components/FollowButton";
+import { FollowButton, SportFavoriteButton } from "@/components/FollowButton";
 import { RuleModal } from "@/components/RuleModal";
 import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
 import { PlayByPlayTable } from "@/components/match/PlayByPlayTable";
@@ -48,6 +49,7 @@ export default function MatchDetailScreen() {
 
   const matchIdStr = (Array.isArray(id) ? id[0] : id) || "";
   const following = isFollowing(matchIdStr, "match");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Fetch match details and events
   const fetchMatch = useCallback(async () => {
@@ -56,7 +58,7 @@ export default function MatchDetailScreen() {
       const [matchRes, eventsRes] = await Promise.all([
         supabase
           .from("matches")
-          .select("*, tournaments(name)")
+          .select("*, tournaments(name, organizer_id)")
           .eq("id", matchIdStr)
           .single(),
         supabase
@@ -67,7 +69,18 @@ export default function MatchDetailScreen() {
       ]);
 
       if (matchRes.data) {
-        setMatch(matchRes.data);
+        let organizerData: { id?: string; username?: string } | null = null;
+        const ownerId =
+          matchRes.data.organizer_id || matchRes.data.tournaments?.organizer_id;
+        if (ownerId) {
+          const { data: oData } = await supabase
+            .from("users")
+            .select("id, username")
+            .eq("id", ownerId)
+            .maybeSingle();
+          organizerData = oData;
+        }
+        setMatch({ ...matchRes.data, organizer: organizerData });
       }
       if (eventsRes.data) {
         setEvents(eventsRes.data);
@@ -79,6 +92,12 @@ export default function MatchDetailScreen() {
       setRefreshing(false);
     }
   }, [matchIdStr]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchMatch();
+    }, [fetchMatch])
+  );
 
   useEffect(() => {
     fetchMatch();
@@ -281,8 +300,8 @@ export default function MatchDetailScreen() {
   const renderHeaderScores = () => {
     const scores = match.scores;
     if (match.sport_type === "Football") {
-      const gA = scores?.football?.goals?.[0] ?? scores?.goals?.[0] ?? 0;
-      const gB = scores?.football?.goals?.[1] ?? scores?.goals?.[1] ?? 0;
+      const gA = scores?.football?.goals?.[0] ?? scores?.goals?.[0] ?? scores?.current?.home ?? 0;
+      const gB = scores?.football?.goals?.[1] ?? scores?.goals?.[1] ?? scores?.current?.away ?? 0;
       return (
         <View style={styles.bigScoreRow}>
           <Text style={styles.bigScore}>{gA}</Text>
@@ -293,8 +312,8 @@ export default function MatchDetailScreen() {
     }
 
     if (match.sport_type === "Basketball") {
-      const pA = scores?.basketball?.total_points?.[0] ?? scores?.total_points?.[0] ?? 0;
-      const pB = scores?.basketball?.total_points?.[1] ?? scores?.total_points?.[1] ?? 0;
+      const pA = scores?.basketball?.total_points?.[0] ?? scores?.total_points?.[0] ?? scores?.current?.home ?? 0;
+      const pB = scores?.basketball?.total_points?.[1] ?? scores?.total_points?.[1] ?? scores?.current?.away ?? 0;
       return (
         <View style={styles.bigScoreRow}>
           <Text style={styles.bigScore}>{pA}</Text>
@@ -305,9 +324,9 @@ export default function MatchDetailScreen() {
     }
 
     if (match.sport_type === "Tennis" || match.sport_type === "Padel") {
-      const sets = scores?.tennis?.sets || [];
+      const sets = scores?.tennis?.sets || scores?.sets || [];
       const games = scores?.tennis?.games || [0, 0];
-      const points = scores?.tennis?.points || [0, 0];
+      const points = scores?.tennis?.points || [scores?.current?.home ?? 0, scores?.current?.away ?? 0];
       const TENNIS_PTS = ["0", "15", "30", "40", "AD"];
       const ptA = TENNIS_PTS[points[0]] || String(points[0]);
       const ptB = TENNIS_PTS[points[1]] || String(points[1]);
@@ -334,8 +353,8 @@ export default function MatchDetailScreen() {
     }
 
     if (match.sport_type === "Volleyball" || match.sport_type === "Beach Volleyball") {
-      const sets = scores?.volleyball?.sets || [];
-      const pts = scores?.volleyball?.current_points || [0, 0];
+      const sets = scores?.volleyball?.sets || scores?.sets || [];
+      const pts = scores?.volleyball?.current_points || [scores?.current?.home ?? 0, scores?.current?.away ?? 0];
       const setsA = sets.filter((s: any) => s[0] > s[1]).length;
       const setsB = sets.filter((s: any) => s[1] > s[0]).length;
 
@@ -370,62 +389,111 @@ export default function MatchDetailScreen() {
       {/* Main Global TopBar */}
       <TopBar />
 
-      {/* Top Header Bar */}
+      {/* Top Row: 32x32 Icon-only Back, Centered Tournament Pill, 32px Spacer */}
       <View style={styles.topNav}>
         <TouchableOpacity
           style={styles.navIconBtn}
           onPress={() => router.back()}
           testID="match-detail-back-btn"
+          accessibilityLabel="Back"
         >
-          <Ionicons name="arrow-back" size={20} color="#dce1fb" />
+          <Ionicons name="arrow-back" size={18} color={ScoreBoardTheme.onSurface} />
         </TouchableOpacity>
 
-        <Text style={styles.navTitle} numberOfLines={1}>
-          {match.tournaments?.name || match.sport_type}
-        </Text>
-
-        <View style={styles.navActions}>
-          <FollowButton
-            entityId={matchIdStr}
-            entityType="match"
-            size={16}
-          />
-
-          <TouchableOpacity style={styles.navIconBtn} onPress={handleShare}>
-            <Ionicons name="share-social-outline" size={20} color="#dce1fb" />
-          </TouchableOpacity>
+        <View style={styles.navCenter}>
+          {match.tournaments?.name ? (
+            <TouchableOpacity
+              style={styles.tournamentPill}
+              onPress={() => {
+                if (match.tournament_id) {
+                  router.push(`/tournament/${match.tournament_id}` as any);
+                }
+              }}
+              disabled={!match.tournament_id}
+              activeOpacity={0.75}
+            >
+              <Ionicons name="trophy-outline" size={13} color={ScoreBoardTheme.textMuted} />
+              <Text style={styles.tournamentPillText} numberOfLines={1}>
+                {match.tournaments.name}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={styles.navTitle} numberOfLines={1}>
+              {match.sport_type}
+            </Text>
+          )}
         </View>
+
+        <View style={styles.navSpacer} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Match Header Hero Card */}
         <View style={styles.heroCard}>
-          <View style={styles.heroMetaRow}>
-            <View style={styles.sportBadge}>
-              <Text style={styles.sportBadgeText}>{match.sport_type}</Text>
+          {/* Hero Top Bar: @organizer on left, SportFavoriteButton + 3-dots menu on right */}
+          <View style={styles.heroTopBar}>
+            <View style={styles.heroTopLeft}>
+              {(match.organizer?.username || match.organizer?.email) ? (
+                <TouchableOpacity
+                  style={styles.organizerPill}
+                  onPress={() => {
+                    const uname =
+                      match.organizer?.username ||
+                      match.organizer?.email?.split("@")[0];
+                    if (uname) router.push(`/user/${encodeURIComponent(uname)}` as any);
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <Ionicons name="person-outline" size={12} color={ScoreBoardTheme.textMuted} />
+                  <Text style={styles.organizerPillText} numberOfLines={1}>
+                    @{match.organizer?.username || match.organizer?.email?.split("@")[0]}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.sportBadge}>
+                  <Text style={styles.sportBadgeText}>{match.sport_type}</Text>
+                </View>
+              )}
+
+              {isOngoing ? (
+                <View style={styles.liveIndicator}>
+                  <View style={styles.livePulse} />
+                  <Text style={styles.liveText}>{t("status.live") || "EM DIRETO"}</Text>
+                </View>
+              ) : (
+                <Text style={styles.statusBadge}>
+                  {isCompleted
+                    ? t("status.completed") || "TERMINADO"
+                    : t("status.scheduled") || "AGENDADO"}
+                </Text>
+              )}
+
+              {match.court && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Ionicons name="location-outline" size={12} color={ScoreBoardTheme.textMuted} />
+                  <Text style={styles.courtBadge} numberOfLines={1}>
+                    {match.court}
+                  </Text>
+                </View>
+              )}
             </View>
 
-            {isOngoing ? (
-              <View style={styles.liveIndicator}>
-                <View style={styles.livePulse} />
-                <Text style={styles.liveText}>{t("status.live") || "EM DIRETO"}</Text>
-              </View>
-            ) : (
-              <Text style={styles.statusBadge}>
-                {isCompleted
-                  ? t("status.completed") || "TERMINADO"
-                  : t("status.scheduled") || "AGENDADO"}
-              </Text>
-            )}
-
-            {match.court && (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Ionicons name="location-outline" size={13} color={ScoreBoardTheme.textMuted} />
-                <Text style={styles.courtBadge} numberOfLines={1}>
-                  {match.court}
-                </Text>
-              </View>
-            )}
+            <View style={styles.heroTopRight}>
+              <SportFavoriteButton
+                entityId={matchIdStr}
+                entityType="match"
+                sport={match.sport_type}
+                size="sm"
+              />
+              <TouchableOpacity
+                style={styles.navIconBtn}
+                onPress={() => setMenuOpen(true)}
+                activeOpacity={0.75}
+                accessibilityLabel={t("match.options") || "Options"}
+              >
+                <Ionicons name="ellipsis-vertical" size={17} color={ScoreBoardTheme.onSurfaceVariant} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Teams vs Score Display */}
@@ -681,6 +749,50 @@ export default function MatchDetailScreen() {
         initialRules={match.settings}
         initialCourt={match.court}
       />
+
+      {/* 3-Dots Options Menu Modal */}
+      <Modal
+        visible={menuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setMenuOpen(false)}
+        >
+          <View style={styles.menuCard}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuOpen(false);
+                handleShare();
+              }}
+            >
+              <Ionicons name="share-outline" size={17} color={ScoreBoardTheme.onSurfaceVariant} />
+              <Text style={styles.menuItemText}>
+                {t("match.shareLink") || "Share Link"}
+              </Text>
+            </TouchableOpacity>
+
+            {canStart && (
+              <TouchableOpacity
+                style={[styles.menuItem, styles.menuItemDivider]}
+                onPress={() => {
+                  setMenuOpen(false);
+                  setRuleModalVisible(true);
+                }}
+              >
+                <Ionicons name="options-outline" size={17} color={ScoreBoardTheme.onSurfaceVariant} />
+                <Text style={styles.menuItemText}>
+                  {t("match.rules") || "Match Rules"}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -724,26 +836,53 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
+  },
+  navCenter: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+    minWidth: 0,
+  },
+  navSpacer: {
+    width: 32,
+  },
+  tournamentPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    maxWidth: "100%",
+  },
+  tournamentPillText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
   navTitle: {
     fontSize: 14,
-    fontWeight: "700",
-    color: "#cbd5e1",
-    maxWidth: "60%",
+    fontWeight: "600",
+    color: ScoreBoardTheme.onSurfaceVariant,
     textAlign: "center",
   },
   navIconBtn: {
-    padding: 6,
-  },
-  navActions: {
-    flexDirection: "row",
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
     alignItems: "center",
-    gap: 8,
+    justifyContent: "center",
   },
   scrollContent: {
     padding: 16,
+    paddingTop: 4,
     paddingBottom: 40,
   },
   heroCard: {
@@ -754,12 +893,75 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
-  heroMetaRow: {
+  heroTopBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 16,
     gap: 8,
+  },
+  heroTopLeft: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+    minWidth: 0,
+  },
+  heroTopRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexShrink: 0,
+  },
+  organizerPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    height: 28,
+    paddingHorizontal: 9,
+    borderRadius: 6,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    maxWidth: 160,
+  },
+  organizerPillText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: ScoreBoardTheme.textMuted,
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  menuCard: {
+    width: "100%",
+    maxWidth: 260,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    overflow: "hidden",
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+  },
+  menuItemDivider: {
+    borderTopWidth: 1,
+    borderTopColor: ScoreBoardTheme.borderSubtle,
+  },
+  menuItemText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: ScoreBoardTheme.onSurface,
   },
   sportBadge: {
     backgroundColor: ScoreBoardTheme.surfaceContainerHigh,

@@ -76,7 +76,7 @@ describe("Mobile Volleyball UI Interaction Tests — FPV Liga UNA Seguros (Clube
 
     render(<VolleyballScoreboard matchData={matchWithServer} canEdit={true} />);
 
-    const pointButtons = screen.getAllByText("PONTO");
+    const pointButtons = screen.getAllByText("Pt");
     const kairosAddPoint = pointButtons[0];
     const vianaAddPoint = pointButtons[1];
 
@@ -131,7 +131,7 @@ describe("Mobile Volleyball UI Interaction Tests — FPV Liga UNA Seguros (Clube
 
     render(<VolleyballScoreboard matchData={matchWithServer} canEdit={true} />);
 
-    const timeoutBtns = screen.getAllByText("Desconto");
+    const timeoutBtns = screen.getAllByText("Desc");
     const kairosTimeout = timeoutBtns[0];
 
     fireEvent.click(kairosTimeout);
@@ -168,7 +168,7 @@ describe("Mobile Volleyball UI Interaction Tests — FPV Liga UNA Seguros (Clube
     render(<VolleyballScoreboard matchData={matchIn5thSet} canEdit={true} />);
 
     // In 5th set, target is 15 points
-    expect(screen.getByText("SET 5 (NEGRA)")).toBeInTheDocument();
+    expect(screen.getAllByText("SET 5 (NEGRA)").length).toBeGreaterThan(0);
     expect(screen.getByText("15")).toBeInTheDocument();
   });
 });

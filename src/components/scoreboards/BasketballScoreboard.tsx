@@ -12,6 +12,11 @@ import { supabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/lib/i18n";
 import { recordMatchEventAtomic } from "@/lib/scoring/atomicScoring";
 import { ScoreBoardTheme } from "@/constants/theme";
+import {
+  ScoreboardMainCard,
+  ScoreboardTeamColumn,
+  ScoreboardActionButton,
+} from "@/components/scoreboards/ScoreboardLayout";
 
 interface BasketballScoreboardProps {
   matchData: any;
@@ -20,7 +25,7 @@ interface BasketballScoreboardProps {
 }
 
 export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballScoreboardProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const defaultQuarterMinutes = rules?.quarter_minutes || 10;
   const defaultShotClock = rules?.shot_clock_seconds || 24;
 
@@ -325,482 +330,382 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
     );
   };
 
-  return (
-    <View style={styles.landscapeContainer}>
-      {/* Column 1: Team Home */}
-      <View style={styles.teamColumn}>
-        <View style={styles.teamHeaderRow}>
-          <Text style={styles.teamName} numberOfLines={1}>
-            {teamA}
-          </Text>
-          {possession === "home" && (
-            <View style={styles.possessionBadge}>
-              <Text style={styles.possessionText}>{t("scoreboard.basketball.possession") || "POSSE"}</Text>
-            </View>
-          )}
-        </View>
+  const eventName =
+    matchData.tournaments?.name ||
+    t("match.singleMatch") ||
+    "Single Match";
 
-        <View style={styles.statsBadgesRow}>
-          <View style={[styles.badgePill, teamFouls.home >= 5 && styles.bonusPill]}>
-            <Text style={[styles.badgeText, teamFouls.home >= 5 && styles.bonusText]}>
-              {t("scoreboard.foulsShort") || "Faltas:"} <Text style={styles.digitalBadgeNum}>{teamFouls.home}</Text>
-              {teamFouls.home >= 5 ? ` ${t("scoreboard.basketball.bonus") || "(BÓNUS)"}` : ""}
-            </Text>
-          </View>
-          <View style={styles.badgePill}>
-            <Text style={styles.badgeText}>
-              {t("scoreboard.timeoutShort") || "Desc:"} <Text style={styles.digitalBadgeNum}>{timeouts.home}</Text>
-            </Text>
-          </View>
-        </View>
+  const renderSideActions = (side: "home" | "away") =>
+    canEdit ? (
+      <>
+        <ScoreboardActionButton
+          testID={`btn-plus1-${side}`}
+          variant="primary"
+          label="+1"
+          onPress={() => handleScore(side, 1)}
+          style={styles.railBtnCompact}
+        />
+        <ScoreboardActionButton
+          testID={`btn-plus2-${side}`}
+          variant="primary"
+          label="+2"
+          onPress={() => handleScore(side, 2)}
+          style={styles.railBtnCompact}
+        />
+        <ScoreboardActionButton
+          testID={`btn-plus3-${side}`}
+          variant="primary"
+          label="+3"
+          onPress={() => handleScore(side, 3)}
+          style={styles.railBtnCompact}
+        />
+        <ScoreboardActionButton
+          testID={`btn-undo-${side}`}
+          variant="secondary"
+          icon="arrow-undo"
+          label={t("scoreboard.undo") || "-1"}
+          onPress={() => handleCorrectScore(side)}
+          style={styles.railBtnCompact}
+        />
+        <ScoreboardActionButton
+          testID={`btn-foul-${side}`}
+          variant="secondary"
+          label={"+F"}
+          onPress={() => handleFoul(side)}
+          style={styles.railBtnCompact}
+        />
+        <ScoreboardActionButton
+          testID={`btn-timeout-${side}`}
+          variant="secondary"
+          label={(locale === "pt" ? "Desc" : "TO")}
+          onPress={() => handleTimeout(side)}
+          disabled={timeouts[side] <= 0}
+          style={[
+            styles.railBtnCompact,
+            timeouts[side] <= 0 ? styles.btnDisabled : undefined,
+          ]}
+        />
+      </>
+    ) : undefined;
 
-        {/* Big Home Score */}
-        <Text style={[styles.scoreDigital, { color: ScoreBoardTheme.onSurface }]}>{scores.home}</Text>
-
-        {/* Home Controls */}
-        {canEdit && (
-          <View style={styles.controlsBlock}>
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnPoint]}
-                onPress={() => handleScore("home", 1)}
-              >
-                <Text style={styles.btnPointText}>+1</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnPoint, styles.btnPoint2]}
-                onPress={() => handleScore("home", 2)}
-              >
-                <Text style={styles.btnPointText}>+2</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnPoint, styles.btnPoint3]}
-                onPress={() => handleScore("home", 3)}
-              >
-                <Text style={styles.btnPointText}>+3</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnUndo]}
-                onPress={() => handleCorrectScore("home")}
-              >
-                <Ionicons name="arrow-undo" size={14} color="#94a3b8" />
-                <Text style={styles.btnUndoText}>{t("scoreboard.undo") || "-1"}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnSubAction]}
-                onPress={() => handleFoul("home")}
-              >
-                <Text style={styles.btnSubText}>{t("scoreboard.basketball.plusFoul") || "+ Falta"}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnSubAction]}
-                onPress={() => handleTimeout("home")}
-                disabled={timeouts.home <= 0}
-              >
-                <Text style={styles.btnSubText}>{t("scoreboard.timeout") || "Desconto"}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
+  const renderPossessionSubLabel = (hasPossession: boolean) =>
+    hasPossession ? (
+      <View style={styles.possessionPill}>
+        <View style={styles.possessionDot} />
+        <Text style={styles.possessionPillText}>
+          {t("scoreboard.basketball.possession") || "POSS"}
+        </Text>
       </View>
+    ) : null;
 
-      {/* Column 2: Center Info, Clocks & Periods */}
-      <View style={styles.centerColumn}>
-        {/* Period cycle button */}
-        <TouchableOpacity
-          style={styles.periodPill}
-          onPress={handlePeriodCycle}
-          disabled={!canEdit}
+  const renderTeamPills = (side: "home" | "away") => (
+    <>
+      <View
+        style={[
+          styles.badgePill,
+          teamFouls[side] >= 5 && styles.bonusPill,
+        ]}
+      >
+        <Text
+          style={[
+            styles.badgeText,
+            teamFouls[side] >= 5 && styles.bonusText,
+          ]}
         >
-          <Text style={styles.periodPillText}>{currentPeriod}</Text>
-          <Ionicons name="swap-vertical" size={12} color="#fbbf24" />
-        </TouchableOpacity>
+          {t("scoreboard.foulsShort") || "Fouls:"}{" "}
+          <Text style={styles.digitalBadgeNum}>{teamFouls[side]}</Text>
+          {teamFouls[side] >= 5
+            ? ` ${t("scoreboard.basketball.bonus") || "(BÓNUS)"}`
+            : ""}
+        </Text>
+      </View>
+      <View style={styles.badgePill}>
+        <Text style={styles.badgeText}>
+          {(locale === "pt" ? "Desc" : "TO")}:{" "}
+          <Text style={styles.digitalBadgeNum}>{timeouts[side]}</Text>
+        </Text>
+      </View>
+    </>
+  );
 
-        {/* Game Clock */}
-        <TouchableOpacity
-          style={[styles.clockBox, isClockRunning && styles.clockBoxRunning]}
-          onPress={toggleClock}
-          disabled={!canEdit}
-        >
-          <Text style={[styles.clockDigital, isClockRunning && styles.clockDigitalRunning]}>
-            {formatTime(quarterSeconds)}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Shot Clock & Possession Row */}
-        <View style={styles.shotClockRow}>
+  return (
+    <ScoreboardMainCard
+      compactHeader={{
+        sportType: matchData.sport_type,
+        sportLabel: matchData.sport_type,
+        eventName,
+        statusBadge: currentPeriod,
+        onFinish: canEdit ? handleFinalizeMatch : undefined,
+        finishLabel: t("scoreboard.endMatch") || "Terminar",
+      }}
+      leftActions={renderSideActions("home")}
+      left={
+        <ScoreboardTeamColumn
+          teamName={teamA}
+          subLabel={renderPossessionSubLabel(possession === "home")}
+          score={scores.home}
+          pills={renderTeamPills("home")}
+        />
+      }
+      center={
+        <View style={styles.centerColumn}>
           <TouchableOpacity
-            style={styles.shotClockPill}
-            onPress={() => resetShotClock(24)}
+            testID="period-cycle-btn"
+            style={styles.periodPill}
+            onPress={handlePeriodCycle}
             disabled={!canEdit}
+            activeOpacity={0.75}
           >
-            <Text style={styles.shotClockLabel}>24s</Text>
+            <Text style={styles.periodPillText}>{currentPeriod}</Text>
+            <Ionicons
+              name="swap-vertical"
+              size={12}
+              color={ScoreBoardTheme.onSurfaceVariant}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.clockBox, isClockRunning && styles.clockBoxRunning]}
+            onPress={toggleClock}
+            disabled={!canEdit}
+            activeOpacity={0.75}
+          >
             <Text
               style={[
-                styles.shotClockNum,
-                shotClock <= 5 && styles.shotClockWarning,
+                styles.clockDigital,
+                isClockRunning && styles.clockDigitalRunning,
               ]}
             >
-              {shotClock}s
+              {formatTime(quarterSeconds)}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.shotClockMiniBtn}
-            onPress={() => resetShotClock(14)}
-            disabled={!canEdit}
-          >
-            <Text style={styles.shotClockMiniText}>14s</Text>
-          </TouchableOpacity>
+          <View style={styles.shotClockRow}>
+            <TouchableOpacity
+              style={styles.shotClockPill}
+              onPress={togglePossession}
+              disabled={!canEdit}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.shotClockLabel}>POSS:</Text>
+              <Text
+                style={[
+                  styles.shotClockNum,
+                  shotClock <= 5 && styles.shotClockWarning,
+                ]}
+              >
+                {shotClock}s
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.possessionToggleBtn}
-            onPress={togglePossession}
-            disabled={!canEdit}
-          >
-            <Ionicons name="swap-horizontal" size={14} color="#60a5fa" />
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={styles.shotClockMiniBtn}
+              onPress={() => resetShotClock(24)}
+              disabled={!canEdit}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.shotClockMiniText}>24s</Text>
+            </TouchableOpacity>
 
-        {/* Finalize Match */}
-        {canEdit && (
-          <TouchableOpacity
-            style={styles.endMatchBtn}
-            onPress={handleFinalizeMatch}
-          >
-            <Ionicons name="checkmark-circle-outline" size={13} color="#f87171" />
-            <Text style={styles.endMatchText}>{t("scoreboard.endMatch") || "Terminar"}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+            <TouchableOpacity
+              style={styles.shotClockMiniBtn}
+              onPress={() => resetShotClock(14)}
+              disabled={!canEdit}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.shotClockMiniText}>14s</Text>
+            </TouchableOpacity>
+          </View>
 
-      {/* Column 3: Team Away */}
-      <View style={styles.teamColumn}>
-        <View style={styles.teamHeaderRow}>
-          {possession === "away" && (
-            <View style={styles.possessionBadge}>
-              <Text style={styles.possessionText}>{t("scoreboard.basketball.possession") || "POSSE"}</Text>
-            </View>
+          {canEdit && (
+            <TouchableOpacity
+              style={styles.clockToggleBtn}
+              onPress={toggleClock}
+              activeOpacity={0.75}
+            >
+              <Ionicons
+                name={isClockRunning ? "pause" : "play"}
+                size={12}
+                color={ScoreBoardTheme.onSurface}
+              />
+              <Text style={styles.clockToggleText}>
+                {isClockRunning
+                  ? (locale === "pt" ? "Pausa" : "Pause")
+                  : (locale === "pt" ? "Iniciar" : "Start")}
+              </Text>
+            </TouchableOpacity>
           )}
-          <Text style={styles.teamName} numberOfLines={1}>
-            {teamB}
-          </Text>
         </View>
-
-        <View style={styles.statsBadgesRow}>
-          <View style={styles.badgePill}>
-            <Text style={styles.badgeText}>
-              {t("scoreboard.timeoutShort") || "Desc:"} <Text style={styles.digitalBadgeNum}>{timeouts.away}</Text>
-            </Text>
-          </View>
-          <View style={[styles.badgePill, teamFouls.away >= 5 && styles.bonusPill]}>
-            <Text style={[styles.badgeText, teamFouls.away >= 5 && styles.bonusText]}>
-              {t("scoreboard.foulsShort") || "Faltas:"} <Text style={styles.digitalBadgeNum}>{teamFouls.away}</Text>
-              {teamFouls.away >= 5 ? ` ${t("scoreboard.basketball.bonus") || "(BÓNUS)"}` : ""}
-            </Text>
-          </View>
-        </View>
-
-        {/* Big Away Score */}
-        <Text style={[styles.scoreDigital, { color: ScoreBoardTheme.onSurface }]}>{scores.away}</Text>
-
-        {/* Away Controls */}
-        {canEdit && (
-          <View style={styles.controlsBlock}>
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnUndo]}
-                onPress={() => handleCorrectScore("away")}
-              >
-                <Ionicons name="arrow-undo" size={14} color="#94a3b8" />
-                <Text style={styles.btnUndoText}>{t("scoreboard.undo") || "-1"}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnPoint]}
-                onPress={() => handleScore("away", 1)}
-              >
-                <Text style={styles.btnPointText}>+1</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnPoint, styles.btnPoint2]}
-                onPress={() => handleScore("away", 2)}
-              >
-                <Text style={styles.btnPointText}>+2</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnPoint, styles.btnPoint3]}
-                onPress={() => handleScore("away", 3)}
-              >
-                <Text style={styles.btnPointText}>+3</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnSubAction]}
-                onPress={() => handleTimeout("away")}
-                disabled={timeouts.away <= 0}
-              >
-                <Text style={styles.btnSubText}>{t("scoreboard.timeout") || "Desconto"}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnSubAction]}
-                onPress={() => handleFoul("away")}
-              >
-                <Text style={styles.btnSubText}>{t("scoreboard.basketball.plusFoul") || "+ Falta"}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </View>
-    </View>
+      }
+      right={
+        <ScoreboardTeamColumn
+          teamName={teamB}
+          subLabel={renderPossessionSubLabel(possession === "away")}
+          score={scores.away}
+          pills={renderTeamPills("away")}
+        />
+      }
+      rightActions={renderSideActions("away")}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  landscapeContainer: {
-    flex: 1,
-    flexDirection: "row",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "transparent",
-    alignItems: "stretch",
-    gap: 8,
+  railBtnCompact: {
+    width: 40,
+    height: 36,
   },
-  teamColumn: {
-    flex: 1,
-    backgroundColor: ScoreBoardTheme.surfaceContainer,
-    borderRadius: 14,
+  btnDisabled: {
+    opacity: 0.35,
+  },
+  possessionPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
     borderColor: ScoreBoardTheme.borderSubtle,
-    padding: 10,
-    alignItems: "center",
-    justifyContent: "space-between",
   },
-  teamHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+  possessionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: ScoreBoardTheme.onSurface,
   },
-  teamDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  teamName: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: "#f8fafc",
-    maxWidth: 120,
-  },
-  possessionBadge: {
-    backgroundColor: "rgba(96, 165, 250, 0.2)",
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 4,
-  },
-  possessionText: {
-    fontSize: 8,
-    fontWeight: "900",
-    color: "#60a5fa",
-  },
-  statsBadgesRow: {
-    flexDirection: "row",
-    gap: 6,
-    marginVertical: 2,
+  possessionPillText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: ScoreBoardTheme.onSurface,
+    letterSpacing: 0.5,
   },
   badgePill: {
-    backgroundColor: "#151e33",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 5,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#1e293b",
-  },
-  bonusPill: {
-    backgroundColor: "rgba(244, 63, 94, 0.15)",
-    borderColor: "rgba(244, 63, 94, 0.3)",
+    borderColor: ScoreBoardTheme.borderSubtle,
   },
   badgeText: {
-    fontSize: 9,
-    color: "#94a3b8",
-    fontWeight: "700",
-  },
-  bonusText: {
-    color: "#f43f5e",
+    fontSize: 10,
+    color: ScoreBoardTheme.textMuted,
+    fontWeight: "600",
   },
   digitalBadgeNum: {
     fontFamily: "Digital7Mono",
     fontSize: 12,
-    color: "#f8fafc",
+    color: ScoreBoardTheme.onSurface,
+    fontVariant: ["tabular-nums"],
   },
-  scoreDigital: {
-    fontFamily: "Digital7Mono",
-    fontSize: 52,
-    lineHeight: 56,
+  bonusPill: {
+    borderColor: "rgba(244, 63, 94, 0.35)",
   },
-  controlsBlock: {
-    width: "100%",
-    gap: 5,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    gap: 5,
-    width: "100%",
-  },
-  btn: {
-    flex: 1,
-    paddingVertical: 7,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  btnPoint: {
-    backgroundColor: ScoreBoardTheme.onSurface,
-  },
-  btnPoint2: {
-    backgroundColor: ScoreBoardTheme.onSurface,
-  },
-  btnPoint3: {
-    backgroundColor: ScoreBoardTheme.onSurface,
-  },
-  btnPointText: {
-    color: ScoreBoardTheme.surfaceContainerLowest,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  btnUndo: {
-    flexDirection: "row",
-    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
-    borderWidth: 1,
-    borderColor: ScoreBoardTheme.borderSubtle,
-    gap: 2,
-  },
-  btnUndoText: {
-    color: "#94a3b8",
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  btnSubAction: {
-    backgroundColor: "#161f36",
-    borderWidth: 1,
-    borderColor: "#222f50",
-    paddingVertical: 5,
-  },
-  btnSubText: {
-    color: "#cbd5e1",
-    fontSize: 10,
-    fontWeight: "700",
+  bonusText: {
+    color: "#fda4af",
   },
   centerColumn: {
-    width: 140,
-    backgroundColor: "#0b101c",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#1e293b",
-    padding: 8,
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 4,
   },
   periodPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(251, 191, 36, 0.15)",
+    gap: 5,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
-    borderColor: "rgba(251, 191, 36, 0.3)",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   periodPillText: {
     fontSize: 11,
-    fontWeight: "900",
-    color: "#fbbf24",
+    fontWeight: "700",
+    color: ScoreBoardTheme.onSurface,
   },
   clockBox: {
-    backgroundColor: "#141c2e",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
-    borderColor: "#222f50",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 10,
-    alignItems: "center",
   },
   clockBoxRunning: {
-    borderColor: "#4f46e5",
-    backgroundColor: "rgba(79, 70, 229, 0.15)",
+    borderColor: ScoreBoardTheme.onSurfaceVariant,
   },
   clockDigital: {
     fontFamily: "Digital7Mono",
-    fontSize: 32,
-    color: "#ffffff",
+    fontSize: 30,
+    lineHeight: 34,
+    color: ScoreBoardTheme.onSurface,
+    fontVariant: ["tabular-nums"],
   },
   clockDigitalRunning: {
-    color: "#818cf8",
+    color: ScoreBoardTheme.onSurface,
   },
   shotClockRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 5,
   },
   shotClockPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#141c2e",
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 6,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
-    borderColor: "#222f50",
+    borderColor: ScoreBoardTheme.borderSubtle,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   shotClockLabel: {
-    fontSize: 8,
-    color: "#94a3b8",
+    fontSize: 9,
     fontWeight: "700",
+    color: ScoreBoardTheme.textMuted,
   },
   shotClockNum: {
     fontFamily: "Digital7Mono",
-    fontSize: 16,
-    color: "#fbbf24",
+    fontSize: 13,
+    color: ScoreBoardTheme.onSurface,
+    fontVariant: ["tabular-nums"],
   },
   shotClockWarning: {
     color: "#f43f5e",
   },
   shotClockMiniBtn: {
-    backgroundColor: "#1e293b",
-    paddingHorizontal: 5,
-    paddingVertical: 3,
-    borderRadius: 5,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   shotClockMiniText: {
-    fontSize: 9,
-    fontWeight: "800",
-    color: "#cbd5e1",
+    fontSize: 10,
+    fontWeight: "700",
+    color: ScoreBoardTheme.onSurfaceVariant,
   },
-  possessionToggleBtn: {
-    backgroundColor: "#1e293b",
-    padding: 4,
-    borderRadius: 5,
-  },
-  endMatchBtn: {
+  clockToggleBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "rgba(244, 63, 94, 0.12)",
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
-    borderColor: "rgba(244, 63, 94, 0.25)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
   },
-  endMatchText: {
-    fontSize: 9,
-    fontWeight: "800",
-    color: "#f87171",
+  clockToggleText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: ScoreBoardTheme.onSurface,
   },
 });

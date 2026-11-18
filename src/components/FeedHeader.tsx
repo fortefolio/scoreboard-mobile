@@ -30,6 +30,7 @@ export interface FeedHeaderProps {
   showViewToggle?: boolean;
   primaryActionLabel?: string;
   onPrimaryAction?: () => void;
+  primaryActionTestID?: string;
   sortOrder?: "desc" | "asc";
   onSortOrderChange?: (order: "desc" | "asc") => void;
   matches?: any[];
@@ -56,6 +57,7 @@ export const FeedHeader = React.memo(function FeedHeader({
   showViewToggle = true,
   primaryActionLabel,
   onPrimaryAction,
+  primaryActionTestID,
   sortOrder = "desc",
   onSortOrderChange,
   matches = [],
@@ -169,9 +171,6 @@ export const FeedHeader = React.memo(function FeedHeader({
 
   return (
     <View style={styles.headerContainer}>
-      {/* Sport Filter Bar */}
-      <SportFilterBar selectedSport={selectedSport} onSelectSport={onSportChange} />
-
       {/* Compact Control Card (matches web small-screen layout) */}
       <View style={styles.controlCard}>
         {/* Row 1: Full-width Search Input + Quick Jump Popover */}
@@ -439,6 +438,7 @@ export const FeedHeader = React.memo(function FeedHeader({
                 style={styles.addBtn}
                 onPress={onPrimaryAction}
                 activeOpacity={0.8}
+                testID={primaryActionTestID}
                 accessibilityLabel={primaryActionLabel || "New"}
               >
                 <Ionicons
@@ -494,6 +494,11 @@ export const FeedHeader = React.memo(function FeedHeader({
             )}
           </View>
         </View>
+      </View>
+
+      {/* Sport Filter Bar (below control card, lower zIndex so quick-jump popover overlays it) */}
+      <View style={styles.sportBarWrap}>
+        <SportFilterBar selectedSport={selectedSport} onSelectSport={onSportChange} />
       </View>
 
       {/* Status Picker Modal */}
@@ -567,7 +572,11 @@ const styles = StyleSheet.create({
     borderColor: ScoreBoardTheme.borderSubtle,
     padding: 12,
     gap: 10,
-    zIndex: 40,
+    zIndex: 50,
+    elevation: 6,
+  },
+  sportBarWrap: {
+    zIndex: 1,
   },
   searchBoxAnchor: {
     position: "relative",
@@ -656,7 +665,7 @@ const styles = StyleSheet.create({
   searchWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: ScoreBoardTheme.surfaceContainerLowest,
+    backgroundColor: "#07080d",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: ScoreBoardTheme.borderSubtle,

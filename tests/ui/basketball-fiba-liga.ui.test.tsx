@@ -55,15 +55,14 @@ describe("Mobile Basketball UI Interaction Tests — FIBA Liga Betclic (SL Benfi
     expect(screen.getAllByText("FC Porto")[0]).toBeInTheDocument();
     expect(screen.getByText("10:00")).toBeInTheDocument();
     expect(screen.getAllByText("24s").length).toBeGreaterThan(0);
-    expect(screen.getByText("Q1")).toBeInTheDocument();
+    expect(screen.getAllByText("Q1").length).toBeGreaterThan(0);
   });
 
   it("scores +1, +2, and +3 points via UI buttons, updating digital score and resetting shot clock", async () => {
     render(<BasketballScoreboard matchData={mockFibaBasketballMatch} canEdit={true} />);
 
     // Benfica Free Throw (+1)
-    const plus1Btns = screen.getAllByText("+1");
-    fireEvent.click(plus1Btns[0]);
+    fireEvent.click(screen.getByTestId("btn-plus1-home"));
 
     expect(insertMock).toHaveBeenCalledWith(
       "match_events",
@@ -110,7 +109,7 @@ describe("Mobile Basketball UI Interaction Tests — FIBA Liga Betclic (SL Benfi
 
     render(<BasketballScoreboard matchData={mockFibaBasketballMatch} canEdit={true} />);
 
-    const foulBtns = screen.getAllByText("+ Falta");
+    const foulBtns = screen.getAllByText("+F");
     const benficaFoulBtn = foulBtns[0];
 
     // Click 4 fouls for Benfica
@@ -134,7 +133,7 @@ describe("Mobile Basketball UI Interaction Tests — FIBA Liga Betclic (SL Benfi
   it("decrements team timeouts when Desconto button is pressed", async () => {
     render(<BasketballScoreboard matchData={mockFibaBasketballMatch} canEdit={true} />);
 
-    const timeoutBtns = screen.getAllByText("Desconto");
+    const timeoutBtns = screen.getAllByText("Desc");
     const portoTimeoutBtn = timeoutBtns[1];
 
     fireEvent.click(portoTimeoutBtn);
@@ -154,7 +153,7 @@ describe("Mobile Basketball UI Interaction Tests — FIBA Liga Betclic (SL Benfi
   it("advances game period to Q2, resetting fouls to 0 and timer to 10:00", async () => {
     render(<BasketballScoreboard matchData={mockFibaBasketballMatch} canEdit={true} />);
 
-    const q1Btn = screen.getByText("Q1");
+    const q1Btn = screen.getByTestId("period-cycle-btn");
     fireEvent.click(q1Btn); // Cycle to Q2
 
     expect(insertMock).toHaveBeenCalledWith(

@@ -53,22 +53,9 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      tabBar={() => null}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: ScoreBoardTheme.onSurface,
-        tabBarInactiveTintColor: ScoreBoardTheme.textMuted,
-        tabBarStyle: {
-          backgroundColor: ScoreBoardTheme.background,
-          borderTopColor: ScoreBoardTheme.borderSubtle,
-          borderTopWidth: 1,
-          height: Platform.OS === "ios" ? 82 : 62,
-          paddingTop: 6,
-          paddingBottom: Platform.OS === "ios" ? 26 : 6,
-        },
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: "500",
-        },
       }}
     >
       <Tabs.Screen
@@ -116,7 +103,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="notifications"
         options={{
-          title: t("nav.dashboard") || "Alertas",
+          title: t("nav.notifications") || "Notifications",
           tabBarBadge: unreadNotifications > 0 ? unreadNotifications : undefined,
           tabBarBadgeStyle: {
             backgroundColor: ScoreBoardTheme.error,
@@ -158,6 +145,14 @@ export default function TabLayout() {
 
       <Tabs.Screen
         name="my-tournaments"
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }}
+      />
+
+      <Tabs.Screen
+        name="umpiring"
         options={{
           tabBarButton: () => null,
           tabBarItemStyle: { display: "none" },

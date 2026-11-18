@@ -62,7 +62,7 @@ describe("Mobile Padel UI Interaction Tests — Madrid Premier Padel P1 (Coello/
   it("triggers and displays 'PONTO DE OURO' at 40-40 without advantage", async () => {
     render(<TennisScoreboard matchData={mockMadridP1Match} canEdit={true} />);
 
-    const addPointButtons = screen.getAllByText("PONTO");
+    const addPointButtons = screen.getAllByText("Pt");
     const coelloAddPoint = addPointButtons[0];
     const galanAddPoint = addPointButtons[1];
 
@@ -135,7 +135,7 @@ describe("Mobile Padel UI Interaction Tests — Madrid Premier Padel P1 (Coello/
 
     render(<TennisScoreboard matchData={mockMadridP1Match} canEdit={true} />);
 
-    const finalizeBtn = screen.getByText("Terminar");
+    const finalizeBtn = screen.getByTestId("end-match-btn");
     fireEvent.click(finalizeBtn);
 
     expect(alertSpy).toHaveBeenCalledWith(

@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation, getSportTranslation } from "@/lib/i18n";
 import { SportIcon } from "@/components/SportIcon";
-import { FollowButton } from "@/components/FollowButton";
+import { FollowButton, SportFavoriteButton } from "@/components/FollowButton";
 import { ScoreBoardTheme } from "@/constants/theme";
 
 export interface TournamentCardProps {
@@ -49,9 +49,13 @@ export function TournamentCard({ tournament, compact = false, onAuthRequired }: 
         onPress={() => router.push(`/tournament/${tournament.id}` as any)}
         activeOpacity={0.85}
       >
-        <View style={styles.compactIconBox}>
-          <SportIcon sport={tournament.sport_type} size={15} color={ScoreBoardTheme.onSurfaceVariant} />
-        </View>
+        <SportFavoriteButton
+          entityId={tournament.id}
+          entityType="tournament"
+          sport={tournament.sport_type}
+          size="sm"
+          onAuthRequired={onAuthRequired}
+        />
 
         <View style={styles.compactContent}>
           <Text style={styles.compactName} numberOfLines={1}>
@@ -64,7 +68,10 @@ export function TournamentCard({ tournament, compact = false, onAuthRequired }: 
 
         <View style={styles.compactRight}>
           {isLive ? (
-            <View style={styles.liveDot} />
+            <View style={styles.livePill}>
+              <View style={styles.liveDot} />
+              <Text style={styles.livePillText}>{t("status.live")}</Text>
+            </View>
           ) : (
             <Text style={styles.statusMutedText}>
               {tournament.status === "completed"
@@ -74,12 +81,6 @@ export function TournamentCard({ tournament, compact = false, onAuthRequired }: 
                 : tournament.status}
             </Text>
           )}
-          <FollowButton
-            entityId={tournament.id}
-            entityType="tournament"
-            size={15}
-            onAuthRequired={onAuthRequired}
-          />
         </View>
       </TouchableOpacity>
     );
@@ -196,12 +197,12 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: ScoreBoardTheme.secondary,
+    backgroundColor: ScoreBoardTheme.liveCrimson,
   },
   livePillText: {
     fontSize: 12,
     fontWeight: "500",
-    color: ScoreBoardTheme.secondary,
+    color: ScoreBoardTheme.onSurface,
   },
   statusMutedText: {
     fontSize: 12,

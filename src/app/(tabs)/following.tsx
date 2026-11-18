@@ -14,7 +14,7 @@ import { TopBar } from "@/components/TopBar";
 import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
 import { FeedHeader } from "@/components/FeedHeader";
 import { MatchCard } from "@/components/MatchCard";
-import { MatchListItem } from "@/components/MatchListItem";
+import { GroupedMatchList } from "@/components/GroupedMatchList";
 import { TournamentCard } from "@/components/TournamentCard";
 import { Pagination } from "@/components/Pagination";
 import { AuthModal } from "@/components/AuthModal";
@@ -232,19 +232,39 @@ export default function FollowingFeedScreen() {
       {/* Following Feed List */}
       <FlatList
         ref={flatListRef}
-        data={paginatedData}
+        data={
+          viewMode === "list"
+            ? paginatedData.length > 0
+              ? [{ id: "__grouped__", _type: "__grouped__" }]
+              : []
+            : paginatedData
+        }
         keyExtractor={(item) => `${item._type}-${item.id}`}
         keyboardShouldPersistTaps="handled"
         renderItem={({ item }) =>
-          item._type === "tournament" ? (
+          viewMode === "list" ? (
+            <View style={{ gap: 12 }}>
+              {paginatedData
+                .filter((x) => x._type === "tournament")
+                .map((tItem) => (
+                  <TournamentCard
+                    key={`tournament-${tItem.id}`}
+                    tournament={tItem}
+                    compact
+                    onAuthRequired={() => setAuthModalVisible(true)}
+                  />
+                ))}
+              {paginatedData.some((x) => x._type !== "tournament") && (
+                <GroupedMatchList
+                  matches={paginatedData.filter((x) => x._type !== "tournament")}
+                  onAuthRequired={() => setAuthModalVisible(true)}
+                />
+              )}
+            </View>
+          ) : item._type === "tournament" ? (
             <TournamentCard
               tournament={item}
-              compact={viewMode === "list"}
-              onAuthRequired={() => setAuthModalVisible(true)}
-            />
-          ) : viewMode === "list" ? (
-            <MatchListItem
-              match={item}
+              compact={false}
               onAuthRequired={() => setAuthModalVisible(true)}
             />
           ) : (

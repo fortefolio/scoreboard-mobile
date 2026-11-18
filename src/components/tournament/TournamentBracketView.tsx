@@ -32,7 +32,7 @@ export function TournamentBracketView({ bracketMatches }: TournamentBracketProps
   if (roundNumbers.length === 0) {
     return (
       <View style={styles.emptyCard}>
-        <Ionicons name="git-network-outline" size={36} color="#475569" />
+        <Ionicons name="git-network-outline" size={36} color={ScoreBoardTheme.textMuted} />
         <Text style={styles.emptyText}>Chave eliminatória ainda não gerada.</Text>
       </View>
     );
@@ -48,8 +48,9 @@ export function TournamentBracketView({ bracketMatches }: TournamentBracketProps
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroll}>
       <View style={styles.bracketContainer}>
-        {roundNumbers.map((r) => {
+        {roundNumbers.map((r, rIdx) => {
           const nodes = rounds[r] || [];
+          const hasNextRound = rIdx < roundNumbers.length - 1;
           return (
             <View key={r} style={styles.roundCol}>
               <View style={styles.roundHeader}>
@@ -71,7 +72,11 @@ export function TournamentBracketView({ bracketMatches }: TournamentBracketProps
                   return (
                     <TouchableOpacity
                       key={node.id}
-                      style={[styles.matchNodeCard, isOngoing && styles.matchNodeCardLive]}
+                      style={[
+                        styles.matchNodeCard,
+                        isOngoing && styles.matchNodeCardLive,
+                        hasNextRound && styles.matchNodeWithConnector,
+                      ]}
                       onPress={() => {
                         if (m?.id) {
                           router.push(`/match/${m.id}` as any);
@@ -166,6 +171,10 @@ const styles = StyleSheet.create({
     borderColor: ScoreBoardTheme.borderSubtle,
     borderRadius: 12,
     padding: 10,
+  },
+  matchNodeWithConnector: {
+    borderRightWidth: 2,
+    borderRightColor: ScoreBoardTheme.onSurfaceVariant,
   },
   matchNodeCardLive: {
     borderColor: "rgba(244, 63, 94, 0.35)",
