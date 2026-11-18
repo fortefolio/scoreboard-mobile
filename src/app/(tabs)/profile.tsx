@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import { TopBar } from "@/components/TopBar";
 import { AuthModal } from "@/components/AuthModal";
 import { useAuth } from "@/components/AuthProvider";
@@ -37,6 +38,7 @@ const SPORTS_LIST = [
 export default function ProfileScreen() {
   const { t, locale, setLocale } = useTranslation();
   const { user, signOut } = useAuth();
+  const router = useRouter();
 
   const [authModalVisible, setAuthModalVisible] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -715,7 +717,15 @@ export default function ProfileScreen() {
                 <View style={styles.statusDot} />
                 <Text style={styles.statusPillText}>{t("footer.statusOnline")}</Text>
               </View>
-              <Text style={styles.footerTermsText}>{t("footer.terms")}</Text>
+              <TouchableOpacity
+                onPress={() => router.push("/terms" as any)}
+                activeOpacity={0.75}
+                testID="profile-terms-link"
+              >
+                <Text style={[styles.footerTermsText, { textDecorationLine: "underline" }]}>
+                  {t("footer.terms")}
+                </Text>
+              </TouchableOpacity>
               <Text style={styles.footerTagline}>{t("footer.tagline")}</Text>
               <Text style={styles.footerCopyright}>
                 © {new Date().getFullYear()} ScoreBoard. {t("footer.allRightsReserved")}
