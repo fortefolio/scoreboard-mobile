@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Keyboard } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Keyboard, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ScoreBoardTheme } from "@/constants/theme";
 
@@ -41,7 +41,7 @@ export function DropdownSelect({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isOpen && styles.containerOpen]}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
 
       {/* Trigger Button */}
@@ -91,46 +91,52 @@ export function DropdownSelect({
         ]}
         testID={testID ? `${testID}-menu` : undefined}
       >
-        {options.map((opt) => {
-          const isSelected = opt.value === value;
-          return (
-            <TouchableOpacity
-              key={opt.value}
-              style={[
-                styles.optionItem,
-                isSelected && styles.optionItemSelected,
-              ]}
-              onPress={() => handleSelect(opt.value)}
-              activeOpacity={0.7}
-              testID={opt.testID || (testID ? `${testID}-option-${opt.value}` : undefined)}
-            >
-              <View style={styles.optionLeft}>
-                {opt.icon && (
-                  <View style={styles.optionIconContainer}>{opt.icon}</View>
-                )}
-                <View style={styles.optionTextContainer}>
-                  <Text
-                    style={[
-                      styles.optionLabel,
-                      isSelected && styles.optionLabelSelected,
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                  {opt.desc ? (
-                    <Text style={styles.optionDesc} numberOfLines={1}>
-                      {opt.desc}
+        <ScrollView
+          style={styles.optionsScroll}
+          nestedScrollEnabled
+          keyboardShouldPersistTaps="handled"
+        >
+          {options.map((opt) => {
+            const isSelected = opt.value === value;
+            return (
+              <TouchableOpacity
+                key={opt.value}
+                style={[
+                  styles.optionItem,
+                  isSelected && styles.optionItemSelected,
+                ]}
+                onPress={() => handleSelect(opt.value)}
+                activeOpacity={0.7}
+                testID={opt.testID || (testID ? `${testID}-option-${opt.value}` : undefined)}
+              >
+                <View style={styles.optionLeft}>
+                  {opt.icon && (
+                    <View style={styles.optionIconContainer}>{opt.icon}</View>
+                  )}
+                  <View style={styles.optionTextContainer}>
+                    <Text
+                      style={[
+                        styles.optionLabel,
+                        isSelected && styles.optionLabelSelected,
+                      ]}
+                    >
+                      {opt.label}
                     </Text>
-                  ) : null}
+                    {opt.desc ? (
+                      <Text style={styles.optionDesc} numberOfLines={1}>
+                        {opt.desc}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
-              </View>
 
-              {isSelected && (
-                <Ionicons name="checkmark-circle" size={18} color={ScoreBoardTheme.onSurface} />
-              )}
-            </TouchableOpacity>
-          );
-        })}
+                {isSelected && (
+                  <Ionicons name="checkmark-circle" size={18} color={ScoreBoardTheme.onSurface} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
     </View>
   );
@@ -139,6 +145,11 @@ export function DropdownSelect({
 const styles = StyleSheet.create({
   container: {
     marginBottom: 16,
+    position: "relative",
+    zIndex: 1,
+  },
+  containerOpen: {
+    zIndex: 100,
   },
   label: {
     fontSize: 12,
@@ -185,13 +196,26 @@ const styles = StyleSheet.create({
     color: ScoreBoardTheme.textMuted,
   },
   optionsList: {
-    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    elevation: 12,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
     borderTopWidth: 0,
     borderColor: ScoreBoardTheme.onSurfaceVariant,
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
     overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+  },
+  optionsScroll: {
+    maxHeight: 220,
   },
   optionItem: {
     flexDirection: "row",

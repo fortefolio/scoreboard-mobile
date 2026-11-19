@@ -25,15 +25,16 @@ import { supabase } from "@/lib/supabase/client";
 import { ScoreBoardTheme } from "@/constants/theme";
 import { validatePassword } from "@/lib/auth/passwordValidation";
 import { mapErrorToUserMessage } from "@/lib/errors/mapError";
+import { en, pt } from "@/lib/i18n";
+import { SUPPORTED_SPORTS } from "@/lib/sports";
 
 const SPORTS_LIST = [
-  { id: "all", labelEn: "All Sports", labelPt: "Todos os Desportos" },
-  { id: "volleyball", labelEn: "Volleyball", labelPt: "Voleibol" },
-  { id: "beach_volleyball", labelEn: "Beach Volleyball", labelPt: "Vólei de Praia" },
-  { id: "tennis", labelEn: "Tennis", labelPt: "Ténis" },
-  { id: "padel", labelEn: "Padel", labelPt: "Padel" },
-  { id: "basketball", labelEn: "Basketball", labelPt: "Basquetebol" },
-  { id: "football", labelEn: "Football", labelPt: "Futebol" },
+  { id: "all", labelEn: en.sports.all, labelPt: pt.sports.all },
+  ...SUPPORTED_SPORTS.map((s) => ({
+    id: s.slug,
+    labelEn: en.sports[s.i18nKey],
+    labelPt: pt.sports[s.i18nKey],
+  })),
 ];
 
 export default function ProfileScreen() {

@@ -28,14 +28,9 @@ export interface CreateMatchModalProps {
   userId: string;
 }
 
-const SPORTS = [
-  "Tennis",
-  "Padel",
-  "Volleyball",
-  "Beach Volleyball",
-  "Football",
-  "Basketball",
-];
+import { SUPPORTED_SPORT_VALUES } from "@/lib/sports";
+
+const SPORTS = SUPPORTED_SPORT_VALUES;
 
 export function CreateMatchModal({
   visible,
@@ -49,44 +44,15 @@ export function CreateMatchModal({
   const [team1, setTeam1] = useState("");
   const [team2, setTeam2] = useState("");
   const [sport, setSport] = useState("Tennis");
-  const [userTournaments, setUserTournaments] = useState<any[]>([]);
-  const [selectedTournamentId, setSelectedTournamentId] = useState<string>("");
   const [matchDate, setMatchDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [loadingTournaments, setLoadingTournaments] = useState(false);
   const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
   const [createdMatchId, setCreatedMatchId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (visible && userId) {
-      loadUserTournaments();
-    }
-  }, [visible, userId]);
-
-  const loadUserTournaments = async () => {
-    try {
-      setLoadingTournaments(true);
-      const { data, error } = await supabase
-        .from("tournaments")
-        .select("id, name")
-        .eq("organizer_id", userId)
-        .order("name", { ascending: true });
-
-      if (!error && data) {
-        setUserTournaments(data);
-      }
-    } catch (e) {
-      console.warn("Failed to load tournaments for match creation:", e);
-    } finally {
-      setLoadingTournaments(false);
-    }
-  };
 
   const resetForm = () => {
     setTeam1("");
     setTeam2("");
     setSport("Tennis");
-    setSelectedTournamentId("");
     setMatchDate("");
     setSubmitting(false);
   };
@@ -144,7 +110,7 @@ export function CreateMatchModal({
           organizer_id: userId,
           sport_type: sport,
           participants: [{ name: trimmedTeam1 }, { name: trimmedTeam2 }],
-          tournament_id: selectedTournamentId || null,
+          tournament_id: null,
           status: "scheduled",
           scheduled_at: finalDate,
         })
@@ -195,7 +161,7 @@ export function CreateMatchModal({
                     {isPt ? "Criar Novo Jogo" : "Create New Match"}
                   </Text>
                   <Text style={styles.headerSubtitle}>
-                    {isPt ? "Agende um jogo individual ou de torneio" : "Schedule a standalone or tournament match"}
+                    {isPt ? "Agende um jogo individual" : "Schedule a standalone match"}
                   </Text>
                 </View>
               </View>
@@ -267,69 +233,6 @@ export function CreateMatchModal({
                 testID="match-sport-dropdown"
                 disabled={submitting}
               />
-
-            {/* Associated Tournament (Optional) */}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>
-                {isPt ? "Torneio Associado (Opcional)" : "Associated Tournament (Optional)"}
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.tournamentChipsScroll}
-              >
-                <TouchableOpacity
-                  style={[
-                    styles.tournamentChip,
-                    selectedTournamentId === "" && styles.tournamentChipActive,
-                  ]}
-                  onPress={() => setSelectedTournamentId("")}
-                  disabled={submitting}
-                  testID="tournament-chip-none"
-                >
-                  <Text
-                    style={[
-                      styles.tournamentChipText,
-                      selectedTournamentId === "" && styles.tournamentChipTextActive,
-                    ]}
-                  >
-                    {isPt ? "Nenhum (Jogo Avulso)" : "None (Standalone)"}
-                  </Text>
-                </TouchableOpacity>
-
-                {userTournaments.map((tr) => {
-                  const isSelected = selectedTournamentId === tr.id;
-                  return (
-                    <TouchableOpacity
-                      key={tr.id}
-                      style={[
-                        styles.tournamentChip,
-                        isSelected && styles.tournamentChipActive,
-                      ]}
-                      onPress={() => setSelectedTournamentId(tr.id)}
-                      disabled={submitting}
-                      testID={`tournament-chip-${tr.id}`}
-                    >
-                      <Ionicons
-                        name="trophy-outline"
-                        size={14}
-                        color={isSelected ? ScoreBoardTheme.surfaceContainerLowest : ScoreBoardTheme.onSurfaceVariant}
-                        style={{ marginRight: 6 }}
-                      />
-                      <Text
-                        style={[
-                          styles.tournamentChipText,
-                          isSelected && styles.tournamentChipTextActive,
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {tr.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
 
             {/* Scheduled Date */}
             <View style={styles.fieldGroup}>
@@ -530,34 +433,6 @@ const styles = StyleSheet.create({
   },
   sportCardTextActive: {
     color: ScoreBoardTheme.onSurface,
-    fontWeight: "700",
-  },
-  tournamentChipsScroll: {
-    flexDirection: "row",
-    gap: 8,
-    paddingVertical: 2,
-  },
-  tournamentChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: ScoreBoardTheme.surfaceContainerLowest,
-    borderWidth: 1,
-    borderColor: ScoreBoardTheme.borderSubtle,
-    borderRadius: 10,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-  },
-  tournamentChipActive: {
-    backgroundColor: ScoreBoardTheme.onSurface,
-    borderColor: ScoreBoardTheme.onSurface,
-  },
-  tournamentChipText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: ScoreBoardTheme.onSurfaceVariant,
-  },
-  tournamentChipTextActive: {
-    color: ScoreBoardTheme.surfaceContainerLowest,
     fontWeight: "700",
   },
   footer: {

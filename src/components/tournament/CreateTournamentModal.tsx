@@ -28,14 +28,9 @@ export interface CreateTournamentModalProps {
   userId: string;
 }
 
-const SPORTS = [
-  "Tennis",
-  "Padel",
-  "Volleyball",
-  "Beach Volleyball",
-  "Football",
-  "Basketball",
-];
+import { SUPPORTED_SPORT_VALUES } from "@/lib/sports";
+
+const SPORTS = SUPPORTED_SPORT_VALUES;
 
 const STAGE_TYPES: Array<{
   key: "bracket" | "groups" | "double_elimination";

@@ -104,12 +104,9 @@ describe("Mobile Match Creation — Feature Parity Tests", () => {
       expect(screen.getByTestId("match-team2-input")).toBeTruthy();
       expect(screen.getByTestId("match-sport-select-tennis")).toBeTruthy();
       expect(screen.getByTestId("match-sport-select-padel")).toBeTruthy();
-      expect(screen.getByTestId("tournament-chip-none")).toBeTruthy();
       expect(screen.getByTestId("submit-create-match-btn")).toBeTruthy();
-
-      await waitFor(() => {
-        expect(screen.getByTestId("tournament-chip-tournament-1")).toBeTruthy();
-      });
+      expect(screen.queryByTestId("tournament-chip-none")).toBeNull();
+      expect(screen.queryByTestId("tournament-chip-tournament-1")).toBeNull();
     });
 
     it("prevents submission if team names are missing", async () => {
@@ -211,7 +208,7 @@ describe("Mobile Match Creation — Feature Parity Tests", () => {
       expect(mockSuccess).toHaveBeenCalledWith("new-match-999");
     });
 
-    it("creates a tournament-linked match when tournament chip is selected", async () => {
+    it("creates a standalone Padel match without tournament association", async () => {
       const mockSuccess = vi.fn();
 
       render(
@@ -225,9 +222,7 @@ describe("Mobile Match Creation — Feature Parity Tests", () => {
         </LanguageProvider>
       );
 
-      await waitFor(() => {
-        expect(screen.getByTestId("tournament-chip-tournament-1")).toBeTruthy();
-      });
+      expect(screen.queryByTestId("tournament-chip-tournament-1")).toBeNull();
 
       fireEvent.change(screen.getByTestId("match-team1-input"), {
         target: { value: "Lebrón / Galán" },
@@ -238,9 +233,6 @@ describe("Mobile Match Creation — Feature Parity Tests", () => {
 
       // Select Padel
       fireEvent.click(screen.getByTestId("match-sport-select-padel"));
-
-      // Select Tournament 1
-      fireEvent.click(screen.getByTestId("tournament-chip-tournament-1"));
 
       // Submit
       fireEvent.click(screen.getByTestId("submit-create-match-btn"));
@@ -253,7 +245,7 @@ describe("Mobile Match Creation — Feature Parity Tests", () => {
         expect.objectContaining({
           sport_type: "Padel",
           participants: [{ name: "Lebrón / Galán" }, { name: "Coello / Tapia" }],
-          tournament_id: "tournament-1",
+          tournament_id: null,
         })
       );
 

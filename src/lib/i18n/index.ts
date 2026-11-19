@@ -4,6 +4,7 @@ export { en } from "./locales/en";
 export { pt } from "./locales/pt";
 
 import { useLanguage } from "./LanguageContext";
+import { findSport } from "@/lib/sports";
 export const useTranslation = useLanguage;
 
 export const getSportTranslation = (
@@ -12,23 +13,9 @@ export const getSportTranslation = (
 ): string => {
   if (!sport) return "";
   if (!t) return sport;
-  const normalized = sport.trim();
-  switch (normalized) {
-    case "Basketball":
-      return t("sports.basketball");
-    case "Volleyball":
-      return t("sports.volleyball");
-    case "Beach Volleyball":
-    case "beach_volleyball":
-    case "Beach volleyball":
-      return t("sports.beachVolleyball");
-    case "Football":
-      return t("sports.football");
-    case "Tennis":
-      return t("sports.tennis");
-    case "Padel":
-      return t("sports.padel");
-    default:
-      return sport;
+  const matched = findSport(sport);
+  if (matched) {
+    return t(`sports.${matched.i18nKey}`);
   }
+  return sport;
 };

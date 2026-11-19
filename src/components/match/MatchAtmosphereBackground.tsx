@@ -1,23 +1,11 @@
 import React, { useMemo } from "react";
 import { StyleSheet, View, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
+import { SUPPORTED_SPORT_SLUGS, type SportSlug } from "@/lib/sports";
 
-export type AtmosphereSportType =
-  | "football"
-  | "tennis"
-  | "beach_volleyball"
-  | "volleyball"
-  | "basketball"
-  | "padel";
+export type AtmosphereSportType = SportSlug;
 
-const ALL_SPORTS: AtmosphereSportType[] = [
-  "football",
-  "tennis",
-  "beach_volleyball",
-  "volleyball",
-  "basketball",
-  "padel",
-];
+const ALL_SPORTS: readonly AtmosphereSportType[] = SUPPORTED_SPORT_SLUGS;
 
 const BACKGROUND_ASSETS: Record<
   AtmosphereSportType,
