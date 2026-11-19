@@ -30,7 +30,7 @@ export default function NotificationsScreen() {
     try {
       const { data, error } = await supabase
         .from("notifications")
-        .select("*")
+        .select("id, user_id, title, body, data, type, read_at, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(50);

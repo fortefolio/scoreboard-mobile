@@ -21,7 +21,7 @@ export default function TabLayout() {
     const checkUnread = async () => {
       const { count } = await supabase
         .from("notifications")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
         .is("read_at", null);
       setUnreadNotifications(count || 0);

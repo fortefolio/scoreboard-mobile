@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/lib/i18n";
+import { mapErrorToUserMessage } from "@/lib/errors/mapError";
 import { useFollow } from "@/lib/hooks/useFollow";
 import { TopBar } from "@/components/TopBar";
 import { FollowButton, SportFavoriteButton } from "@/components/FollowButton";
@@ -58,12 +59,12 @@ export default function MatchDetailScreen() {
       const [matchRes, eventsRes] = await Promise.all([
         supabase
           .from("matches")
-          .select("*, tournaments(name, organizer_id)")
+          .select("id, tournament_id, organizer_id, umpire_id, umpire_invite_status, sport_type, status, participants, scores, settings, round_number, match_order, bracket_type, group_label, court, scheduled_at, created_at, updated_at, tournaments(name, organizer_id)")
           .eq("id", matchIdStr)
           .single(),
         supabase
           .from("match_events")
-          .select("*")
+          .select("id, match_id, idempotency_key, event_data, created_at")
           .eq("match_id", matchIdStr)
           .order("created_at", { ascending: false }),
       ]);
@@ -71,7 +72,7 @@ export default function MatchDetailScreen() {
       if (matchRes.data) {
         let organizerData: { id?: string; username?: string } | null = null;
         const ownerId =
-          matchRes.data.organizer_id || matchRes.data.tournaments?.organizer_id;
+          matchRes.data.organizer_id || (matchRes.data.tournaments as any)?.organizer_id;
         if (ownerId) {
           const { data: oData } = await supabase
             .from("users")
@@ -162,9 +163,12 @@ export default function MatchDetailScreen() {
   }, [fetchMatch, matchIdStr]);
 
   // Permissions
-  const isOrganizer = user && match?.organizer_id === user.id;
-  const isUmpire =
-    user && match?.umpire_id === user.id && match?.umpire_invite_status === "accepted";
+  const isOrganizer = Boolean(
+    user?.id && match?.organizer_id && user.id === match.organizer_id
+  );
+  const isUmpire = Boolean(
+    user?.id && match?.umpire_id === user.id && match?.umpire_invite_status === "accepted"
+  );
   const canStart = isOrganizer || isUmpire;
   const isOngoing = match?.status === "ongoing";
   const isCompleted = match?.status === "completed";
@@ -198,7 +202,14 @@ export default function MatchDetailScreen() {
       }
       router.push(`/match/${matchIdStr}/scoreboard` as any);
     } catch (e: any) {
-      Alert.alert("Erro", "Não foi possível iniciar o marcador: " + e.message);
+      Alert.alert(
+        locale === "pt" ? "Erro" : "Error",
+        mapErrorToUserMessage(
+          e,
+          locale,
+          locale === "pt" ? "Não foi possível iniciar o marcador." : "Could not start scoreboard."
+        )
+      );
     } finally {
       setStartingMatch(false);
     }
@@ -206,6 +217,7 @@ export default function MatchDetailScreen() {
 
   // Search Umpires
   const searchUmpires = async (query: string) => {
+    if (!isOrganizer) return;
     setUmpireSearch(query);
     if (query.trim().length < 2) {
       setUmpireSearchResults([]);
@@ -235,6 +247,7 @@ export default function MatchDetailScreen() {
 
   // Assign Umpire
   const assignUmpire = async (umpireId: string | null) => {
+    if (!isOrganizer) return;
     try {
       const { error } = await supabase.rpc("appoint_match_umpire", {
         p_match_id: matchIdStr,
@@ -251,12 +264,13 @@ export default function MatchDetailScreen() {
           : t("match.umpireUnassigned")
       );
     } catch (e: any) {
-      Alert.alert(locale === "pt" ? "Erro" : "Error", e.message);
+      Alert.alert(locale === "pt" ? "Erro" : "Error", mapErrorToUserMessage(e, locale));
     }
   };
 
   // Save Rules
   const handleSaveRules = async (rules: Record<string, any>, court: string | null) => {
+    if (!isOrganizer) return;
     const { error } = await supabase
       .from("matches")
       .update({
@@ -740,15 +754,17 @@ export default function MatchDetailScreen() {
         )}
       </ScrollView>
 
-      {/* Rules Modal */}
-      <RuleModal
-        visible={ruleModalVisible}
-        onClose={() => setRuleModalVisible(false)}
-        onSave={handleSaveRules}
-        sportType={match.sport_type}
-        initialRules={match.settings}
-        initialCourt={match.court}
-      />
+      {/* Rules Modal (Organizer only) */}
+      {isOrganizer && (
+        <RuleModal
+          visible={ruleModalVisible}
+          onClose={() => setRuleModalVisible(false)}
+          onSave={handleSaveRules}
+          sportType={match.sport_type}
+          initialRules={match.settings}
+          initialCourt={match.court}
+        />
+      )}
 
       {/* 3-Dots Options Menu Modal */}
       <Modal
@@ -776,7 +792,7 @@ export default function MatchDetailScreen() {
               </Text>
             </TouchableOpacity>
 
-            {canStart && (
+            {isOrganizer && (
               <TouchableOpacity
                 style={[styles.menuItem, styles.menuItemDivider]}
                 onPress={() => {

@@ -87,24 +87,32 @@ export async function registerPushToken(userId: string, token: string): Promise<
   }
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ALLOWED_DEEP_LINK_PATHS = [
+  /^\/match\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\/scoreboard)?$/i,
+  /^\/tournament\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\/(teams|signup))?$/i,
+  /^\/(my-matches|my-tournaments|umpire-matches|notifications|settings)$/,
+];
+
 /**
- * Parses deep links from push notification payloads
+ * Parses deep links from push notification payloads against an explicit route allowlist.
  */
 export function parseNotificationDeepLink(data: any): string | null {
-  if (!data) return null;
+  if (!data || typeof data !== "object") return null;
 
-  if (data.match_id) {
+  if (typeof data.match_id === "string" && UUID_RE.test(data.match_id)) {
     return `/match/${data.match_id}`;
   }
 
-  if (data.tournament_id) {
+  if (typeof data.tournament_id === "string" && UUID_RE.test(data.tournament_id)) {
     return `/tournament/${data.tournament_id}`;
   }
 
-  if (data.url) {
-    // If standard scheme scoreboard://match/123
-    const match = data.url.replace("scoreboard://", "/");
-    return match;
+  if (typeof data.url === "string" && data.url.startsWith("scoreboard://")) {
+    const path = `/${data.url.slice("scoreboard://".length)}`.replace(/\/+/g, "/");
+    if (ALLOWED_DEEP_LINK_PATHS.some((re) => re.test(path))) {
+      return path;
+    }
   }
 
   return null;

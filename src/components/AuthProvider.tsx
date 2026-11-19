@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import * as Linking from "expo-linking";
 import { supabase } from "@/lib/supabase/client";
@@ -21,12 +21,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const lastUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     // 1. Initial session load
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      lastUserIdRef.current = session?.user?.id ?? null;
       if (session?.user) {
         registerForPushNotificationsAsync(session.user.id).catch(() => {});
       }
@@ -37,25 +39,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      const nextUserId = session?.user?.id ?? null;
+      const prevUserId = lastUserIdRef.current;
+      if (nextUserId) {
+        lastUserIdRef.current = nextUserId;
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user && (event === "SIGNED_IN" || event === "USER_UPDATED")) {
+        if (prevUserId && nextUserId && prevUserId !== nextUserId) {
+          clearOfflineQueue().catch(() => {});
+        }
         registerForPushNotificationsAsync(session.user.id).catch(() => {});
       }
       if (event === "SIGNED_OUT") {
+        lastUserIdRef.current = null;
         clearOfflineQueue().catch(() => {});
       }
       setLoading(false);
     });
 
-    // 3. Handle deep link auth callback (e.g. email verification redirect)
+    // 3. Handle deep link auth callback (validated scheme/host/path + session guard)
+    const isAllowedAuthCallbackUrl = (rawUrl: string): boolean => {
+      try {
+        const parsed = new URL(rawUrl);
+        const normalizedPath = parsed.pathname.replace(/\/+$/, "");
+        if (parsed.protocol === "scoreboard:") {
+          const full = `${parsed.hostname}${normalizedPath}`;
+          return full === "auth/callback" || full === "auth/reset-password";
+        }
+        if (parsed.protocol === "https:" && (parsed.hostname === "score-board.net" || parsed.hostname === "www.score-board.net")) {
+          return normalizedPath === "/auth/callback" || normalizedPath === "/auth/reset-password";
+        }
+        return false;
+      } catch {
+        return false;
+      }
+    };
+
     const handleAuthUrl = async (url: string | null) => {
-      if (!url) return;
+      if (!url || !isAllowedAuthCallbackUrl(url)) return;
 
       try {
-        // Hash fragment tokens: #access_token=...&refresh_token=...
+        // Query parameters (PKCE): ?code=...
+        const queryIndex = url.indexOf("?");
+        if (queryIndex !== -1) {
+          const query = url.substring(queryIndex + 1).split("#")[0];
+          const params = new URLSearchParams(query);
+          const code = params.get("code");
+
+          if (code) {
+            await supabase.auth.exchangeCodeForSession(code);
+            return;
+          }
+        }
+
+        // Hash fragment tokens: only accept when no active session exists to prevent forced session switching
         const hashIndex = url.indexOf("#");
         if (hashIndex !== -1) {
+          const { data: current } = await supabase.auth.getSession();
+          if (current?.session) {
+            console.warn("[AuthProvider] Ignored implicit auth deep link while session is already active.");
+            return;
+          }
           const hash = url.substring(hashIndex + 1);
           const params = new URLSearchParams(hash);
           const access_token = params.get("access_token");
@@ -66,19 +113,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               access_token,
               refresh_token,
             });
-            return;
-          }
-        }
-
-        // Query parameters: ?code=...
-        const queryIndex = url.indexOf("?");
-        if (queryIndex !== -1) {
-          const query = url.substring(queryIndex + 1);
-          const params = new URLSearchParams(query);
-          const code = params.get("code");
-
-          if (code) {
-            await supabase.auth.exchangeCodeForSession(code);
             return;
           }
         }
@@ -119,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: {
           display_name: displayName,
         },
-        emailRedirectTo: "scoreboard://auth/callback",
+        emailRedirectTo: "https://score-board.net/auth/callback",
       },
     });
     return { error: error as Error | null };
@@ -127,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetPasswordForEmail = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "scoreboard://auth/reset-password",
+      redirectTo: "https://score-board.net/auth/reset-password",
     });
     return { error: error as Error | null };
   };

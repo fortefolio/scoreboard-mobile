@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/lib/i18n";
 import { validatePassword } from "@/lib/auth/passwordValidation";
+import { mapErrorToUserMessage } from "@/lib/errors/mapError";
 import { Spacing } from "@/constants/theme";
 
 export default function ResetPasswordScreen() {
@@ -44,11 +45,22 @@ export default function ResetPasswordScreen() {
 
     setLoading(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session) {
+        setErrorMsg(
+          locale === "pt"
+            ? "Sessão de recuperação inválida ou expirada."
+            : "Recovery session is invalid or expired."
+        );
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({ password: newPassword });
 
       if (error) {
-        setErrorMsg(error.message);
+        setErrorMsg(mapErrorToUserMessage(error, locale));
       } else {
+        await supabase.auth.signOut({ scope: "others" }).catch(() => {});
         Alert.alert(
           locale === "pt" ? "Sucesso" : "Success",
           t("auth.passwordResetSuccess"),
@@ -61,7 +73,13 @@ export default function ResetPasswordScreen() {
         );
       }
     } catch (err: any) {
-      setErrorMsg(err?.message || (locale === "pt" ? "Erro ao atualizar palavra-passe." : "Error updating password."));
+      setErrorMsg(
+        mapErrorToUserMessage(
+          err,
+          locale,
+          locale === "pt" ? "Erro ao atualizar palavra-passe." : "Error updating password."
+        )
+      );
     } finally {
       setLoading(false);
     }

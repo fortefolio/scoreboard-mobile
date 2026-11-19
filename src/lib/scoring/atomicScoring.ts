@@ -115,7 +115,15 @@ export async function recordMatchEventAtomic(
     }
   }
 
-  // Graceful fallback when RPC is unavailable or in mock test environment
+  // In production, do not fall back to non-transactional two-step writes
+  if (typeof __DEV__ !== "undefined" && !__DEV__ && process.env.NODE_ENV !== "test") {
+    return {
+      data: null,
+      error: { message: "Atomic scoring RPC is required in production." },
+    };
+  }
+
+  // Graceful fallback when RPC is unavailable in dev/mock test environment
   const eventPayload = {
     match_id: matchId,
     event_data: eventData,
@@ -123,7 +131,7 @@ export async function recordMatchEventAtomic(
   };
 
   try {
-    let updateRes = null;
+    let updatePromise: Promise<any> | null = null;
     if (newScores || newStatus) {
       const updatePayload: Record<string, any> = {
         updated_at: new Date().toISOString(),
@@ -131,12 +139,25 @@ export async function recordMatchEventAtomic(
       if (newScores) updatePayload.scores = newScores;
       if (newStatus) updatePayload.status = newStatus;
 
-      updateRes = supabase.from("matches").update(updatePayload).eq("id", matchId);
+      updatePromise = supabase.from("matches").update(updatePayload).eq("id", matchId);
     }
 
     const insertRes = await supabase.from("match_events").insert([eventPayload]);
-    if (updateRes) {
-      await updateRes;
+    if (updatePromise) {
+      const updateRes = await updatePromise;
+      if (updateRes?.error) {
+        if (isNetworkIssue(updateRes.error)) {
+          await enqueueOfflineEvent({
+            matchId,
+            newScores,
+            eventData,
+            newStatus,
+            idempotencyKey: key,
+          });
+          return { data: null, error: null, queued: true, idempotencyKey: key };
+        }
+        return updateRes;
+      }
     }
 
     if (insertRes?.error && isNetworkIssue(insertRes.error)) {

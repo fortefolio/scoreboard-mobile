@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "./AuthProvider";
 import { useLanguage } from "@/lib/i18n";
 import { validatePassword } from "@/lib/auth/passwordValidation";
+import { mapErrorToUserMessage } from "@/lib/errors/mapError";
 import { Colors, ScoreBoardTheme, Spacing } from "@/constants/theme";
 
 interface AuthModalProps {
@@ -26,7 +27,7 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModalProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { signIn, signUp, resetPasswordForEmail } = useAuth();
   const [mode, setMode] = useState<"login" | "signup" | "forgot">(initialMode);
   const [email, setEmail] = useState("");
@@ -59,12 +60,12 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
       try {
         const { error } = await resetPasswordForEmail(email.trim());
         if (error) {
-          setErrorMsg(error.message);
+          setErrorMsg(mapErrorToUserMessage(error, locale));
         } else {
           setResetEmailSent(true);
         }
       } catch (e: any) {
-        setErrorMsg(e.message || t("common.error"));
+        setErrorMsg(mapErrorToUserMessage(e, locale, t("common.error")));
       } finally {
         setLoading(false);
       }
@@ -89,20 +90,20 @@ export function AuthModal({ visible, onClose, initialMode = "login" }: AuthModal
       if (mode === "login") {
         const { error } = await signIn(email.trim(), password);
         if (error) {
-          setErrorMsg(error.message);
+          setErrorMsg(mapErrorToUserMessage(error, locale));
         } else {
           onClose();
         }
       } else {
         const { error } = await signUp(email.trim(), password, displayName.trim());
         if (error) {
-          setErrorMsg(error.message);
+          setErrorMsg(mapErrorToUserMessage(error, locale));
         } else {
           setSignupSuccess(true);
         }
       }
     } catch (e: any) {
-      setErrorMsg(e.message || t("common.error"));
+      setErrorMsg(mapErrorToUserMessage(e, locale, t("common.error")));
     } finally {
       setLoading(false);
     }

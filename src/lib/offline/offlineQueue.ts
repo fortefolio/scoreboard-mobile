@@ -6,6 +6,7 @@
 
 export interface QueuedAtomicEvent {
   id: string;
+  userId?: string | null;
   idempotencyKey: string;
   matchId: string;
   newScores?: any;
@@ -80,6 +81,7 @@ export async function saveOfflineQueue(queue: QueuedAtomicEvent[]): Promise<void
 }
 
 export async function enqueueOfflineEvent(params: {
+  userId?: string | null;
   matchId: string;
   newScores?: any;
   eventData: Record<string, any>;
@@ -89,6 +91,7 @@ export async function enqueueOfflineEvent(params: {
   const queue = await getOfflineQueue();
   const event: QueuedAtomicEvent = {
     id: `offline-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    userId: params.userId ?? null,
     idempotencyKey: params.idempotencyKey,
     matchId: params.matchId,
     newScores: params.newScores ?? null,
@@ -114,15 +117,23 @@ export async function clearOfflineQueue(): Promise<void> {
 export async function flushOfflineQueue(
   supabase: any,
   matchIdFilter?: string
-): Promise<{ processed: number; remaining: number }> {
-  if (isFlushing) return { processed: 0, remaining: (await getOfflineQueue()).length };
+): Promise<{ processed: number; remaining: number; failed: number }> {
+  if (isFlushing) return { processed: 0, remaining: (await getOfflineQueue()).length, failed: 0 };
   isFlushing = true;
 
   try {
     let queue = await getOfflineQueue();
     if (queue.length === 0) {
       isFlushing = false;
-      return { processed: 0, remaining: 0 };
+      return { processed: 0, remaining: 0, failed: 0 };
+    }
+
+    let currentUserId: string | null = null;
+    if (typeof supabase?.auth?.getUser === "function") {
+      try {
+        const { data } = await supabase.auth.getUser();
+        currentUserId = data?.user?.id ?? null;
+      } catch {}
     }
 
     const itemsToProcess = matchIdFilter
@@ -130,8 +141,15 @@ export async function flushOfflineQueue(
       : [...queue];
 
     let processedCount = 0;
+    let failedCount = 0;
 
     for (const item of itemsToProcess) {
+      if (item.userId && currentUserId && item.userId !== currentUserId) {
+        queue = queue.filter((q) => q.id !== item.id);
+        await saveOfflineQueue(queue);
+        continue;
+      }
+
       try {
         let res: any;
         if (typeof supabase?.rpc === "function") {
@@ -143,23 +161,26 @@ export async function flushOfflineQueue(
             p_new_status: item.newStatus,
           });
         } else {
-          // Fallback to table inserts
           if (item.newScores || item.newStatus) {
             const upd: any = { updated_at: new Date().toISOString() };
             if (item.newScores) upd.scores = item.newScores;
             if (item.newStatus) upd.status = item.newStatus;
-            await supabase.from("matches").update(upd).eq("id", item.matchId);
+            const updRes = await supabase.from("matches").update(upd).eq("id", item.matchId);
+            if (updRes?.error) {
+              res = updRes;
+            }
           }
-          res = await supabase.from("match_events").insert([
-            {
-              match_id: item.matchId,
-              event_data: item.eventData,
-              idempotency_key: item.idempotencyKey,
-            },
-          ]);
+          if (!res?.error) {
+            res = await supabase.from("match_events").insert([
+              {
+                match_id: item.matchId,
+                event_data: item.eventData,
+                idempotency_key: item.idempotencyKey,
+              },
+            ]);
+          }
         }
 
-        // Check if network failed or server returned success
         if (res?.error) {
           const isNetworkError =
             res.error?.message?.includes("network") ||
@@ -168,12 +189,17 @@ export async function flushOfflineQueue(
             res.error?.code === "ECONNREFUSED";
 
           if (isNetworkError) {
-            // Stop draining on network failure; keep remaining items in queue
             break;
           }
+
+          // Non-network authorization/validation error: do not count as processed
+          console.warn("[offlineQueue] Dropping rejected offline event:", res.error?.code || res.error?.message);
+          queue = queue.filter((q) => q.id !== item.id);
+          failedCount++;
+          await saveOfflineQueue(queue);
+          continue;
         }
 
-        // Successfully sent or already processed via idempotency
         queue = queue.filter((q) => q.id !== item.id);
         processedCount++;
         await saveOfflineQueue(queue);
@@ -187,13 +213,14 @@ export async function flushOfflineQueue(
         if (isNetworkError) {
           break;
         }
-        // Non-network error (e.g. invalid status), remove to prevent infinite loop
+        console.warn("[offlineQueue] Dropping failed offline event:", err);
         queue = queue.filter((q) => q.id !== item.id);
+        failedCount++;
         await saveOfflineQueue(queue);
       }
     }
 
-    return { processed: processedCount, remaining: queue.length };
+    return { processed: processedCount, remaining: queue.length, failed: failedCount };
   } finally {
     isFlushing = false;
   }

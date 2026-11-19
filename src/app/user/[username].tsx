@@ -70,13 +70,13 @@ export default function PublicUserProfileScreen() {
           const [mRes, tRes] = await Promise.all([
             supabase
               .from("matches")
-              .select("*, tournaments(name)")
+              .select("id, tournament_id, organizer_id, umpire_id, sport_type, status, participants, scores, scheduled_at, created_at, tournaments(name)")
               .eq("organizer_id", uData.id)
               .order("created_at", { ascending: false })
               .limit(100),
             supabase
               .from("tournaments")
-              .select("*")
+              .select("id, name, sport_type, status, visibility, start_date, end_date, organizer_id, created_at")
               .eq("organizer_id", uData.id)
               .order("created_at", { ascending: false })
               .limit(100),

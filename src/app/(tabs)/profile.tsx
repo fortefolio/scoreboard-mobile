@@ -24,6 +24,7 @@ import { useTranslation, Locale } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
 import { ScoreBoardTheme } from "@/constants/theme";
 import { validatePassword } from "@/lib/auth/passwordValidation";
+import { mapErrorToUserMessage } from "@/lib/errors/mapError";
 
 const SPORTS_LIST = [
   { id: "all", labelEn: "All Sports", labelPt: "Todos os Desportos" },
@@ -180,7 +181,7 @@ export default function ProfileScreen() {
         .eq("id", user.id);
 
       if (error) {
-        Alert.alert(locale === "pt" ? "Erro" : "Error", error.message);
+        Alert.alert(locale === "pt" ? "Erro" : "Error", mapErrorToUserMessage(error, locale));
       } else {
         setInitialUsername(trimmedUsername);
         setUsername(trimmedUsername);
@@ -192,7 +193,7 @@ export default function ProfileScreen() {
         );
       }
     } catch (err: any) {
-      Alert.alert(locale === "pt" ? "Erro" : "Error", err?.message || "Failed to update profile");
+      Alert.alert(locale === "pt" ? "Erro" : "Error", mapErrorToUserMessage(err, locale, "Failed to update profile"));
     } finally {
       setSavingProfile(false);
     }
@@ -222,7 +223,7 @@ export default function ProfileScreen() {
         .eq("id", user.id);
 
       if (error) {
-        Alert.alert(locale === "pt" ? "Erro" : "Error", error.message);
+        Alert.alert(locale === "pt" ? "Erro" : "Error", mapErrorToUserMessage(error, locale));
       } else {
         if (newLocale) setLocale(newLocale);
         Alert.alert(
@@ -231,7 +232,7 @@ export default function ProfileScreen() {
         );
       }
     } catch (err: any) {
-      Alert.alert(locale === "pt" ? "Erro" : "Error", err?.message || "Failed to save preferences");
+      Alert.alert(locale === "pt" ? "Erro" : "Error", mapErrorToUserMessage(err, locale, "Failed to save preferences"));
     } finally {
       setSavingPreferences(false);
     }
@@ -288,8 +289,9 @@ export default function ProfileScreen() {
 
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) {
-        Alert.alert(locale === "pt" ? "Erro" : "Error", error.message);
+        Alert.alert(locale === "pt" ? "Erro" : "Error", mapErrorToUserMessage(error, locale));
       } else {
+        await supabase.auth.signOut({ scope: "others" }).catch(() => {});
         setPasswordModalVisible(false);
         setCurrentPassword("");
         setNewPassword("");
@@ -300,7 +302,7 @@ export default function ProfileScreen() {
         );
       }
     } catch (err: any) {
-      Alert.alert(locale === "pt" ? "Erro" : "Error", err?.message || "Password update failed");
+      Alert.alert(locale === "pt" ? "Erro" : "Error", mapErrorToUserMessage(err, locale, "Password update failed"));
     } finally {
       setUpdatingPassword(false);
     }
@@ -315,7 +317,7 @@ export default function ProfileScreen() {
     try {
       const { data, error } = await supabase.rpc("export_user_data");
       if (error) {
-        Alert.alert(locale === "pt" ? "Erro" : "Error", error.message);
+        Alert.alert(locale === "pt" ? "Erro" : "Error", mapErrorToUserMessage(error, locale));
         return;
       }
 
@@ -325,7 +327,7 @@ export default function ProfileScreen() {
         message: formattedJson,
       });
     } catch (err: any) {
-      Alert.alert(locale === "pt" ? "Erro" : "Error", err?.message || "Export failed");
+      Alert.alert(locale === "pt" ? "Erro" : "Error", mapErrorToUserMessage(err, locale, "Export failed"));
     } finally {
       setExportingData(false);
     }
@@ -351,7 +353,7 @@ export default function ProfileScreen() {
     try {
       const { error } = await supabase.rpc("delete_user_account");
       if (error) {
-        setDeleteError(error.message);
+        setDeleteError(mapErrorToUserMessage(error, locale));
         setIsDeleting(false);
         return;
       }
@@ -363,7 +365,7 @@ export default function ProfileScreen() {
         [{ text: "OK", onPress: () => signOut() }]
       );
     } catch (err: any) {
-      setDeleteError(err?.message || "Failed to delete account");
+      setDeleteError(mapErrorToUserMessage(err, locale, "Failed to delete account"));
       setIsDeleting(false);
     }
   };

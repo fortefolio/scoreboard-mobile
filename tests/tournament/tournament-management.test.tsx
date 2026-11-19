@@ -170,7 +170,7 @@ describe("Tournament Management on Mobile — Feature Parity Tests", () => {
   });
 
   describe("TournamentDetailScreen Organizer Hub", () => {
-    it("displays organizer control panel and badge when logged in as organizer", async () => {
+    it("displays organizer tabs and generate/settings controls when logged in as organizer", async () => {
       render(
         <LanguageProvider>
           <TournamentDetailScreen />
@@ -178,14 +178,18 @@ describe("Tournament Management on Mobile — Feature Parity Tests", () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId("organizer-controls-section")).toBeTruthy();
+        expect(screen.getByTestId("tab-teams")).toBeTruthy();
+        expect(screen.getByTestId("tab-bracket")).toBeTruthy();
+        expect(screen.getByTestId("tab-settings")).toBeTruthy();
+      });
+
+      fireEvent.click(screen.getByTestId("tab-settings"));
+      await waitFor(() => {
         expect(screen.getByTestId("organizer-settings-btn")).toBeTruthy();
-        expect(screen.getByTestId("organizer-teams-btn")).toBeTruthy();
-        expect(screen.getByTestId("organizer-generate-btn")).toBeTruthy();
       });
     });
 
-    it("hides organizer controls for non-organizer visitors", async () => {
+    it("hides organizer controls, settings tab, and roster PII actions for non-organizer visitors", async () => {
       mockUser = { id: "other-user-999", email: "visitor@scoreboard.app" };
 
       render(
@@ -198,7 +202,15 @@ describe("Tournament Management on Mobile — Feature Parity Tests", () => {
         expect(screen.getAllByText("Algarve Padel Open").length).toBeGreaterThan(0);
       });
 
-      expect(screen.queryByTestId("organizer-controls-section")).toBeNull();
+      expect(screen.queryByTestId("tab-settings")).toBeNull();
+      expect(screen.queryByTestId("organizer-settings-btn")).toBeNull();
+      expect(screen.queryByTestId("header-add-team-btn")).toBeNull();
+      expect(screen.queryByTestId("roster-menu-btn")).toBeNull();
+      expect(screen.queryByTestId("view-team-btn-part-1")).toBeNull();
+      expect(screen.queryByTestId("remove-team-btn-part-1")).toBeNull();
+
+      fireEvent.click(screen.getByTestId("tab-bracket"));
+      expect(screen.queryByTestId("organizer-generate-btn")).toBeNull();
     });
 
     it("invokes generate-tournament-bracket edge function when organizer confirms bracket generation", async () => {
@@ -215,6 +227,12 @@ describe("Tournament Management on Mobile — Feature Parity Tests", () => {
           <TournamentDetailScreen />
         </LanguageProvider>
       );
+
+      await waitFor(() => {
+        expect(screen.getByTestId("tab-bracket")).toBeTruthy();
+      });
+
+      fireEvent.click(screen.getByTestId("tab-bracket"));
 
       await waitFor(() => {
         expect(screen.getByTestId("organizer-generate-btn")).toBeTruthy();
@@ -370,6 +388,48 @@ describe("Tournament Management on Mobile — Feature Parity Tests", () => {
       await waitFor(() => {
         expect(mockDelete).toHaveBeenCalledWith("id", "part-1");
       });
+    });
+
+    it("hides add, remove, details, and 3-dot menu actions from non-organizers", async () => {
+      mockUser = { id: "other-user-999", email: "visitor@scoreboard.app" };
+
+      render(
+        <LanguageProvider>
+          <TournamentTeamsScreen />
+        </LanguageProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText("Team Alfa")).toBeTruthy();
+        expect(screen.getByText("Team Beta")).toBeTruthy();
+      });
+
+      expect(screen.queryByTestId("header-add-team-btn")).toBeNull();
+      expect(screen.queryByTestId("empty-add-team-btn")).toBeNull();
+      expect(screen.queryByTestId("roster-menu-btn")).toBeNull();
+      expect(screen.queryByTestId("view-team-btn-part-1")).toBeNull();
+      expect(screen.queryByTestId("remove-team-btn-part-1")).toBeNull();
+    });
+  });
+
+  describe("TournamentSettingsModal Authorization", () => {
+    it("renders nothing when opened by a non-organizer", () => {
+      mockUser = { id: "other-user-999", email: "visitor@scoreboard.app" };
+
+      render(
+        <LanguageProvider>
+          <TournamentSettingsModal
+            visible={true}
+            onClose={vi.fn()}
+            tournament={mockTournament}
+            onUpdateSuccess={vi.fn()}
+            onDeleteSuccess={vi.fn()}
+          />
+        </LanguageProvider>
+      );
+
+      expect(screen.queryByTestId("settings-save-btn")).toBeNull();
+      expect(screen.queryByTestId("settings-delete-tournament-btn")).toBeNull();
     });
   });
 });

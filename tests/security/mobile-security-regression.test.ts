@@ -12,10 +12,13 @@ describe("Mobile Security Regression Invariants", () => {
     expect(source).not.toContain("username.ilike.%${query.trim()}%");
   });
 
-  it("tournament/[id]/teams.tsx requests only public columns and never wildcard *", () => {
-    const source = fs.readFileSync(path.join(mobileRoot, "app/tournament/[id]/teams.tsx"), "utf8");
+  it("TournamentRosterSection.tsx requests only public columns and never wildcard *", () => {
+    const source = fs.readFileSync(
+      path.join(mobileRoot, "components/tournament/TournamentRosterSection.tsx"),
+      "utf8"
+    );
 
-    expect(source).toContain('.select("id, tournament_id, team_id, name, seed, created_at")');
+    expect(source).toContain('.select("id, tournament_id, name, seed, created_at")');
     expect(source).not.toContain('.from("tournament_participants").select("*")');
   });
 

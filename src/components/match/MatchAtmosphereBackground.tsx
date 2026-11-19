@@ -93,18 +93,15 @@ function MatchAtmosphereBackgroundComponent({
       <Image
         source={source}
         contentFit="cover"
-        style={[
-          StyleSheet.absoluteFill,
-          { opacity: isUmpire ? 0.16 : 0.22 },
-        ]}
+        style={StyleSheet.absoluteFill}
       />
       <View
         style={[
           StyleSheet.absoluteFill,
           {
             backgroundColor: isUmpire
-              ? "rgba(7, 8, 13, 0.82)"
-              : "rgba(11, 13, 20, 0.78)",
+              ? "rgba(11, 13, 20, 0.90)"
+              : "rgba(11, 13, 20, 0.85)",
           },
         ]}
       />

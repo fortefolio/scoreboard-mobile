@@ -50,22 +50,30 @@ import Constants from "expo-constants";
 import * as Device from "expo-device";
 
 function getSupabaseUrl(): string {
-  const envUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "http://localhost:54321";
-
-  // Android Emulator (virtual): 10.0.2.2 points to host loopback (works in dev and release builds)
-  if (Platform.OS === "android" && !Device.isDevice && (envUrl.includes("localhost") || envUrl.includes("127.0.0.1"))) {
-    return envUrl.replace("localhost", "10.0.2.2").replace("127.0.0.1", "10.0.2.2");
-  }
+  const envUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 
   if (__DEV__) {
+    const devUrl = envUrl || "http://localhost:54321";
+
+    // Android Emulator (virtual): 10.0.2.2 points to host loopback
+    if (Platform.OS === "android" && !Device.isDevice && (devUrl.includes("localhost") || devUrl.includes("127.0.0.1"))) {
+      return devUrl.replace("localhost", "10.0.2.2").replace("127.0.0.1", "10.0.2.2");
+    }
+
     // Extract bundler host IP (e.g. "192.168.1.116" when running via Expo on physical device)
     const hostUri = Constants.expoConfig?.hostUri || (Constants as any).manifest2?.extra?.expoClient?.hostUri;
     const debuggerHost = hostUri?.split(":")?.[0];
 
     // Physical device (iOS / Android): replace localhost with host computer's IP
-    if (Device.isDevice && debuggerHost && (envUrl.includes("localhost") || envUrl.includes("127.0.0.1"))) {
-      return envUrl.replace("localhost", debuggerHost).replace("127.0.0.1", debuggerHost);
+    if (Device.isDevice && debuggerHost && (devUrl.includes("localhost") || devUrl.includes("127.0.0.1"))) {
+      return devUrl.replace("localhost", debuggerHost).replace("127.0.0.1", debuggerHost);
     }
+
+    return devUrl;
+  }
+
+  if (!envUrl || !envUrl.startsWith("https://")) {
+    throw new Error("EXPO_PUBLIC_SUPABASE_URL must be configured with https:// in production builds.");
   }
 
   return envUrl;
@@ -74,11 +82,12 @@ function getSupabaseUrl(): string {
 const supabaseUrl = getSupabaseUrl();
 const supabaseAnonKey =
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
-  "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH";
+  (__DEV__ ? "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH" : "");
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: ExpoSecureStoreAdapter,
+    flowType: "pkce",
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
