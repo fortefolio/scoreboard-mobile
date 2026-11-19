@@ -4,65 +4,112 @@ import { supabase } from "@/lib/supabase/client";
 
 export type EntityType = "match" | "tournament" | "team" | "player" | "competition";
 
-export function useFollow() {
-  const { user } = useAuth();
-  const [followedMatchIds, setFollowedMatchIds] = useState<Set<string>>(new Set());
-  const [followedTournamentIds, setFollowedTournamentIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState<boolean>(true);
-  const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
+interface FollowStoreState {
+  userId: string | null;
+  followedMatchIds: Set<string>;
+  followedTournamentIds: Set<string>;
+  loading: boolean;
+  updatingIds: Set<string>;
+}
 
-  const fetchFollows = useCallback(async () => {
-    if (!user) {
-      setFollowedMatchIds(new Set());
-      setFollowedTournamentIds(new Set());
-      setLoading(false);
+let storeState: FollowStoreState = {
+  userId: null,
+  followedMatchIds: new Set(),
+  followedTournamentIds: new Set(),
+  loading: true,
+  updatingIds: new Set(),
+};
+
+const listeners = new Set<(state: FollowStoreState) => void>();
+
+function setStoreState(updater: (prev: FollowStoreState) => FollowStoreState) {
+  storeState = updater(storeState);
+  listeners.forEach((listener) => listener(storeState));
+}
+
+async function fetchFollowsForUser(userId: string | null) {
+  if (!userId) {
+    setStoreState((prev) => ({
+      ...prev,
+      userId: null,
+      followedMatchIds: new Set(),
+      followedTournamentIds: new Set(),
+      loading: false,
+    }));
+    return;
+  }
+
+  setStoreState((prev) => ({ ...prev, userId, loading: true }));
+
+  try {
+    const { data, error } = await supabase
+      .from("follows")
+      .select("entity_id, entity_type")
+      .eq("user_id", userId);
+
+    if (error) {
+      console.warn("Error fetching follows:", error.message);
+      setStoreState((prev) => ({ ...prev, loading: false }));
       return;
     }
 
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("follows")
-        .select("entity_id, entity_type")
-        .eq("user_id", user.id);
+    const matchIds = new Set<string>();
+    const tournamentIds = new Set<string>();
 
-      if (error) {
-        console.warn("Error fetching follows:", error.message);
-        return;
+    (data || []).forEach((item: { entity_id: string; entity_type: string }) => {
+      if (item.entity_type === "match") {
+        matchIds.add(item.entity_id);
+      } else if (item.entity_type === "tournament" || item.entity_type === "competition") {
+        tournamentIds.add(item.entity_id);
       }
+    });
 
-      const matchIds = new Set<string>();
-      const tournamentIds = new Set<string>();
+    setStoreState((prev) => ({
+      ...prev,
+      userId,
+      followedMatchIds: matchIds,
+      followedTournamentIds: tournamentIds,
+      loading: false,
+    }));
+  } catch (err) {
+    console.warn("Failed to load follows:", err);
+    setStoreState((prev) => ({ ...prev, loading: false }));
+  }
+}
 
-      (data || []).forEach((item: { entity_id: string; entity_type: string }) => {
-        if (item.entity_type === "match") {
-          matchIds.add(item.entity_id);
-        } else if (item.entity_type === "tournament" || item.entity_type === "competition") {
-          tournamentIds.add(item.entity_id);
-        }
-      });
-
-      setFollowedMatchIds(matchIds);
-      setFollowedTournamentIds(tournamentIds);
-    } catch (err) {
-      console.warn("Failed to load follows:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
+export function useFollow() {
+  const { user } = useAuth();
+  const [state, setState] = useState<FollowStoreState>(storeState);
 
   useEffect(() => {
-    fetchFollows();
-  }, [fetchFollows]);
+    listeners.add(setState);
+    setState(storeState);
+    return () => {
+      listeners.delete(setState);
+    };
+  }, []);
+
+  useEffect(() => {
+    const nextUserId = user?.id ?? null;
+    if (storeState.userId !== nextUserId) {
+      fetchFollowsForUser(nextUserId);
+    } else if (!nextUserId && storeState.loading) {
+      fetchFollowsForUser(null);
+    }
+  }, [user?.id]);
+
+  const refetchFollows = useCallback(async () => {
+    await fetchFollowsForUser(user?.id ?? null);
+  }, [user?.id]);
 
   const isFollowing = useCallback(
     (entityId: string, entityType: "match" | "tournament"): boolean => {
       if (entityType === "match") {
-        return followedMatchIds.has(entityId);
+        return state.followedMatchIds.has(entityId);
       }
-      return followedTournamentIds.has(entityId);
+      return state.followedTournamentIds.has(entityId);
     },
-    [followedMatchIds, followedTournamentIds]
+    [state.followedMatchIds, state.followedTournamentIds]
   );
 
   const toggleFollow = useCallback(
@@ -71,27 +118,29 @@ export function useFollow() {
         return false;
       }
 
-      const currentlyFollowing = isFollowing(entityId, entityType);
+      const currentlyFollowing =
+        entityType === "match"
+          ? storeState.followedMatchIds.has(entityId)
+          : storeState.followedTournamentIds.has(entityId);
       const nextState = !currentlyFollowing;
+      const updatingKey = `${entityType}:${entityId}`;
 
-      // Optimistic update
-      if (entityType === "match") {
-        setFollowedMatchIds((prev) => {
-          const next = new Set(prev);
-          if (nextState) next.add(entityId);
-          else next.delete(entityId);
-          return next;
-        });
-      } else {
-        setFollowedTournamentIds((prev) => {
-          const next = new Set(prev);
-          if (nextState) next.add(entityId);
-          else next.delete(entityId);
-          return next;
-        });
-      }
+      // Optimistic update on shared store
+      setStoreState((prev) => {
+        const nextUpdating = new Set(prev.updatingIds);
+        nextUpdating.add(updatingKey);
 
-      setUpdatingIds((prev) => new Set(prev).add(entityId));
+        if (entityType === "match") {
+          const nextMatches = new Set(prev.followedMatchIds);
+          if (nextState) nextMatches.add(entityId);
+          else nextMatches.delete(entityId);
+          return { ...prev, followedMatchIds: nextMatches, updatingIds: nextUpdating };
+        }
+        const nextTournaments = new Set(prev.followedTournamentIds);
+        if (nextState) nextTournaments.add(entityId);
+        else nextTournaments.delete(entityId);
+        return { ...prev, followedTournamentIds: nextTournaments, updatingIds: nextUpdating };
+      });
 
       try {
         if (currentlyFollowing) {
@@ -109,41 +158,38 @@ export function useFollow() {
         return nextState;
       } catch (err) {
         console.warn("Failed to toggle follow:", err);
-        // Rollback
-        if (entityType === "match") {
-          setFollowedMatchIds((prev) => {
-            const next = new Set(prev);
-            if (currentlyFollowing) next.add(entityId);
-            else next.delete(entityId);
-            return next;
-          });
-        } else {
-          setFollowedTournamentIds((prev) => {
-            const next = new Set(prev);
-            if (currentlyFollowing) next.add(entityId);
-            else next.delete(entityId);
-            return next;
-          });
-        }
+        // Rollback on shared store
+        setStoreState((prev) => {
+          if (entityType === "match") {
+            const nextMatches = new Set(prev.followedMatchIds);
+            if (currentlyFollowing) nextMatches.add(entityId);
+            else nextMatches.delete(entityId);
+            return { ...prev, followedMatchIds: nextMatches };
+          }
+          const nextTournaments = new Set(prev.followedTournamentIds);
+          if (currentlyFollowing) nextTournaments.add(entityId);
+          else nextTournaments.delete(entityId);
+          return { ...prev, followedTournamentIds: nextTournaments };
+        });
         return currentlyFollowing;
       } finally {
-        setUpdatingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(entityId);
-          return next;
+        setStoreState((prev) => {
+          const nextUpdating = new Set(prev.updatingIds);
+          nextUpdating.delete(updatingKey);
+          return { ...prev, updatingIds: nextUpdating };
         });
       }
     },
-    [user, isFollowing]
+    [user]
   );
 
   return {
-    followedMatchIds,
-    followedTournamentIds,
-    loading,
-    updatingIds,
+    followedMatchIds: state.followedMatchIds,
+    followedTournamentIds: state.followedTournamentIds,
+    loading: state.loading,
+    updatingIds: state.updatingIds,
     isFollowing,
     toggleFollow,
-    refetchFollows: fetchFollows,
+    refetchFollows,
   };
 }

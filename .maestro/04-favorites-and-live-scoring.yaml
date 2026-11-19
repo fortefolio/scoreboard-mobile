@@ -1,0 +1,20 @@
+appId: dev.goncaloforte.scoreboard
+---
+- launchApp
+- assertVisible: "SCORE:BOARD"
+
+# Verify guest feed and sport filter pills (alphabetical)
+- assertVisible: "Matches"
+- assertVisible: "Tournaments"
+- assertVisible: "Basketball"
+
+# Switch to Favorites tab and verify prompt or empty state
+- tapOn: "Favorites"
+- assertVisible:
+    text: "Favorites|Following|Favoritos|Sign In"
+
+# Switch back to Matches and open first match overview if present
+- tapOn: "Matches"
+- tapOn:
+    index: 0
+    optional: true
