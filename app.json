@@ -12,7 +12,7 @@
       "icon": "./assets/images/icon.png",
       "supportsTablet": true,
       "bundleIdentifier": "dev.goncaloforte.scoreboard",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -27,7 +27,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "dev.goncaloforte.scoreboard",
-      "versionCode": 2,
+      "versionCode": 3,
       "googleServicesFile": "./google-services.json"
     },
     "web": {
