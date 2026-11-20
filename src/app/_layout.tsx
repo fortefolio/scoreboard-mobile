@@ -11,6 +11,7 @@ import { AuthProvider } from '@/components/AuthProvider';
 import { BottomTabBar } from '@/components/BottomTabBar';
 import { LanguageProvider } from '@/lib/i18n';
 import { parseNotificationDeepLink } from '@/lib/notifications/push';
+import { supabase } from '@/lib/supabase/client';
 import { ScoreBoardTheme } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -48,7 +49,16 @@ export default function RootLayout() {
       const reqId = response.notification.request.identifier;
       if (handledNotificationIdRef.current === reqId) return;
 
-      const target = parseNotificationDeepLink(response.notification.request.content.data);
+      const data = response.notification.request.content.data as Record<string, unknown> | undefined;
+      const notificationId = typeof data?.notification_id === 'string' ? data.notification_id : null;
+      const target = parseNotificationDeepLink(data);
+      if (notificationId) {
+        supabase
+          .from('notifications')
+          .update({ read_at: new Date().toISOString() })
+          .eq('id', notificationId)
+          .then(() => {}, () => {});
+      }
       if (target) {
         handledNotificationIdRef.current = reqId;
         router.push(target as any);

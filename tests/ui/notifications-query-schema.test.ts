@@ -14,7 +14,7 @@ const VALID_NOTIFICATION_COLUMNS = new Set([
 
 describe("notifications query schema alignment", () => {
   it("selects only existing columns from public.notifications in notifications.tsx", () => {
-    const filePath = path.resolve(__dirname, "notifications.tsx");
+    const filePath = path.resolve(__dirname, "../../src/app/(tabs)/notifications.tsx");
     const source = fs.readFileSync(filePath, "utf8");
     const selectMatch = source.match(
       /\.from\("notifications"\)[\s\S]*?\.select\("([^"]+)"\)/
