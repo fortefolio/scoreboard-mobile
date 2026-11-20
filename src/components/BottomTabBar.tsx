@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, usePathname, useSegments } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Notifications from "expo-notifications";
 import { useAuth } from "@/components/AuthProvider";
 import { useTranslation } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
@@ -20,6 +21,9 @@ export function BottomTabBar() {
   useEffect(() => {
     if (!user) {
       setUnreadNotifications(0);
+      if (Platform.OS !== "web") {
+        Notifications.setBadgeCountAsync(0).catch(() => {});
+      }
       return;
     }
 
@@ -30,7 +34,11 @@ export function BottomTabBar() {
           .select("id", { count: "exact", head: true })
           .eq("user_id", user.id)
           .is("read_at", null);
-        setUnreadNotifications(count || 0);
+        const nextCount = count || 0;
+        setUnreadNotifications(nextCount);
+        if (Platform.OS !== "web") {
+          Notifications.setBadgeCountAsync(nextCount).catch(() => {});
+        }
       } catch {
         // Ignore network errors
       }

@@ -27,6 +27,22 @@ vi.mock("expo-image", () => ({
   Image: (props: any) => React.createElement("img", props),
 }));
 
+vi.mock("expo-notifications", () => ({
+  setNotificationHandler: vi.fn(),
+  getPermissionsAsync: vi.fn().mockResolvedValue({ status: "granted" }),
+  requestPermissionsAsync: vi.fn().mockResolvedValue({ status: "granted" }),
+  setNotificationChannelAsync: vi.fn().mockResolvedValue(undefined),
+  getDevicePushTokenAsync: vi.fn().mockResolvedValue({ data: "mock-token" }),
+  setBadgeCountAsync: vi.fn().mockResolvedValue(true),
+  getLastNotificationResponseAsync: vi.fn().mockResolvedValue(null),
+  addNotificationResponseReceivedListener: vi.fn(() => ({ remove: vi.fn() })),
+  AndroidImportance: { MAX: 5 },
+}));
+
+vi.mock("expo-device", () => ({
+  isDevice: false,
+}));
+
 vi.mock("react-native-safe-area-context", () => ({
   SafeAreaView: ({ children, style }: any) => React.createElement("div", { style }, children),
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
