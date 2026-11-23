@@ -22,7 +22,7 @@ import { TopBar } from "@/components/TopBar";
 import { FollowButton, SportFavoriteButton } from "@/components/FollowButton";
 import { RuleModal } from "@/components/RuleModal";
 import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
-import { PlayByPlayTable } from "@/components/match/PlayByPlayTable";
+import { ScoreProgressBreakdown } from "@/components/match/ScoreProgressBreakdown";
 import { MatchDetailSkeleton } from "@/components/common/Skeleton";
 import { supabase } from "@/lib/supabase/client";
 import { ScoreBoardTheme, Colors, Spacing } from "@/constants/theme";
@@ -52,6 +52,8 @@ export default function MatchDetailScreen() {
   const matchIdStr = (Array.isArray(id) ? id[0] : id) || "";
   const following = isFollowing(matchIdStr, "match");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deletingMatch, setDeletingMatch] = useState(false);
 
   // Fetch match details and events
   const fetchMatch = useCallback(async () => {
@@ -292,32 +294,29 @@ export default function MatchDetailScreen() {
   // Delete Match
   const handleDeleteMatch = () => {
     if (!isOrganizer) return;
-    Alert.alert(
-      t("match.deleteMatch"),
-      t("match.deleteMatchConfirm"),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("common.delete"),
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const { error } = await supabase
-                .from("matches")
-                .delete()
-                .eq("id", matchIdStr);
-              if (error) throw error;
-              router.back();
-            } catch (e: any) {
-              Alert.alert(
-                locale === "pt" ? "Erro" : "Error",
-                mapErrorToUserMessage(e, locale)
-              );
-            }
-          },
-        },
-      ]
-    );
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDeleteMatch = async () => {
+    if (!isOrganizer || deletingMatch) return;
+    setDeletingMatch(true);
+    try {
+      const { error } = await supabase
+        .from("matches")
+        .delete()
+        .eq("id", matchIdStr);
+      if (error) throw error;
+      setDeleteModalVisible(false);
+      router.back();
+    } catch (e: any) {
+      setDeleteModalVisible(false);
+      Alert.alert(
+        locale === "pt" ? "Erro" : "Error",
+        mapErrorToUserMessage(e, locale)
+      );
+    } finally {
+      setDeletingMatch(false);
+    }
   };
 
   if (loading) {
@@ -346,91 +345,92 @@ export default function MatchDetailScreen() {
   const teamBName = match.participants?.[1]?.name || t("common.teamDefault") + " B";
 
   // Score representations
-  const renderHeaderScores = () => {
+  const getHeroScoreSummary = () => {
     const scores = match.scores;
     if (match.sport_type === "Football") {
       const gA = scores?.football?.goals?.[0] ?? scores?.goals?.[0] ?? scores?.current?.home ?? 0;
       const gB = scores?.football?.goals?.[1] ?? scores?.goals?.[1] ?? scores?.current?.away ?? 0;
-      return (
-        <View style={styles.bigScoreRow}>
-          <Text style={styles.bigScore}>{gA}</Text>
-          <Text style={styles.scoreColon}>:</Text>
-          <Text style={styles.bigScore}>{gB}</Text>
-        </View>
-      );
+      return { scoreA: gA, scoreB: gB, setSummary: null };
     }
 
     if (match.sport_type === "Basketball") {
       const pA = scores?.basketball?.total_points?.[0] ?? scores?.total_points?.[0] ?? scores?.current?.home ?? 0;
       const pB = scores?.basketball?.total_points?.[1] ?? scores?.total_points?.[1] ?? scores?.current?.away ?? 0;
-      return (
-        <View style={styles.bigScoreRow}>
-          <Text style={styles.bigScore}>{pA}</Text>
-          <Text style={styles.scoreColon}>:</Text>
-          <Text style={styles.bigScore}>{pB}</Text>
-        </View>
-      );
+      return { scoreA: pA, scoreB: pB, setSummary: null };
     }
 
     if (match.sport_type === "Tennis" || match.sport_type === "Padel") {
-      const sets = scores?.tennis?.sets || scores?.sets || [];
-      const games = scores?.tennis?.games || [0, 0];
-      const points = scores?.tennis?.points || [scores?.current?.home ?? 0, scores?.current?.away ?? 0];
+      const sets: [number, number][] = scores?.tennis?.sets || scores?.sets || [];
+      const games: [number, number] = scores?.tennis?.games || [0, 0];
+      const points: [number, number] = scores?.tennis?.points || [scores?.current?.home ?? 0, scores?.current?.away ?? 0];
+      const isTiebreak = Boolean(scores?.tennis?.is_tiebreak);
       const TENNIS_PTS = ["0", "15", "30", "40", "AD"];
-      const ptA = TENNIS_PTS[points[0]] || String(points[0]);
-      const ptB = TENNIS_PTS[points[1]] || String(points[1]);
+      const ptA = isTiebreak ? String(points[0] ?? 0) : (TENNIS_PTS[points[0]] ?? String(points[0] ?? 0));
+      const ptB = isTiebreak ? String(points[1] ?? 0) : (TENNIS_PTS[points[1]] ?? String(points[1] ?? 0));
+      const setsA = sets.filter((s) => s[0] > s[1]).length;
+      const setsB = sets.filter((s) => s[1] > s[0]).length;
+      const serving = scores?.tennis?.serving_team;
 
-      return (
-        <View style={{ alignItems: "center" }}>
-          {sets.length > 0 && (
-            <Text style={styles.setsHeader}>
-              Sets: {sets.map((s: any) => `${s[0]}-${s[1]}`).join("   ")}
-            </Text>
-          )}
-          <View style={styles.bigScoreRow}>
-            <Text style={styles.bigScore}>{games[0]}</Text>
-            <Text style={styles.scoreColon}>:</Text>
-            <Text style={styles.bigScore}>{games[1]}</Text>
-          </View>
-          {isOngoing && (
-            <Text style={styles.liveGamePoints}>
-              Pontos: {ptA} - {ptB}
-            </Text>
-          )}
-        </View>
-      );
+      return {
+        scoreA: setsA,
+        scoreB: setsB,
+        setSummary: {
+          isTennis: true,
+          sets,
+          games,
+          ptA,
+          ptB,
+          setsA,
+          setsB,
+          serving,
+        },
+      };
     }
 
     if (match.sport_type === "Volleyball" || match.sport_type === "Beach Volleyball") {
-      const sets = scores?.volleyball?.sets || scores?.sets || [];
-      const pts = scores?.volleyball?.current_points || [scores?.current?.home ?? 0, scores?.current?.away ?? 0];
-      const setsA = sets.filter((s: any) => s[0] > s[1]).length;
-      const setsB = sets.filter((s: any) => s[1] > s[0]).length;
+      const sets: [number, number][] = scores?.volleyball?.sets || scores?.sets || [];
+      const pts: [number, number] = scores?.volleyball?.current_points || [scores?.current?.home ?? 0, scores?.current?.away ?? 0];
+      const setsA = sets.filter((s) => s[0] > s[1]).length;
+      const setsB = sets.filter((s) => s[1] > s[0]).length;
+      const serving = scores?.volleyball?.serving_team;
 
-      return (
-        <View style={{ alignItems: "center" }}>
-          <View style={styles.bigScoreRow}>
-            <Text style={styles.bigScore}>{setsA}</Text>
-            <Text style={styles.scoreColon}>:</Text>
-            <Text style={styles.bigScore}>{setsB}</Text>
-          </View>
-          {isOngoing && (
-            <Text style={styles.liveGamePoints}>
-              Set {sets.length + 1}: {pts[0]} - {pts[1]}
-            </Text>
-          )}
-        </View>
-      );
+      return {
+        scoreA: setsA,
+        scoreB: setsB,
+        setSummary: {
+          isTennis: false,
+          sets,
+          games: null,
+          ptA: String(pts[0] ?? 0),
+          ptB: String(pts[1] ?? 0),
+          setsA,
+          setsB,
+          serving,
+        },
+      };
     }
 
-    return (
-      <View style={styles.bigScoreRow}>
-        <Text style={styles.bigScore}>0</Text>
-        <Text style={styles.scoreColon}>:</Text>
-        <Text style={styles.bigScore}>0</Text>
-      </View>
-    );
+    return {
+      scoreA: scores?.current?.home ?? 0,
+      scoreB: scores?.current?.away ?? 0,
+      setSummary: null,
+    };
   };
+
+  const heroSummary = getHeroScoreSummary();
+  const formattedMatchDate = (() => {
+    const rawDate = match.scheduled_at || match.created_at;
+    if (!rawDate) return null;
+    try {
+      return new Date(rawDate).toLocaleDateString(undefined, {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return null;
+    }
+  })();
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -493,7 +493,6 @@ export default function MatchDetailScreen() {
                   }}
                   activeOpacity={0.75}
                 >
-                  <Ionicons name="person-outline" size={12} color={ScoreBoardTheme.textMuted} />
                   <Text style={styles.organizerPillText} numberOfLines={1}>
                     @{match.organizer?.username || match.organizer?.email?.split("@")[0]}
                   </Text>
@@ -501,28 +500,6 @@ export default function MatchDetailScreen() {
               ) : (
                 <View style={styles.sportBadge}>
                   <Text style={styles.sportBadgeText}>{match.sport_type}</Text>
-                </View>
-              )}
-
-              {isOngoing ? (
-                <View style={styles.liveIndicator}>
-                  <View style={styles.livePulse} />
-                  <Text style={styles.liveText}>{t("status.live") || "EM DIRETO"}</Text>
-                </View>
-              ) : (
-                <Text style={styles.statusBadge}>
-                  {isCompleted
-                    ? t("status.completed") || "TERMINADO"
-                    : t("status.scheduled") || "AGENDADO"}
-                </Text>
-              )}
-
-              {match.court && (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Ionicons name="location-outline" size={12} color={ScoreBoardTheme.textMuted} />
-                  <Text style={styles.courtBadge} numberOfLines={1}>
-                    {match.court}
-                  </Text>
                 </View>
               )}
             </View>
@@ -548,54 +525,124 @@ export default function MatchDetailScreen() {
           {/* Teams vs Score Display */}
           <View style={styles.matchupRow}>
             <View style={styles.teamSide}>
-              <View style={styles.teamAvatar}>
-                <Text style={styles.avatarLetter}>
-                  {(teamAName[0] || "A").toUpperCase()}
-                </Text>
+              <View style={styles.scoreBox}>
+                <Text style={styles.scoreBoxText}>{heroSummary.scoreA}</Text>
               </View>
               <Text style={styles.teamTitle} numberOfLines={2}>
                 {teamAName}
               </Text>
             </View>
 
-            <View style={styles.scoreCenter}>{renderHeaderScores()}</View>
+            <View style={styles.scoreCenter}>
+              <Text style={styles.vsText}>vs</Text>
+              {isOngoing ? (
+                <View style={styles.liveIndicator}>
+                  <View style={styles.livePulse} />
+                  <Text style={styles.liveText}>{t("status.live") || "Live"}</Text>
+                </View>
+              ) : (
+                <Text style={styles.statusBadge}>
+                  {isCompleted
+                    ? t("status.completed") || "Completed"
+                    : t("status.scheduled") || "Scheduled"}
+                </Text>
+              )}
+              {formattedMatchDate && (
+                <Text style={styles.matchDateText}>{formattedMatchDate}</Text>
+              )}
+            </View>
 
             <View style={styles.teamSide}>
-              <View style={styles.teamAvatar}>
-                <Text style={styles.avatarLetter}>
-                  {(teamBName[0] || "B").toUpperCase()}
-                </Text>
+              <View style={styles.scoreBox}>
+                <Text style={styles.scoreBoxText}>{heroSummary.scoreB}</Text>
               </View>
               <Text style={styles.teamTitle} numberOfLines={2}>
                 {teamBName}
               </Text>
             </View>
           </View>
-        </View>
 
-        {/* Start Scoreboard Handheld Button */}
-        {canStart && !isCompleted && (
-          <TouchableOpacity
-            testID="start-scoreboard-btn"
-            style={styles.startScoreboardBtn}
-            onPress={handleStartScoreboard}
-            disabled={startingMatch}
-            activeOpacity={0.85}
-          >
-            {startingMatch ? (
-              <ActivityIndicator color={ScoreBoardTheme.surfaceContainerLowest} />
-            ) : (
-              <>
-                <Ionicons name="play-circle" size={24} color={ScoreBoardTheme.surfaceContainerLowest} />
-                <Text style={styles.startScoreboardText}>
-                  {match.status === "scheduled"
-                    ? t("match.startScoreboardUpper") || "INICIAR MARCADOR"
-                    : t("match.openScoreboardUpper") || "ABRIR CONSOLA DE ÁRBITRO"}
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
-        )}
+          {/* Embedded Set / Game / Points Summary Table for Set-based Sports */}
+          {heroSummary.setSummary && (
+            <>
+              <View style={styles.heroDivider} />
+              <View style={styles.summaryTable} testID="match-summary-table">
+                <View style={styles.summaryHeaderRow}>
+                  <Text style={[styles.summaryHeaderText, styles.summaryTeamCol]} numberOfLines={1}>
+                    {t("common.team") || "Team"}
+                  </Text>
+                  {heroSummary.setSummary.sets.map((_, idx) => (
+                    <Text key={`sh-${idx}`} style={[styles.summaryHeaderText, styles.summaryNumCol]} numberOfLines={1}>
+                      S{idx + 1}
+                    </Text>
+                  ))}
+                  {heroSummary.setSummary.isTennis && (
+                    <Text style={[styles.summaryHeaderText, styles.summaryNumCol]} numberOfLines={1}>
+                      {t("common.games") || "Games"}
+                    </Text>
+                  )}
+                  <Text style={[styles.summaryHeaderText, styles.summaryNumCol]} numberOfLines={1}>
+                    {t("common.pointsLabel") || "Points"}
+                  </Text>
+                  <Text style={[styles.summaryHeaderText, styles.summaryNumCol]} numberOfLines={1}>
+                    Sets
+                  </Text>
+                </View>
+
+                {[
+                  {
+                    name: teamAName,
+                    teamIdx: 0,
+                    games: heroSummary.setSummary.games?.[0] ?? 0,
+                    points: heroSummary.setSummary.ptA,
+                    setsWon: heroSummary.setSummary.setsA,
+                  },
+                  {
+                    name: teamBName,
+                    teamIdx: 1,
+                    games: heroSummary.setSummary.games?.[1] ?? 0,
+                    points: heroSummary.setSummary.ptB,
+                    setsWon: heroSummary.setSummary.setsB,
+                  },
+                ].map((row, rIdx) => {
+                  const isServing =
+                    heroSummary.setSummary?.serving === row.teamIdx ||
+                    (row.teamIdx === 0 && heroSummary.setSummary?.serving === "home") ||
+                    (row.teamIdx === 1 && heroSummary.setSummary?.serving === "away");
+                  return (
+                    <View
+                      key={`sr-${row.teamIdx}`}
+                      style={[styles.summaryRow, rIdx === 0 && styles.summaryRowBorder]}
+                    >
+                      <View style={[styles.summaryTeamCol, styles.summaryTeamCell]}>
+                        <Text style={styles.summaryTeamName} numberOfLines={1}>
+                          {row.name}
+                        </Text>
+                        {isServing && <View style={styles.servingDot} />}
+                      </View>
+                      {heroSummary.setSummary!.sets.map((s, sIdx) => (
+                        <Text key={`sv-${row.teamIdx}-${sIdx}`} style={[styles.summaryCellMuted, styles.summaryNumCol]}>
+                          {s[row.teamIdx] ?? 0}
+                        </Text>
+                      ))}
+                      {heroSummary.setSummary!.isTennis && (
+                        <Text style={[styles.summaryCellMuted, styles.summaryNumCol]}>
+                          {row.games}
+                        </Text>
+                      )}
+                      <Text style={[styles.summaryCellBold, styles.summaryNumCol]}>
+                        {row.points}
+                      </Text>
+                      <Text style={[styles.summaryCellBold, styles.summaryNumCol]}>
+                        {row.setsWon}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </>
+          )}
+        </View>
 
         {/* Tab Navigation */}
         <View style={styles.tabsRow}>
@@ -627,14 +674,35 @@ export default function MatchDetailScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Start Scoreboard Handheld Button */}
+        {canStart && !isCompleted && (
+          <TouchableOpacity
+            testID="start-scoreboard-btn"
+            style={styles.startScoreboardBtn}
+            onPress={handleStartScoreboard}
+            disabled={startingMatch}
+            activeOpacity={0.85}
+          >
+            {startingMatch ? (
+              <ActivityIndicator color={ScoreBoardTheme.surfaceContainerLowest} />
+            ) : (
+              <>
+                <Ionicons name="play-circle" size={24} color={ScoreBoardTheme.surfaceContainerLowest} />
+                <Text style={styles.startScoreboardText}>
+                  {match.status === "scheduled"
+                    ? t("match.startScoreboard") || "Start Scoreboard"
+                    : t("match.openScoreboard") || "Open Referee Console"}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
+
         {/* TAB 1: SCORE PROGRESS & EVENTS */}
         {activeTab === "progress" && (
           <View style={styles.tabContent}>
-            <Text style={styles.sectionTitle}>
-              {t("match.pointHistoryEvents") || t("match.scoreProgress")}
-            </Text>
-
-            <PlayByPlayTable
+            <ScoreProgressBreakdown
+              match={match}
               events={events}
               teamAName={teamAName}
               teamBName={teamBName}
@@ -860,6 +928,60 @@ export default function MatchDetailScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Delete Match Confirmation Modal */}
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !deletingMatch && setDeleteModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => !deletingMatch && setDeleteModalVisible(false)}
+        >
+          <View
+            style={styles.confirmModalCard}
+            onStartShouldSetResponder={() => true}
+            testID="delete-match-confirm-modal"
+          >
+            <Text style={styles.confirmModalTitle}>
+              {t("match.deleteMatch")}
+            </Text>
+            <Text style={styles.confirmModalBody}>
+              {t("match.deleteMatchConfirm")}
+            </Text>
+            <View style={styles.confirmModalActions}>
+              <TouchableOpacity
+                style={styles.confirmCancelBtn}
+                onPress={() => setDeleteModalVisible(false)}
+                disabled={deletingMatch}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.confirmCancelText}>
+                  {t("common.cancel")}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.confirmDeleteBtn}
+                onPress={confirmDeleteMatch}
+                disabled={deletingMatch}
+                activeOpacity={0.75}
+                testID="confirm-delete-match-btn"
+              >
+                {deletingMatch ? (
+                  <ActivityIndicator size="small" color="#f87171" />
+                ) : (
+                  <Text style={styles.confirmDeleteText}>
+                    {t("match.deleteMatch")}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1030,6 +1152,61 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: ScoreBoardTheme.onSurface,
   },
+  confirmModalCard: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: ScoreBoardTheme.surfaceContainer,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    padding: 20,
+  },
+  confirmModalTitle: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: ScoreBoardTheme.onSurface,
+    marginBottom: 8,
+  },
+  confirmModalBody: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: ScoreBoardTheme.textMuted,
+    marginBottom: 20,
+  },
+  confirmModalActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  confirmCancelBtn: {
+    flex: 1,
+    paddingVertical: 11,
+    borderRadius: 10,
+    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmCancelText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: ScoreBoardTheme.onSurfaceVariant,
+  },
+  confirmDeleteBtn: {
+    flex: 1,
+    paddingVertical: 11,
+    borderRadius: 10,
+    backgroundColor: "rgba(239, 68, 68, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.45)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmDeleteText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#f87171",
+  },
   sportBadge: {
     backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
     borderWidth: 1,
@@ -1103,6 +1280,108 @@ const styles = StyleSheet.create({
   scoreCenter: {
     paddingHorizontal: 10,
     alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+  },
+  scoreBox: {
+    width: 72,
+    height: 72,
+    borderRadius: 14,
+    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  scoreBoxText: {
+    fontFamily: "Digital7Mono",
+    fontSize: 40,
+    color: ScoreBoardTheme.onSurface,
+    fontVariant: ["tabular-nums"],
+  },
+  vsText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: ScoreBoardTheme.textMuted,
+  },
+  matchDateText: {
+    fontSize: 11,
+    color: ScoreBoardTheme.textMuted,
+    fontVariant: ["tabular-nums"],
+  },
+  heroDivider: {
+    height: 1,
+    backgroundColor: ScoreBoardTheme.borderSubtle,
+    marginVertical: 16,
+  },
+  summaryTable: {
+    backgroundColor: ScoreBoardTheme.surfaceContainerLow,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    overflow: "hidden",
+  },
+  summaryHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: ScoreBoardTheme.borderSubtle,
+  },
+  summaryHeaderText: {
+    fontSize: 11,
+    fontWeight: "500",
+    color: ScoreBoardTheme.textMuted,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  summaryRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: ScoreBoardTheme.borderSubtle,
+  },
+  summaryTeamCol: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  summaryTeamCell: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  summaryTeamName: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: ScoreBoardTheme.onSurface,
+    flexShrink: 1,
+  },
+  servingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: ScoreBoardTheme.onSurface,
+  },
+  summaryNumCol: {
+    width: 48,
+    textAlign: "center",
+  },
+  summaryCellMuted: {
+    fontFamily: "Digital7Mono",
+    fontSize: 14,
+    color: ScoreBoardTheme.textMuted,
+    fontVariant: ["tabular-nums"],
+  },
+  summaryCellBold: {
+    fontFamily: "Digital7Mono",
+    fontSize: 14,
+    fontWeight: "700",
+    color: ScoreBoardTheme.onSurface,
+    fontVariant: ["tabular-nums"],
   },
   bigScoreRow: {
     flexDirection: "row",

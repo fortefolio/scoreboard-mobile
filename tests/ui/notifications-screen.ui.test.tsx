@@ -98,11 +98,14 @@ describe("NotificationsScreen", () => {
     await waitFor(() => {
       expect(screen.getByText("Match Started")).toBeInTheDocument();
     });
+    expect(screen.getByText("Braga vs Evora is now live.")).toBeInTheDocument();
     expect(screen.getByText(/Clear all|Limpar tudo/i)).toBeInTheDocument();
 
-    // Mark as read button
-    const markReadBtn = screen.getByTestId("icon-checkmark-done-outline");
-    fireEvent.click(markReadBtn);
+    // Open 3-dot action menu and click Mark as read
+    const menuBtn = screen.getByTestId("notif-menu-n1");
+    fireEvent.click(menuBtn);
+    const markReadItem = await screen.findByText(/Mark as read|Marcar como lida/i);
+    fireEvent.click(markReadItem);
     await waitFor(() => {
       expect(mockUpdateEq).toHaveBeenCalled();
     });

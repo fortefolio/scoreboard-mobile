@@ -31,9 +31,30 @@ export function PlayByPlayTable({
     );
   }
 
+  // Reconcile goal undo/correction events chronologically before displaying newest-first
+  const reconciledEvents = (() => {
+    const chrono = [...events].reverse();
+    const active: any[] = [];
+    for (const ev of chrono) {
+      const tType = ev?.event_data?.type;
+      if (tType === "correct_goal" || tType === "goal_reverted") {
+        const revertSide = ev?.event_data?.side || "home";
+        const lastIdx = active.findLastIndex(
+          (g) => g?.event_data?.type === "goal" && (g?.event_data?.side || "home") === revertSide
+        );
+        if (lastIdx !== -1) {
+          active.splice(lastIdx, 1);
+          continue;
+        }
+      }
+      active.push(ev);
+    }
+    return active.reverse();
+  })();
+
   return (
     <View style={styles.tableCard}>
-      {events.map((ev, idx) => {
+      {reconciledEvents.map((ev, idx) => {
         const data = ev.event_data || {};
         const side =
           data.scoring_side !== undefined
@@ -51,7 +72,7 @@ export function PlayByPlayTable({
 
         const deltaBadge =
           data.points !== undefined
-            ? `+${data.points}`
+            ? `${Number(data.points) > 0 ? "+" : ""}${data.points}`
             : data.minute !== undefined
             ? `${data.minute}'`
             : null;

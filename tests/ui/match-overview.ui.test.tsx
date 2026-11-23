@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { LanguageProvider } from "@/lib/i18n";
 import MatchDetailScreen from "../../src/app/match/[id]";
 
@@ -139,5 +139,54 @@ describe("MatchDetailScreen (Match Overview)", () => {
       expect(screen.getByText("3")).toBeInTheDocument();
     });
     expect(screen.getByText("1")).toBeInTheDocument();
+  });
+
+  it("renders Tennis summary table and Set, Game & Point-by-Point Breakdown", async () => {
+    mockMatchData = {
+      id: "match-tennis-1",
+      sport_type: "Tennis",
+      status: "ongoing",
+      organizer_id: "org-1",
+      tournament_id: null,
+      participants: [{ name: "Alexander Zverev" }, { name: "Carlos Alcaraz" }],
+      scores: {
+        tennis: {
+          sets: [[6, 4]],
+          games: [2, 1],
+          points: [2, 1],
+          serving_team: 0,
+          current_set_games: [
+            {
+              game_number: 1,
+              winner: 0,
+              serving_team: 0,
+              points_progression: [
+                [1, 0],
+                [2, 0],
+                [3, 0],
+                [4, 0],
+              ],
+            },
+          ],
+        },
+      },
+      settings: {},
+    };
+
+    render(
+      <LanguageProvider>
+        <MatchDetailScreen />
+      </LanguageProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("match-summary-table")).toBeInTheDocument();
+    });
+    const summaryTable = screen.getByTestId("match-summary-table");
+    expect(within(summaryTable).getByText("30")).toBeInTheDocument();
+    expect(within(summaryTable).getByText("15")).toBeInTheDocument();
+    const breakdown = screen.getByTestId("tennis-score-breakdown");
+    expect(breakdown).toBeInTheDocument();
+    expect(within(breakdown).getByText("Game 1")).toBeInTheDocument();
   });
 });
