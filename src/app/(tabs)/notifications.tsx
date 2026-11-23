@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { TopBar } from "@/components/TopBar";
+import { NotificationListSkeleton } from "@/components/common/Skeleton";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
@@ -182,9 +183,7 @@ export default function NotificationsScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
-        </View>
+        <NotificationListSkeleton />
       ) : !user ? (
         <View style={styles.centered}>
           <Ionicons name="lock-closed-outline" size={48} color="#475569" />

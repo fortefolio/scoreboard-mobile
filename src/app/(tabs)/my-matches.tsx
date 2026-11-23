@@ -21,6 +21,7 @@ import { GroupedMatchList } from "@/components/GroupedMatchList";
 import { Pagination } from "@/components/Pagination";
 import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
 import { CreateMatchModal } from "@/components/match/CreateMatchModal";
+import { MatchListSkeleton } from "@/components/common/Skeleton";
 import { AuthModal } from "@/components/AuthModal";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/lib/i18n";
@@ -209,9 +210,7 @@ export default function MyMatchesScreen() {
       )}
 
       {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
-        </View>
+        <MatchListSkeleton />
       ) : !user ? (
         <View style={styles.centered}>
           <Ionicons name="lock-closed-outline" size={48} color={ScoreBoardTheme.textMuted} />

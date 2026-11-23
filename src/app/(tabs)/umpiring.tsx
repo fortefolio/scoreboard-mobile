@@ -15,6 +15,7 @@ import { TopBar } from "@/components/TopBar";
 import { WorkspaceTabs } from "@/components/WorkspaceTabs";
 import { FeedHeader } from "@/components/FeedHeader";
 import { MatchCard } from "@/components/MatchCard";
+import { MatchListSkeleton } from "@/components/common/Skeleton";
 import { GroupedMatchList } from "@/components/GroupedMatchList";
 import { Pagination } from "@/components/Pagination";
 import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
@@ -178,9 +179,7 @@ export default function UmpiringScreen() {
       )}
 
       {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
-        </View>
+        <MatchListSkeleton />
       ) : !user ? (
         <View style={styles.centered}>
           <Ionicons name="lock-closed-outline" size={48} color={ScoreBoardTheme.textMuted} />

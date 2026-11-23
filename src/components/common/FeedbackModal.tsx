@@ -11,6 +11,8 @@ export interface FeedbackModalProps {
   confirmText?: string;
   onConfirm: () => void;
   testID?: string;
+  /** Render as an inline overlay View instead of a native Modal (avoids iOS nested-Modal presentation failures). */
+  inline?: boolean;
 }
 
 export function FeedbackModal({
@@ -21,6 +23,7 @@ export function FeedbackModal({
   confirmText = "OK",
   onConfirm,
   testID = "feedback-modal-confirm-btn",
+  inline = false,
 }: FeedbackModalProps) {
   const isSuccess = type === "success";
   const isError = type === "error";
@@ -38,6 +41,33 @@ export function FeedbackModal({
     ? "rgba(239, 68, 68, 0.15)"
     : ScoreBoardTheme.surfaceContainerHighest;
 
+  const content = (
+    <View style={styles.overlay}>
+      <View style={styles.dialogCard}>
+        <View style={[styles.iconWrapper, { backgroundColor: iconBg }]}>
+          <Ionicons name={iconName} size={36} color={iconColor} />
+        </View>
+
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.message}>{message}</Text>
+
+        <TouchableOpacity
+          style={styles.confirmBtn}
+          onPress={onConfirm}
+          activeOpacity={0.8}
+          testID={testID}
+        >
+          <Text style={styles.confirmBtnText}>{confirmText}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  if (inline) {
+    if (!visible) return null;
+    return <View style={styles.inlineHost}>{content}</View>;
+  }
+
   return (
     <Modal
       visible={visible}
@@ -45,30 +75,16 @@ export function FeedbackModal({
       animationType="fade"
       onRequestClose={onConfirm}
     >
-      <View style={styles.overlay}>
-        <View style={styles.dialogCard}>
-          <View style={[styles.iconWrapper, { backgroundColor: iconBg }]}>
-            <Ionicons name={iconName} size={36} color={iconColor} />
-          </View>
-
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
-
-          <TouchableOpacity
-            style={styles.confirmBtn}
-            onPress={onConfirm}
-            activeOpacity={0.8}
-            testID={testID}
-          >
-            <Text style={styles.confirmBtnText}>{confirmText}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      {content}
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  inlineHost: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 50,
+  },
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.75)",

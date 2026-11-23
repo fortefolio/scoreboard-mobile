@@ -9,7 +9,7 @@ import {
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase/client";
-import { useLanguage } from "@/lib/i18n";
+import { useLanguage, getSportTranslation } from "@/lib/i18n";
 import { recordMatchEventAtomic } from "@/lib/scoring/atomicScoring";
 import { ScoreBoardTheme } from "@/constants/theme";
 import {
@@ -432,7 +432,7 @@ export function BasketballScoreboard({ matchData, rules, canEdit }: BasketballSc
     <ScoreboardMainCard
       compactHeader={{
         sportType: matchData.sport_type,
-        sportLabel: matchData.sport_type,
+        sportLabel: getSportTranslation(matchData.sport_type, t),
         eventName,
         statusBadge: currentPeriod,
         onFinish: canEdit ? handleFinalizeMatch : undefined,

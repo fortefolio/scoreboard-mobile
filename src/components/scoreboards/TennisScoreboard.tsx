@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,8 +9,14 @@ import {
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase/client";
-import { useLanguage } from "@/lib/i18n";
+import { useLanguage, getSportTranslation } from "@/lib/i18n";
 import { recordMatchEventAtomic } from "@/lib/scoring/atomicScoring";
+import {
+  calculateTennisScore,
+  createInitialTennisScores,
+  TennisRules,
+  TennisScoresState,
+} from "@/lib/scoring/tennis-engine";
 import { ScoreBoardTheme } from "@/constants/theme";
 import {
   ScoreboardMainCard,
@@ -31,6 +37,28 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
   const isPadel = matchData.sport_type === "Padel";
   const defaultMaxSets = rules?.max_sets || 3;
   const noAd = rules?.no_ad ?? (isPadel ? true : false);
+  const effectiveRules: TennisRules = { ...rules, no_ad: noAd };
+
+  const normalizeScoresState = (raw: any): TennisScoresState => {
+    const base = createInitialTennisScores((raw?.serving_index ?? 0) as 0 | 1);
+    const tData = raw?.tennis || {};
+    const g: [number, number] = tData.games || [0, 0];
+    return {
+      ...base,
+      ...(raw || {}),
+      serving_index: (raw?.serving_index ?? 0) as 0 | 1,
+      match_won: Boolean(raw?.match_won),
+      tennis: {
+        ...base.tennis,
+        ...tData,
+        points: tData.points || [0, 0],
+        games: g,
+        sets: tData.sets || [],
+        current_set: tData.current_set ?? (tData.sets?.length || 0) + 1,
+        is_tiebreak: Boolean(tData.is_tiebreak ?? (g[0] === 6 && g[1] === 6 && rules?.set_type !== "advantage")),
+      },
+    };
+  };
 
   const [points, setPoints] = useState<[number, number]>(
     matchData.scores?.tennis?.points || [0, 0]
@@ -42,16 +70,30 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
   const [serverIdx, setServerIdx] = useState<number | null>(
     matchData.scores?.serving_index ?? null
   );
+  const [isTiebreakState, setIsTiebreakState] = useState<boolean>(
+    Boolean(
+      matchData.scores?.tennis?.is_tiebreak ??
+        ((matchData.scores?.tennis?.games?.[0] ?? 0) === 6 &&
+          (matchData.scores?.tennis?.games?.[1] ?? 0) === 6 &&
+          rules?.set_type !== "advantage")
+    )
+  );
   const [tossing, setTossing] = useState(false);
   const [aces, setAces] = useState({ home: 0, away: 0 });
   const [doubleFaults, setDoubleFaults] = useState({ home: 0, away: 0 });
+  const scoresRef = useRef<TennisScoresState>(normalizeScoresState(matchData.scores));
+  const serverIdxRef = useRef<number | null>(matchData.scores?.serving_index ?? null);
 
   useEffect(() => {
     if (matchData.scores?.tennis) {
-      setPoints(matchData.scores.tennis.points || [0, 0]);
-      setGames(matchData.scores.tennis.games || [0, 0]);
-      setSets(matchData.scores.tennis.sets || []);
+      const normalized = normalizeScoresState(matchData.scores);
+      scoresRef.current = normalized;
+      serverIdxRef.current = matchData.scores.serving_index ?? null;
+      setPoints(normalized.tennis.points);
+      setGames(normalized.tennis.games);
+      setSets(normalized.tennis.sets);
       setServerIdx(matchData.scores.serving_index ?? null);
+      setIsTiebreakState(normalized.tennis.is_tiebreak);
       if (matchData.scores.tennis.stats) {
         setAces(matchData.scores.tennis.stats.aces || { home: 0, away: 0 });
         setDoubleFaults(matchData.scores.tennis.stats.double_faults || { home: 0, away: 0 });
@@ -69,7 +111,7 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
     Array.isArray(s) ? s[1] > s[0] : (s.team2 ?? s.away ?? 0) > (s.team1 ?? s.home ?? 0)
   ).length;
 
-  const isTiebreak = games[0] === 6 && games[1] === 6;
+  const isTiebreak = isTiebreakState;
 
   const formatPoints = (pts: number, oppPts: number) => {
     if (isTiebreak) return String(pts);
@@ -102,6 +144,11 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
   const handleToss = async (selectedIdx: number) => {
     if (!canEdit) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    serverIdxRef.current = selectedIdx;
+    scoresRef.current = {
+      ...scoresRef.current,
+      serving_index: selectedIdx as 0 | 1,
+    };
     setServerIdx(selectedIdx);
     setTossing(true);
 
@@ -119,20 +166,33 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
 
   const handlePoint = async (winnerIdx: number) => {
     if (!canEdit) return;
-    if (serverIdx === null) {
+    if (serverIdxRef.current === null && serverIdx === null) {
       Alert.alert("Serviço", "Selecione primeiro quem está a servir!");
       return;
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-    const newPoints: [number, number] = [...points];
-    newPoints[winnerIdx]++;
-    setPoints(newPoints);
+    const prevState = scoresRef.current;
+    const nextScores = calculateTennisScore(prevState, winnerIdx as 0 | 1, effectiveRules);
+    const existingStats = (prevState.tennis as any)?.stats;
+    if (existingStats) {
+      (nextScores.tennis as any).stats = existingStats;
+    }
+
+    scoresRef.current = nextScores;
+    serverIdxRef.current = nextScores.serving_index;
+    setPoints(nextScores.tennis.points);
+    setGames(nextScores.tennis.games);
+    setSets(nextScores.tennis.sets);
+    setServerIdx(nextScores.serving_index);
+    setIsTiebreakState(nextScores.tennis.is_tiebreak);
 
     try {
       const { error } = await recordMatchEventAtomic(supabase, {
         matchId: matchData.id,
+        newScores: nextScores,
+        newStatus: nextScores.match_won ? "completed" : undefined,
         eventData: {
           type: "point_won",
           side: winnerIdx === 0 ? "home" : "away",
@@ -148,21 +208,21 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
   };
 
   const handleCorrectPoint = async (idx: number) => {
-    if (!canEdit || points[idx] <= 0) return;
+    const currentPoints = scoresRef.current.tennis.points;
+    if (!canEdit || currentPoints[idx] <= 0) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    const newPoints: [number, number] = [...points];
+    const newPoints: [number, number] = [...currentPoints];
     newPoints[idx] = Math.max(0, newPoints[idx] - 1);
-    setPoints(newPoints);
-
-    const currentScores = matchData?.scores || {};
-    const updated = {
-      ...currentScores,
+    const updated: TennisScoresState = {
+      ...scoresRef.current,
       tennis: {
-        ...(currentScores.tennis || {}),
+        ...scoresRef.current.tennis,
         points: newPoints,
       },
     };
+    scoresRef.current = updated;
+    setPoints(newPoints);
 
     await recordMatchEventAtomic(supabase, {
       matchId: matchData.id,
@@ -209,11 +269,14 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
   const toggleServer = async () => {
     if (!canEdit) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const nextIdx = serverIdx === 0 ? 1 : 0;
+    const nextIdx = (serverIdxRef.current ?? serverIdx) === 0 ? 1 : 0;
+    serverIdxRef.current = nextIdx;
+    const updated: TennisScoresState = {
+      ...scoresRef.current,
+      serving_index: nextIdx as 0 | 1,
+    };
+    scoresRef.current = updated;
     setServerIdx(nextIdx);
-
-    const currentScores = matchData?.scores || {};
-    const updated = { ...currentScores, serving_index: nextIdx };
 
     await recordMatchEventAtomic(supabase, {
       matchId: matchData.id,
@@ -319,7 +382,7 @@ export function TennisScoreboard({ matchData, rules, canEdit }: TennisScoreboard
       <ScoreboardMainCard
         compactHeader={{
           sportType: matchData.sport_type,
-          sportLabel: matchData.sport_type,
+          sportLabel: getSportTranslation(matchData.sport_type, t),
           eventName,
           statusBadge: isTiebreak
             ? "Tie-Break"

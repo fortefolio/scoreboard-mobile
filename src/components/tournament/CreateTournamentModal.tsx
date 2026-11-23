@@ -486,24 +486,25 @@ export function CreateTournamentModal({
           </View>
         </View>
       </KeyboardAvoidingView>
-    </Modal>
 
-    <FeedbackModal
-      visible={feedbackModalVisible}
-      type="success"
-      title={isPt ? "Sucesso" : "Success"}
-      message={isPt ? "Torneio criado com sucesso!" : "Tournament created successfully!"}
-      confirmText="OK"
-      testID="success-modal-confirm-btn"
-      onConfirm={() => {
-        setFeedbackModalVisible(false);
-        const id = createdTournamentId;
-        resetForm();
-        if (id) {
-          onCreateSuccess(id);
-        }
-      }}
-    />
+      <FeedbackModal
+        inline
+        visible={feedbackModalVisible}
+        type="success"
+        title={isPt ? "Sucesso" : "Success"}
+        message={isPt ? "Torneio criado com sucesso!" : "Tournament created successfully!"}
+        confirmText="OK"
+        testID="success-modal-confirm-btn"
+        onConfirm={() => {
+          setFeedbackModalVisible(false);
+          const id = createdTournamentId;
+          resetForm();
+          if (id) {
+            onCreateSuccess(id);
+          }
+        }}
+      />
+    </Modal>
   </>
   );
 }

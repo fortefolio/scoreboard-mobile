@@ -294,22 +294,23 @@ export function CreateMatchModal({
           </View>
         </View>
       </KeyboardAvoidingView>
-    </Modal>
 
-    <FeedbackModal
-      visible={feedbackModalVisible}
-      type="success"
-      title={isPt ? "Sucesso" : "Success"}
-      message={isPt ? "Jogo criado com sucesso!" : "Match created successfully!"}
-      confirmText="OK"
-      testID="success-modal-confirm-btn"
-      onConfirm={() => {
-        setFeedbackModalVisible(false);
-        const id = createdMatchId;
-        resetForm();
-        onCreateSuccess(id || undefined);
-      }}
-    />
+      <FeedbackModal
+        inline
+        visible={feedbackModalVisible}
+        type="success"
+        title={isPt ? "Sucesso" : "Success"}
+        message={isPt ? "Jogo criado com sucesso!" : "Match created successfully!"}
+        confirmText="OK"
+        testID="success-modal-confirm-btn"
+        onConfirm={() => {
+          setFeedbackModalVisible(false);
+          const id = createdMatchId;
+          resetForm();
+          onCreateSuccess(id || undefined);
+        }}
+      />
+    </Modal>
   </>
   );
 }

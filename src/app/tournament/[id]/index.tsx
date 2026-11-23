@@ -23,6 +23,7 @@ import { GroupStandingsView } from "@/components/tournament/GroupStandingsView";
 import { TournamentBracketView } from "@/components/tournament/TournamentBracketView";
 import { TournamentRosterSection } from "@/components/tournament/TournamentRosterSection";
 import { TournamentSettingsModal } from "@/components/tournament/TournamentSettingsModal";
+import { MatchDetailSkeleton } from "@/components/common/Skeleton";
 import { calculateStandings, Standing } from "@/lib/standings/groups";
 import { ScoreBoardTheme } from "@/constants/theme";
 import { supabase } from "@/lib/supabase/client";
@@ -260,9 +261,7 @@ export default function TournamentDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
-        </View>
+        <MatchDetailSkeleton />
       </SafeAreaView>
     );
   }

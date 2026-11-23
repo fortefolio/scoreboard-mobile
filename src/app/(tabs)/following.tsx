@@ -14,6 +14,7 @@ import { TopBar } from "@/components/TopBar";
 import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
 import { FeedHeader } from "@/components/FeedHeader";
 import { MatchCard } from "@/components/MatchCard";
+import { MatchListSkeleton } from "@/components/common/Skeleton";
 import { GroupedMatchList } from "@/components/GroupedMatchList";
 import { TournamentCard } from "@/components/TournamentCard";
 import { Pagination } from "@/components/Pagination";
@@ -154,12 +155,7 @@ export default function FollowingFeedScreen() {
 
   const renderEmpty = () => {
     if (loading) {
-      return (
-        <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
-          <Text style={styles.loadingText}>{t("common.loading") || "Loading live data..."}</Text>
-        </View>
-      );
+      return <MatchListSkeleton />;
     }
 
     if (!user) {

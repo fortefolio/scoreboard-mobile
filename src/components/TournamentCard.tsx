@@ -40,7 +40,7 @@ export function TournamentCard({ tournament, compact = false, onAuthRequired }: 
 
   const startDate = formatDate(tournament.start_date);
   const endDate = formatDate(tournament.end_date);
-  const dateDisplay = startDate && endDate ? `${startDate} - ${endDate}` : startDate || t("tournaments.upcoming");
+  const dateDisplay = startDate && endDate ? `${startDate} - ${endDate}` : startDate || t("status.scheduled");
 
   if (compact) {
     return (

@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +20,7 @@ import { GroupedMatchList } from "@/components/GroupedMatchList";
 import { Pagination } from "@/components/Pagination";
 import { AuthModal } from "@/components/AuthModal";
 import { CreateMatchModal } from "@/components/match/CreateMatchModal";
+import { MatchListSkeleton } from "@/components/common/Skeleton";
 import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
 import { GuestLandingHero } from "@/components/home/GuestLandingHero";
 import {
@@ -212,14 +214,41 @@ export default function MatchesFeedScreen() {
     setAuthModalVisible(true);
   };
 
+  const handleDeleteMatch = useCallback(
+    (matchId: string) => {
+      Alert.alert(
+        t("match.deleteMatch"),
+        t("match.deleteMatchConfirm"),
+        [
+          { text: t("common.cancel"), style: "cancel" },
+          {
+            text: t("common.delete"),
+            style: "destructive",
+            onPress: async () => {
+              try {
+                const { error } = await supabase
+                  .from("matches")
+                  .delete()
+                  .eq("id", matchId);
+                if (error) throw error;
+                setMatches((prev) => prev.filter((m) => m.id !== matchId));
+              } catch (e: any) {
+                Alert.alert(
+                  locale === "pt" ? "Erro" : "Error",
+                  e?.message || (locale === "pt" ? "Erro ao eliminar jogo." : "Failed to delete match.")
+                );
+              }
+            },
+          },
+        ]
+      );
+    },
+    [t, locale]
+  );
+
   const renderEmpty = () => {
     if (loading) {
-      return (
-        <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
-          <Text style={styles.loadingText}>{t("common.loading") || "Loading live data..."}</Text>
-        </View>
-      );
+      return <MatchListSkeleton />;
     }
 
     if (!user) {
@@ -364,7 +393,12 @@ export default function MatchesFeedScreen() {
               onAuthRequired={() => openAuthModal("login")}
             />
           ) : (
-            <MatchCard match={item} onAuthRequired={() => openAuthModal("login")} />
+            <MatchCard
+              match={item}
+              onAuthRequired={() => openAuthModal("login")}
+              canDelete={Boolean(user?.id && item.organizer_id === user.id)}
+              onDelete={handleDeleteMatch}
+            />
           )
         }
         ListFooterComponent={

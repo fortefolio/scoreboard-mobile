@@ -11,6 +11,7 @@
     "ios": {
       "icon": "./assets/images/icon.png",
       "supportsTablet": true,
+      "requireFullScreen": true,
       "bundleIdentifier": "dev.goncaloforte.scoreboard",
       "buildNumber": "4",
       "googleServicesFile": "./GoogleService-Info.plist",

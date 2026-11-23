@@ -28,6 +28,9 @@ vi.mock("@/components/AuthProvider", () => ({
 
 // Mock Supabase
 const mockRpc = vi.fn();
+const mockUpdate = vi.fn().mockReturnValue({
+  eq: vi.fn().mockResolvedValue({ error: null }),
+});
 
 vi.mock("@/lib/supabase/client", () => ({
   supabase: {
@@ -51,9 +54,7 @@ vi.mock("@/lib/supabase/client", () => ({
             }),
         }),
       }),
-      update: () => ({
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      }),
+      update: (payload: any) => mockUpdate(payload),
     }),
     rpc: (name: string, params: any) => mockRpc(name, params),
     auth: {
@@ -158,6 +159,52 @@ describe("Mobile Profile & Settings Screen", () => {
 
     await waitFor(() => {
       expect(mockRpc).toHaveBeenCalledWith("export_user_data", undefined);
+    });
+  });
+
+  it("renders notification preferences and saves generic & sport-specific settings", async () => {
+    render(
+      <LanguageProvider>
+        <ProfileScreen />
+      </LanguageProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("notification-settings-section")).toBeInTheDocument();
+    });
+
+    // Toggle Tennis & Padel Games switch on
+    const tennisGamesEl = screen.getByTestId("notif-switch-tennis-games");
+    const tennisGamesInput = tennisGamesEl.querySelector("input");
+    fireEvent.click(tennisGamesInput || tennisGamesEl);
+    // Save preferences
+    fireEvent.click(screen.getByTestId("save-notif-prefs-btn"));
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          preferences: expect.objectContaining({
+            notifications: expect.objectContaining({
+              enabled: true,
+              umpire_invited: true,
+              match_started: true,
+              match_ended: true,
+              tennis_padel_enabled: true,
+              tennis_padel_sets: true,
+              tennis_padel_games: true,
+              volleyball_enabled: true,
+              volleyball_sets: true,
+              volleyball_points: false,
+              football_enabled: true,
+              football_goals: true,
+              football_cards: true,
+              basketball_enabled: true,
+              basketball_points: true,
+              basketball_quarters: true,
+            }),
+          }),
+        })
+      );
     });
   });
 });

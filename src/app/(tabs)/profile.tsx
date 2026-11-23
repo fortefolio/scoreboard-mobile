@@ -60,6 +60,24 @@ export default function ProfileScreen() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [savingPreferences, setSavingPreferences] = useState(false);
 
+  // Notification preferences
+  const [notifAllEnabled, setNotifAllEnabled] = useState(true);
+  const [notifUmpireInvited, setNotifUmpireInvited] = useState(true);
+  const [notifMatchStarted, setNotifMatchStarted] = useState(true);
+  const [notifMatchEnded, setNotifMatchEnded] = useState(true);
+  const [notifTennisEnabled, setNotifTennisEnabled] = useState(true);
+  const [notifTennisSets, setNotifTennisSets] = useState(true);
+  const [notifTennisGames, setNotifTennisGames] = useState(false);
+  const [notifVolleyEnabled, setNotifVolleyEnabled] = useState(true);
+  const [notifVolleySets, setNotifVolleySets] = useState(true);
+  const [notifVolleyPoints, setNotifVolleyPoints] = useState(false);
+  const [notifFootballEnabled, setNotifFootballEnabled] = useState(true);
+  const [notifFootballGoals, setNotifFootballGoals] = useState(true);
+  const [notifFootballCards, setNotifFootballCards] = useState(true);
+  const [notifBasketballEnabled, setNotifBasketballEnabled] = useState(true);
+  const [notifBasketballPoints, setNotifBasketballPoints] = useState(true);
+  const [notifBasketballQuarters, setNotifBasketballQuarters] = useState(true);
+
   // Security & Password fields
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -104,6 +122,40 @@ export default function ProfileScreen() {
           setDefaultSport(prefs.default_sport || "all");
           setHapticsEnabled(prefs.haptics_enabled !== false);
           setSoundEnabled(prefs.sound_enabled !== false);
+
+          const notif = prefs.notifications || {};
+          setNotifAllEnabled(notif.enabled !== false);
+          setNotifUmpireInvited(notif.umpire_invited !== false);
+          setNotifMatchStarted(notif.match_started !== false);
+          setNotifMatchEnded(notif.match_ended !== false);
+          setNotifTennisEnabled(notif.tennis_padel_enabled !== false);
+          setNotifTennisSets(
+            notif.tennis_padel_sets !== undefined
+              ? notif.tennis_padel_sets
+              : notif.tennis_padel_granularity !== "none"
+          );
+          setNotifTennisGames(
+            notif.tennis_padel_games !== undefined
+              ? notif.tennis_padel_games
+              : notif.tennis_padel_granularity === "game"
+          );
+          setNotifVolleyEnabled(notif.volleyball_enabled !== false);
+          setNotifVolleySets(
+            notif.volleyball_sets !== undefined
+              ? notif.volleyball_sets
+              : notif.volleyball_granularity !== "none"
+          );
+          setNotifVolleyPoints(
+            notif.volleyball_points !== undefined
+              ? notif.volleyball_points
+              : notif.volleyball_granularity === "point"
+          );
+          setNotifFootballEnabled(notif.football_enabled !== false);
+          setNotifFootballGoals(notif.football_goals !== false);
+          setNotifFootballCards(notif.football_cards !== false);
+          setNotifBasketballEnabled(notif.basketball_enabled !== false);
+          setNotifBasketballPoints(notif.basketball_points !== false);
+          setNotifBasketballQuarters(notif.basketball_quarters !== false);
         }
       } catch (err) {
         console.error("Error loading profile:", err);
@@ -213,6 +265,24 @@ export default function ProfileScreen() {
         default_sport: defaultSport === "all" ? null : defaultSport,
         haptics_enabled: hapticsEnabled,
         sound_enabled: soundEnabled,
+        notifications: {
+          enabled: notifAllEnabled,
+          umpire_invited: notifUmpireInvited,
+          match_started: notifMatchStarted,
+          match_ended: notifMatchEnded,
+          tennis_padel_enabled: notifTennisEnabled,
+          tennis_padel_sets: notifTennisSets,
+          tennis_padel_games: notifTennisGames,
+          volleyball_enabled: notifVolleyEnabled,
+          volleyball_sets: notifVolleySets,
+          volleyball_points: notifVolleyPoints,
+          football_enabled: notifFootballEnabled,
+          football_goals: notifFootballGoals,
+          football_cards: notifFootballCards,
+          basketball_enabled: notifBasketballEnabled,
+          basketball_points: notifBasketballPoints,
+          basketball_quarters: notifBasketballQuarters,
+        },
       };
 
       const { error } = await supabase
@@ -611,6 +681,301 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               )}
             </View>
+
+            {/* Section 2b: Notification Preferences (Authenticated Only) */}
+            {user && (
+              <>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingRight: 4 }}>
+                  <Text style={styles.sectionHeader}>{t("settings.notifications.title")}</Text>
+                  <Switch
+                    testID="notif-switch-all"
+                    value={notifAllEnabled}
+                    onValueChange={setNotifAllEnabled}
+                    trackColor={{ false: ScoreBoardTheme.surfaceContainerHighest, true: ScoreBoardTheme.onSurfaceVariant }}
+                    thumbColor={notifAllEnabled ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                  />
+                </View>
+                <View style={styles.sectionCard} testID="notification-settings-section">
+                  <View
+                    style={!notifAllEnabled ? { opacity: 0.45 } : undefined}
+                    pointerEvents={notifAllEnabled ? "auto" : "none"}
+                  >
+                  <Text style={styles.notifSubHeader}>{t("settings.notifications.generalTitle")}</Text>
+
+                  {/* Umpire Invitations */}
+                  <View style={styles.rowItem}>
+                    <View style={styles.rowLeft}>
+                      <Ionicons name="shield-checkmark-outline" size={20} color="#94a3b8" />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.rowLabel}>{t("settings.notifications.umpireInvited")}</Text>
+                        <Text style={styles.rowSubLabel}>{t("settings.notifications.umpireInvitedDesc")}</Text>
+                      </View>
+                    </View>
+                    <Switch
+                      testID="notif-switch-umpire"
+                      value={notifUmpireInvited}
+                      onValueChange={setNotifUmpireInvited}
+                      trackColor={{ false: ScoreBoardTheme.surfaceContainerHighest, true: ScoreBoardTheme.onSurfaceVariant }}
+                      thumbColor={notifUmpireInvited ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                    />
+                  </View>
+
+                  <View style={styles.rowDivider} />
+
+                  {/* Match Started */}
+                  <View style={styles.rowItem}>
+                    <View style={styles.rowLeft}>
+                      <Ionicons name="play-circle-outline" size={20} color="#94a3b8" />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.rowLabel}>{t("settings.notifications.matchStarted")}</Text>
+                        <Text style={styles.rowSubLabel}>{t("settings.notifications.matchStartedDesc")}</Text>
+                      </View>
+                    </View>
+                    <Switch
+                      testID="notif-switch-started"
+                      value={notifMatchStarted}
+                      onValueChange={setNotifMatchStarted}
+                      trackColor={{ false: ScoreBoardTheme.surfaceContainerHighest, true: ScoreBoardTheme.onSurfaceVariant }}
+                      thumbColor={notifMatchStarted ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                    />
+                  </View>
+
+                  <View style={styles.rowDivider} />
+
+                  {/* Match Ended */}
+                  <View style={styles.rowItem}>
+                    <View style={styles.rowLeft}>
+                      <Ionicons name="flag-outline" size={20} color="#94a3b8" />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.rowLabel}>{t("settings.notifications.matchEnded")}</Text>
+                        <Text style={styles.rowSubLabel}>{t("settings.notifications.matchEndedDesc")}</Text>
+                      </View>
+                    </View>
+                    <Switch
+                      testID="notif-switch-ended"
+                      value={notifMatchEnded}
+                      onValueChange={setNotifMatchEnded}
+                      trackColor={{ false: ScoreBoardTheme.surfaceContainerHighest, true: ScoreBoardTheme.onSurfaceVariant }}
+                      thumbColor={notifMatchEnded ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                    />
+                  </View>
+
+                  <View style={styles.rowDivider} />
+                  <Text style={styles.notifSubHeader}>{t("settings.notifications.sportSpecificTitle")}</Text>
+
+                  <View>
+                    {/* Tennis & Padel */}
+                    <View style={[styles.sportCardHeader, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
+                      <View style={[styles.rowLeft, { flex: 1, paddingRight: 12 }]}>
+                        <Ionicons name="tennisball-outline" size={18} color={ScoreBoardTheme.onSurface} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.sportCardHeaderTitle}>{t("settings.notifications.tennisPadel")}</Text>
+                          <Text style={styles.rowSubLabel}>{t("settings.notifications.tennisPadelHint")}</Text>
+                        </View>
+                      </View>
+                      <Switch
+                        testID="notif-switch-tennis-all"
+                        value={notifTennisEnabled}
+                        onValueChange={setNotifTennisEnabled}
+                        trackColor={{ false: ScoreBoardTheme.surfaceContainer, true: ScoreBoardTheme.onSurfaceVariant }}
+                        thumbColor={notifTennisEnabled ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                      />
+                    </View>
+                    <View
+                      style={!notifTennisEnabled ? { opacity: 0.45 } : undefined}
+                      pointerEvents={notifTennisEnabled ? "auto" : "none"}
+                    >
+                  <View style={styles.rowItem}>
+                    <View style={{ flex: 1, paddingLeft: 32 }}>
+                      <Text style={styles.rowLabel}>{t("settings.notifications.tennisPadelSets")}</Text>
+                      <Text style={styles.rowSubLabel}>{t("settings.notifications.tennisPadelSetsDesc")}</Text>
+                    </View>
+                    <Switch
+                      testID="notif-switch-tennis-sets"
+                      value={notifTennisSets}
+                      onValueChange={setNotifTennisSets}
+                      trackColor={{ false: ScoreBoardTheme.surfaceContainerHighest, true: ScoreBoardTheme.onSurfaceVariant }}
+                      thumbColor={notifTennisSets ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                    />
+                  </View>
+                  <View style={styles.rowItem}>
+                    <View style={{ flex: 1, paddingLeft: 32 }}>
+                      <Text style={styles.rowLabel}>{t("settings.notifications.tennisPadelGames")}</Text>
+                      <Text style={styles.rowSubLabel}>{t("settings.notifications.tennisPadelGamesDesc")}</Text>
+                    </View>
+                    <Switch
+                      testID="notif-switch-tennis-games"
+                      value={notifTennisGames}
+                      onValueChange={setNotifTennisGames}
+                      trackColor={{ false: ScoreBoardTheme.surfaceContainerHighest, true: ScoreBoardTheme.onSurfaceVariant }}
+                      thumbColor={notifTennisGames ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                    />
+                  </View>
+                  </View>
+
+                  <View style={styles.rowDivider} />
+
+                  {/* Volleyball */}
+                  <View style={[styles.sportCardHeader, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
+                    <View style={styles.rowLeft}>
+                      <Ionicons name="aperture-outline" size={18} color={ScoreBoardTheme.onSurface} />
+                      <Text style={styles.sportCardHeaderTitle}>{t("settings.notifications.volleyball")}</Text>
+                    </View>
+                    <Switch
+                      testID="notif-switch-volley-all"
+                      value={notifVolleyEnabled}
+                      onValueChange={setNotifVolleyEnabled}
+                      trackColor={{ false: ScoreBoardTheme.surfaceContainer, true: ScoreBoardTheme.onSurfaceVariant }}
+                      thumbColor={notifVolleyEnabled ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                    />
+                  </View>
+                  <View
+                    style={!notifVolleyEnabled ? { opacity: 0.45 } : undefined}
+                    pointerEvents={notifVolleyEnabled ? "auto" : "none"}
+                  >
+                  <View style={styles.rowItem}>
+                    <View style={{ flex: 1, paddingLeft: 32 }}>
+                      <Text style={styles.rowLabel}>{t("settings.notifications.volleyballSets")}</Text>
+                      <Text style={styles.rowSubLabel}>{t("settings.notifications.volleyballSetsDesc")}</Text>
+                    </View>
+                    <Switch
+                      testID="notif-switch-volley-sets"
+                      value={notifVolleySets}
+                      onValueChange={setNotifVolleySets}
+                      trackColor={{ false: ScoreBoardTheme.surfaceContainerHighest, true: ScoreBoardTheme.onSurfaceVariant }}
+                      thumbColor={notifVolleySets ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                    />
+                  </View>
+                  <View style={styles.rowItem}>
+                    <View style={{ flex: 1, paddingLeft: 32 }}>
+                      <Text style={styles.rowLabel}>{t("settings.notifications.volleyballPoints")}</Text>
+                      <Text style={styles.rowSubLabel}>{t("settings.notifications.volleyballPointsDesc")}</Text>
+                    </View>
+                    <Switch
+                      testID="notif-switch-volley-points"
+                      value={notifVolleyPoints}
+                      onValueChange={setNotifVolleyPoints}
+                      trackColor={{ false: ScoreBoardTheme.surfaceContainerHighest, true: ScoreBoardTheme.onSurfaceVariant }}
+                      thumbColor={notifVolleyPoints ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                    />
+                  </View>
+                  </View>
+
+                  <View style={styles.rowDivider} />
+
+                  {/* Football */}
+                  <View style={[styles.sportCardHeader, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
+                    <View style={styles.rowLeft}>
+                      <Ionicons name="football-outline" size={18} color={ScoreBoardTheme.onSurface} />
+                      <Text style={styles.sportCardHeaderTitle}>{t("settings.notifications.football")}</Text>
+                    </View>
+                    <Switch
+                      testID="notif-switch-football-all"
+                      value={notifFootballEnabled}
+                      onValueChange={setNotifFootballEnabled}
+                      trackColor={{ false: ScoreBoardTheme.surfaceContainer, true: ScoreBoardTheme.onSurfaceVariant }}
+                      thumbColor={notifFootballEnabled ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                    />
+                  </View>
+                  <View
+                    style={!notifFootballEnabled ? { opacity: 0.45 } : undefined}
+                    pointerEvents={notifFootballEnabled ? "auto" : "none"}
+                  >
+                  <View style={styles.rowItem}>
+                    <View style={{ flex: 1, paddingLeft: 32 }}>
+                      <Text style={styles.rowLabel}>{t("settings.notifications.footballGoals")}</Text>
+                      <Text style={styles.rowSubLabel}>{t("settings.notifications.footballGoalsDesc")}</Text>
+                    </View>
+                    <Switch
+                      testID="notif-switch-football-goals"
+                      value={notifFootballGoals}
+                      onValueChange={setNotifFootballGoals}
+                      trackColor={{ false: ScoreBoardTheme.surfaceContainerHighest, true: ScoreBoardTheme.onSurfaceVariant }}
+                      thumbColor={notifFootballGoals ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                    />
+                  </View>
+                  <View style={styles.rowItem}>
+                    <View style={{ flex: 1, paddingLeft: 32 }}>
+                      <Text style={styles.rowLabel}>{t("settings.notifications.footballCards")}</Text>
+                      <Text style={styles.rowSubLabel}>{t("settings.notifications.footballCardsDesc")}</Text>
+                    </View>
+                    <Switch
+                      testID="notif-switch-football-cards"
+                      value={notifFootballCards}
+                      onValueChange={setNotifFootballCards}
+                      trackColor={{ false: ScoreBoardTheme.surfaceContainerHighest, true: ScoreBoardTheme.onSurfaceVariant }}
+                      thumbColor={notifFootballCards ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                    />
+                  </View>
+                  </View>
+
+                  <View style={styles.rowDivider} />
+
+                  {/* Basketball */}
+                  <View style={[styles.sportCardHeader, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
+                    <View style={styles.rowLeft}>
+                      <Ionicons name="basketball-outline" size={18} color={ScoreBoardTheme.onSurface} />
+                      <Text style={styles.sportCardHeaderTitle}>{t("settings.notifications.basketball")}</Text>
+                    </View>
+                    <Switch
+                      testID="notif-switch-basketball-all"
+                      value={notifBasketballEnabled}
+                      onValueChange={setNotifBasketballEnabled}
+                      trackColor={{ false: ScoreBoardTheme.surfaceContainer, true: ScoreBoardTheme.onSurfaceVariant }}
+                      thumbColor={notifBasketballEnabled ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                    />
+                  </View>
+                  <View
+                    style={!notifBasketballEnabled ? { opacity: 0.45 } : undefined}
+                    pointerEvents={notifBasketballEnabled ? "auto" : "none"}
+                  >
+                  <View style={styles.rowItem}>
+                    <View style={{ flex: 1, paddingLeft: 32 }}>
+                      <Text style={styles.rowLabel}>{t("settings.notifications.basketballPoints")}</Text>
+                      <Text style={styles.rowSubLabel}>{t("settings.notifications.basketballPointsDesc")}</Text>
+                    </View>
+                    <Switch
+                      testID="notif-switch-basketball-points"
+                      value={notifBasketballPoints}
+                      onValueChange={setNotifBasketballPoints}
+                      trackColor={{ false: ScoreBoardTheme.surfaceContainerHighest, true: ScoreBoardTheme.onSurfaceVariant }}
+                      thumbColor={notifBasketballPoints ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                    />
+                  </View>
+                  <View style={styles.rowItem}>
+                    <View style={{ flex: 1, paddingLeft: 32 }}>
+                      <Text style={styles.rowLabel}>{t("settings.notifications.basketballQuarters")}</Text>
+                      <Text style={styles.rowSubLabel}>{t("settings.notifications.basketballQuartersDesc")}</Text>
+                    </View>
+                    <Switch
+                      testID="notif-switch-basketball-quarters"
+                      value={notifBasketballQuarters}
+                      onValueChange={setNotifBasketballQuarters}
+                      trackColor={{ false: ScoreBoardTheme.surfaceContainerHighest, true: ScoreBoardTheme.onSurfaceVariant }}
+                      thumbColor={notifBasketballQuarters ? ScoreBoardTheme.onSurface : ScoreBoardTheme.textMuted}
+                    />
+                  </View>
+                  </View>
+                  </View>
+                  </View>
+
+                  <TouchableOpacity
+                    testID="save-notif-prefs-btn"
+                    style={[styles.savePrefsButton, savingPreferences && styles.buttonDisabled]}
+                    onPress={() => handleSavePreferences()}
+                    disabled={savingPreferences}
+                  >
+                    {savingPreferences ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <Text style={styles.savePrefsButtonText}>
+                        {t("settings.preferences.savePreferences")}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
 
             {/* Section 3: Security & GDPR Portability (Authenticated Only) */}
             {user && (
@@ -1345,5 +1710,60 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: ScoreBoardTheme.textMuted,
     textAlign: "center",
+  },
+  notifSubHeader: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: ScoreBoardTheme.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  notifBlock: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  sportCardHeader: {
+    backgroundColor: ScoreBoardTheme.surfaceContainerHighest,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: ScoreBoardTheme.borderSubtle,
+  },
+  sportCardHeaderTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: ScoreBoardTheme.onSurface,
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+  },
+  granularityRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginLeft: 32,
+  },
+  granularityPill: {
+    flex: 1,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: ScoreBoardTheme.borderSubtle,
+    backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
+    alignItems: "center",
+  },
+  granularityPillActive: {
+    backgroundColor: ScoreBoardTheme.onSurface,
+    borderColor: ScoreBoardTheme.onSurface,
+  },
+  granularityPillText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: ScoreBoardTheme.onSurfaceVariant,
+  },
+  granularityPillTextActive: {
+    color: ScoreBoardTheme.surfaceContainerLowest,
   },
 });

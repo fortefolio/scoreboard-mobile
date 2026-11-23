@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import { FollowButton, SportFavoriteButton } from "@/components/FollowButton";
 import { RuleModal } from "@/components/RuleModal";
 import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
 import { PlayByPlayTable } from "@/components/match/PlayByPlayTable";
+import { MatchDetailSkeleton } from "@/components/common/Skeleton";
 import { supabase } from "@/lib/supabase/client";
 import { ScoreBoardTheme, Colors, Spacing } from "@/constants/theme";
 
@@ -94,8 +95,14 @@ export default function MatchDetailScreen() {
     }
   }, [matchIdStr]);
 
+  const hasMountedRef = useRef(false);
+
   useFocusEffect(
     useCallback(() => {
+      if (!hasMountedRef.current) {
+        hasMountedRef.current = true;
+        return;
+      }
       fetchMatch();
     }, [fetchMatch])
   );
@@ -282,13 +289,41 @@ export default function MatchDetailScreen() {
     fetchMatch();
   };
 
+  // Delete Match
+  const handleDeleteMatch = () => {
+    if (!isOrganizer) return;
+    Alert.alert(
+      t("match.deleteMatch"),
+      t("match.deleteMatchConfirm"),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("common.delete"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from("matches")
+                .delete()
+                .eq("id", matchIdStr);
+              if (error) throw error;
+              router.back();
+            } catch (e: any) {
+              Alert.alert(
+                locale === "pt" ? "Erro" : "Error",
+                mapErrorToUserMessage(e, locale)
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
-          <Text style={styles.loadingText}>{t("common.loading") || "A carregar jogo..."}</Text>
-        </View>
+        <MatchDetailSkeleton />
       </SafeAreaView>
     );
   }
@@ -793,18 +828,34 @@ export default function MatchDetailScreen() {
             </TouchableOpacity>
 
             {isOrganizer && (
-              <TouchableOpacity
-                style={[styles.menuItem, styles.menuItemDivider]}
-                onPress={() => {
-                  setMenuOpen(false);
-                  setRuleModalVisible(true);
-                }}
-              >
-                <Ionicons name="options-outline" size={17} color={ScoreBoardTheme.onSurfaceVariant} />
-                <Text style={styles.menuItemText}>
-                  {t("match.rules") || "Match Rules"}
-                </Text>
-              </TouchableOpacity>
+              <>
+                <TouchableOpacity
+                  style={[styles.menuItem, styles.menuItemDivider]}
+                  onPress={() => {
+                    setMenuOpen(false);
+                    setRuleModalVisible(true);
+                  }}
+                >
+                  <Ionicons name="options-outline" size={17} color={ScoreBoardTheme.onSurfaceVariant} />
+                  <Text style={styles.menuItemText}>
+                    {t("match.matchRules")}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  testID="match-detail-delete-btn"
+                  style={[styles.menuItem, styles.menuItemDivider]}
+                  onPress={() => {
+                    setMenuOpen(false);
+                    handleDeleteMatch();
+                  }}
+                >
+                  <Ionicons name="trash-outline" size={17} color="#ef4444" />
+                  <Text style={[styles.menuItemText, { color: "#ef4444" }]}>
+                    {t("match.deleteMatch")}
+                  </Text>
+                </TouchableOpacity>
+              </>
             )}
           </View>
         </TouchableOpacity>

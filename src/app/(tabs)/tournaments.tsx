@@ -17,6 +17,7 @@ import { TournamentCard } from "@/components/TournamentCard";
 import { Pagination } from "@/components/Pagination";
 import { AuthModal } from "@/components/AuthModal";
 import { CreateTournamentModal } from "@/components/tournament/CreateTournamentModal";
+import { TournamentListSkeleton } from "@/components/common/Skeleton";
 import { MatchAtmosphereBackground } from "@/components/match/MatchAtmosphereBackground";
 import { useAuth } from "@/components/AuthProvider";
 import { useTranslation } from "@/lib/i18n";
@@ -167,12 +168,7 @@ export default function TournamentsFeedScreen() {
 
   const renderEmpty = () => {
     if (loading) {
-      return (
-        <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color={ScoreBoardTheme.onSurfaceVariant} />
-          <Text style={styles.loadingText}>{t("common.loading") || "Loading live data..."}</Text>
-        </View>
-      );
+      return <TournamentListSkeleton />;
     }
 
     const hasActiveFilters =

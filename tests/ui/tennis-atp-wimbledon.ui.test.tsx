@@ -167,6 +167,22 @@ describe("Mobile Tennis UI Interaction Tests — 2023 Wimbledon Final (Alcaraz v
     fireEvent.click(alcarazAddPoint);
     expect(screen.getByText("BREAK POINT")).toBeInTheDocument();
     expect(screen.getAllByText("AD").length).toBeGreaterThan(0);
+
+    // Alcaraz scores from Advantage -> wins the game! (games become 4-1, points reset to 0-0, server rotates to Alcaraz)
+    fireEvent.click(alcarazAddPoint);
+    expect(screen.queryByText("AD")).toBeNull();
+    expect(screen.getByText("4 - 1")).toBeInTheDocument();
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scores: expect.objectContaining({
+          serving_index: 0,
+          tennis: expect.objectContaining({
+            points: [0, 0],
+            games: [4, 1],
+          }),
+        }),
+      })
+    );
   });
 
   it("allows referee to manually switch server using Alternar Servidor button", async () => {
