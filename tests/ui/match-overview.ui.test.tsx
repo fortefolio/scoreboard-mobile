@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import { LanguageProvider } from "@/lib/i18n";
 import MatchDetailScreen from "../../src/app/match/[id]";
 
@@ -29,6 +29,7 @@ vi.mock("@/lib/hooks/useFollow", () => ({
 }));
 
 let mockMatchData: any = null;
+const mockDeleteMatchEq = vi.fn().mockResolvedValue({ error: null });
 
 vi.mock("@/lib/supabase/client", () => ({
   supabase: {
@@ -40,6 +41,9 @@ vi.mock("@/lib/supabase/client", () => ({
               single: () =>
                 Promise.resolve({ data: mockMatchData, error: null }),
             }),
+          }),
+          delete: () => ({
+            eq: mockDeleteMatchEq,
           }),
         };
       }
@@ -188,5 +192,41 @@ describe("MatchDetailScreen (Match Overview)", () => {
     const breakdown = screen.getByTestId("tennis-score-breakdown");
     expect(breakdown).toBeInTheDocument();
     expect(within(breakdown).getByText("Game 1")).toBeInTheDocument();
+  });
+
+  it("opens custom Delete Match confirmation modal and deletes on confirm", async () => {
+    mockDeleteMatchEq.mockClear();
+    mockMatchData = {
+      id: "match-del-1",
+      sport_type: "Football",
+      status: "scheduled",
+      organizer_id: "org-1",
+      tournament_id: null,
+      participants: [{ name: "AAC" }, { name: "AAV" }],
+      scores: { current: { home: 0, away: 0 } },
+      settings: {},
+    };
+
+    render(
+      <LanguageProvider>
+        <MatchDetailScreen />
+      </LanguageProvider>
+    );
+
+    const optionsBtn = await screen.findByTestId("icon-ellipsis-vertical");
+    fireEvent.click(optionsBtn);
+
+    const deleteMenuBtn = await screen.findByTestId("match-detail-delete-btn");
+    fireEvent.click(deleteMenuBtn);
+
+    const confirmModal = await screen.findByTestId("delete-match-confirm-modal");
+    expect(confirmModal).toBeInTheDocument();
+
+    const confirmBtn = screen.getByTestId("confirm-delete-match-btn");
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(mockDeleteMatchEq).toHaveBeenCalledWith("id", "match-bb-1");
+    });
   });
 });

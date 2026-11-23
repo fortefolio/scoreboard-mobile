@@ -20,6 +20,7 @@ vi.mock("@/components/AuthProvider", () => ({
 
 const mockUpdateEq = vi.fn().mockResolvedValue({ error: null });
 const mockDeleteEq = vi.fn().mockResolvedValue({ error: null });
+const mockRpc = vi.fn().mockResolvedValue({ error: null });
 
 let mockNotifications = [
   {
@@ -36,7 +37,19 @@ let mockNotifications = [
 
 vi.mock("@/lib/supabase/client", () => ({
   supabase: {
+    rpc: (...args: any[]) => mockRpc(...args),
     from: (table: string) => {
+      if (table === "matches") {
+        return {
+          select: () => ({
+            in: () =>
+              Promise.resolve({
+                data: [{ id: "m-inv-1", umpire_id: "user-1", umpire_invite_status: "pending" }],
+                error: null,
+              }),
+          }),
+        };
+      }
       if (table === "notifications") {
         return {
           select: () => ({
@@ -108,6 +121,38 @@ describe("NotificationsScreen", () => {
     fireEvent.click(markReadItem);
     await waitFor(() => {
       expect(mockUpdateEq).toHaveBeenCalled();
+    });
+  });
+
+  it("calls accept_umpire_invitation RPC when inline accept icon is tapped", async () => {
+    mockRpc.mockClear();
+    mockNotifications = [
+      {
+        id: "n2",
+        user_id: "user-1",
+        type: "umpire_invitation",
+        title: "New Umpire Invitation",
+        message: "You are the umpire for the Tennis match.",
+        read_at: null,
+        created_at: "2026-11-18T10:00:00Z",
+        data: { match_id: "m-inv-1", type: "umpire_invitation" },
+      },
+    ];
+
+    render(
+      <LanguageProvider>
+        <NotificationsScreen />
+      </LanguageProvider>
+    );
+
+    const acceptBtn = await screen.findByTestId("notif-accept-n2");
+    fireEvent.click(acceptBtn);
+
+    await waitFor(() => {
+      expect(mockRpc).toHaveBeenCalledWith("accept_umpire_invitation", {
+        p_match_id: "m-inv-1",
+        p_notification_id: "n2",
+      });
     });
   });
 });
