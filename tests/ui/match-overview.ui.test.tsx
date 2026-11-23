@@ -154,11 +154,11 @@ describe("MatchDetailScreen (Match Overview)", () => {
       tournament_id: null,
       participants: [{ name: "Alexander Zverev" }, { name: "Carlos Alcaraz" }],
       scores: {
+        serving_index: 0,
         tennis: {
-          sets: [[6, 4]],
+          sets: [{ team1: 6, team2: 4 }],
           games: [2, 1],
           points: [2, 1],
-          serving_team: 0,
           current_set_games: [
             {
               game_number: 1,
@@ -187,6 +187,8 @@ describe("MatchDetailScreen (Match Overview)", () => {
       expect(screen.getByTestId("match-summary-table")).toBeInTheDocument();
     });
     const summaryTable = screen.getByTestId("match-summary-table");
+    expect(within(summaryTable).getByText("6")).toBeInTheDocument();
+    expect(within(summaryTable).getByText("4")).toBeInTheDocument();
     expect(within(summaryTable).getByText("30")).toBeInTheDocument();
     expect(within(summaryTable).getByText("15")).toBeInTheDocument();
     const breakdown = screen.getByTestId("tennis-score-breakdown");

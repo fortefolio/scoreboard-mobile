@@ -345,6 +345,16 @@ export default function MatchDetailScreen() {
   const teamBName = match.participants?.[1]?.name || t("common.teamDefault") + " B";
 
   // Score representations
+  const getSetPair = (s: any): [number, number] => {
+    if (Array.isArray(s)) {
+      return [Number(s[0] ?? 0), Number(s[1] ?? 0)];
+    }
+    if (s && typeof s === "object") {
+      return [Number(s.home ?? s.team1 ?? 0), Number(s.away ?? s.team2 ?? 0)];
+    }
+    return [0, 0];
+  };
+
   const getHeroScoreSummary = () => {
     const scores = match.scores;
     if (match.sport_type === "Football") {
@@ -360,7 +370,8 @@ export default function MatchDetailScreen() {
     }
 
     if (match.sport_type === "Tennis" || match.sport_type === "Padel") {
-      const sets: [number, number][] = scores?.tennis?.sets || scores?.sets || [];
+      const rawSets: any[] = scores?.tennis?.sets || scores?.sets || [];
+      const sets: [number, number][] = rawSets.map(getSetPair);
       const games: [number, number] = scores?.tennis?.games || [0, 0];
       const points: [number, number] = scores?.tennis?.points || [scores?.current?.home ?? 0, scores?.current?.away ?? 0];
       const isTiebreak = Boolean(scores?.tennis?.is_tiebreak);
@@ -369,7 +380,7 @@ export default function MatchDetailScreen() {
       const ptB = isTiebreak ? String(points[1] ?? 0) : (TENNIS_PTS[points[1]] ?? String(points[1] ?? 0));
       const setsA = sets.filter((s) => s[0] > s[1]).length;
       const setsB = sets.filter((s) => s[1] > s[0]).length;
-      const serving = scores?.tennis?.serving_team;
+      const serving = scores?.tennis?.serving_team ?? scores?.serving_index;
 
       return {
         scoreA: setsA,
@@ -388,11 +399,12 @@ export default function MatchDetailScreen() {
     }
 
     if (match.sport_type === "Volleyball" || match.sport_type === "Beach Volleyball") {
-      const sets: [number, number][] = scores?.volleyball?.sets || scores?.sets || [];
+      const rawSets: any[] = scores?.volleyball?.sets || scores?.sets || [];
+      const sets: [number, number][] = rawSets.map(getSetPair);
       const pts: [number, number] = scores?.volleyball?.current_points || [scores?.current?.home ?? 0, scores?.current?.away ?? 0];
       const setsA = sets.filter((s) => s[0] > s[1]).length;
       const setsB = sets.filter((s) => s[1] > s[0]).length;
-      const serving = scores?.volleyball?.serving_team;
+      const serving = scores?.volleyball?.serving_team ?? scores?.serving_index;
 
       return {
         scoreA: setsA,
@@ -934,7 +946,9 @@ export default function MatchDetailScreen() {
         visible={deleteModalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => !deletingMatch && setDeleteModalVisible(false)}
+        onRequestClose={() => {
+          if (!deletingMatch) setDeleteModalVisible(false);
+        }}
       >
         <TouchableOpacity
           style={styles.menuOverlay}

@@ -22,7 +22,7 @@ const mockUpdateEq = vi.fn().mockResolvedValue({ error: null });
 const mockDeleteEq = vi.fn().mockResolvedValue({ error: null });
 const mockRpc = vi.fn().mockResolvedValue({ error: null });
 
-let mockNotifications = [
+let mockNotifications: any[] = [
   {
     id: "n1",
     user_id: "user-1",
