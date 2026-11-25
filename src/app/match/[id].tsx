@@ -1626,7 +1626,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyText: {
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
     fontSize: 13,
     textAlign: "center",
   },
@@ -1660,6 +1660,6 @@ const styles = StyleSheet.create({
   },
   eventTime: {
     fontSize: 11,
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
   },
 });

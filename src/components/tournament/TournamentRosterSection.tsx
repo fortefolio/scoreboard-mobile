@@ -812,7 +812,7 @@ const styles = StyleSheet.create({
   },
   contactEmail: {
     fontSize: 12,
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
     marginTop: 2,
   },
   rowRightActions: {
@@ -845,7 +845,7 @@ const styles = StyleSheet.create({
   },
   emptySubtitle: {
     fontSize: 13,
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
     textAlign: "center",
     lineHeight: 18,
   },

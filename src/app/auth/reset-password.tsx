@@ -19,7 +19,7 @@ import { supabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/lib/i18n";
 import { validatePassword } from "@/lib/auth/passwordValidation";
 import { mapErrorToUserMessage } from "@/lib/errors/mapError";
-import { Spacing } from "@/constants/theme";
+import { ScoreBoardTheme, Spacing } from "@/constants/theme";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   },
   helpText: {
     fontSize: 11,
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
     marginTop: 4,
     lineHeight: 15,
   },

@@ -1387,7 +1387,7 @@ const styles = StyleSheet.create({
   },
   fieldHint: {
     fontSize: 10,
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
     marginTop: 4,
   },
   input: {
@@ -1456,7 +1456,7 @@ const styles = StyleSheet.create({
   },
   rowSubLabel: {
     fontSize: 11,
-    color: "#64748b",
+    color: ScoreBoardTheme.textMuted,
     marginTop: 2,
     paddingRight: 10,
   },
