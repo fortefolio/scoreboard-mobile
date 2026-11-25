@@ -43,7 +43,7 @@
     "@testing-library/react-native": "^14.1.0",
     "@types/node": "^26.6.6",
     "@types/react": "~19.3.0",
-    "@vitest/ui": "^5.0.5",
+    "@vitest/ui": "^5.1.1",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~58.0.4",
     "fast-check": "^4.10.2",
