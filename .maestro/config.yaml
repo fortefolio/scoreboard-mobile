@@ -1,0 +1,7 @@
+executionOrder:
+  continueOnFailure: true
+  flowsOrder:
+    - 01-auth-login-flow
+    - 02-organizer-workflow
+    - 04-favorites-and-live-scoring
+    - 03-guest-landing-flow

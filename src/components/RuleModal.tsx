@@ -106,7 +106,7 @@ export function RuleModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={styles.overlay}>
           <View style={styles.modalCard}>
             <View style={styles.header}>

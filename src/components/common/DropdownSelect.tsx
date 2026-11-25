@@ -87,8 +87,9 @@ export function DropdownSelect({
       <View
         style={[
           styles.optionsList,
-          { display: isOpen ? "flex" : "none" },
+          !isOpen && styles.dropdownMenuClosed,
         ]}
+        collapsable={false}
         testID={testID ? `${testID}-menu` : undefined}
       >
         <ScrollView
@@ -196,10 +197,6 @@ const styles = StyleSheet.create({
     color: ScoreBoardTheme.textMuted,
   },
   optionsList: {
-    position: "absolute",
-    top: "100%",
-    left: 0,
-    right: 0,
     zIndex: 100,
     elevation: 12,
     backgroundColor: ScoreBoardTheme.surfaceContainerHigh,
@@ -213,6 +210,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.45,
     shadowRadius: 14,
+  },
+  dropdownMenuClosed: {
+    height: 0,
+    borderWidth: 0,
+    opacity: 0,
+    pointerEvents: "none",
   },
   optionsScroll: {
     maxHeight: 220,

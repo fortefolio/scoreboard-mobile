@@ -62,7 +62,7 @@ export default function MatchDetailScreen() {
       const [matchRes, eventsRes] = await Promise.all([
         supabase
           .from("matches")
-          .select("id, tournament_id, organizer_id, umpire_id, umpire_invite_status, sport_type, status, participants, scores, settings, round_number, match_order, bracket_type, group_label, court, scheduled_at, created_at, updated_at, tournaments(name, organizer_id)")
+          .select("id, tournament_id, organizer_id, umpire_id, umpire_invite_status, sport_type, status, participants, scores, settings, round_number, match_order, bracket_type, group_label, court, scheduled_at, created_at, updated_at, tournaments(name, organizer_id), organizer:users!organizer_id(id, username)")
           .eq("id", matchIdStr)
           .single(),
         supabase
@@ -73,10 +73,11 @@ export default function MatchDetailScreen() {
       ]);
 
       if (matchRes.data) {
-        let organizerData: { id?: string; username?: string } | null = null;
+        let organizerData: { id?: string; username?: string } | null =
+          (matchRes.data as any).organizer ?? null;
         const ownerId =
           matchRes.data.organizer_id || (matchRes.data.tournaments as any)?.organizer_id;
-        if (ownerId) {
+        if (!organizerData && ownerId) {
           const { data: oData } = await supabase
             .from("users")
             .select("id, username")

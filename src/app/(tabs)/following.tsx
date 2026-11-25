@@ -48,17 +48,24 @@ export default function FollowingFeedScreen() {
 
   const fetchFollowedData = useCallback(async () => {
     try {
+      const matchIds = Array.from(followedMatchIds);
+      const tournamentIds = Array.from(followedTournamentIds);
+
       const [matchesRes, tournamentsRes] = await Promise.all([
-        supabase
-          .from("matches")
-          .select("*, tournaments(name), organizer:users!organizer_id(username)")
-          .order("created_at", { ascending: false })
-          .limit(200),
-        supabase
-          .from("tournaments")
-          .select("*, organizer:users!organizer_id(username)")
-          .order("created_at", { ascending: false })
-          .limit(100),
+        matchIds.length > 0
+          ? supabase
+              .from("matches")
+              .select("id, tournament_id, organizer_id, umpire_id, sport_type, status, participants, scores, round_number, match_order, bracket_type, group_label, court, scheduled_at, created_at, tournaments(name), organizer:users!organizer_id(username)")
+              .in("id", matchIds)
+              .order("created_at", { ascending: false })
+          : Promise.resolve({ data: [] as any[] }),
+        tournamentIds.length > 0
+          ? supabase
+              .from("tournaments")
+              .select("id, name, sport_type, status, visibility, start_date, end_date, organizer_id, created_at, organizer:users!organizer_id(username)")
+              .in("id", tournamentIds)
+              .order("created_at", { ascending: false })
+          : Promise.resolve({ data: [] as any[] }),
       ]);
 
       if (matchesRes.data) setMatches(matchesRes.data);
@@ -69,7 +76,7 @@ export default function FollowingFeedScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [followedMatchIds, followedTournamentIds]);
 
   useEffect(() => {
     fetchFollowedData();

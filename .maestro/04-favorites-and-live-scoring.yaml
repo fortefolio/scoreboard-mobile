@@ -6,10 +6,10 @@ appId: dev.goncaloforte.scoreboard
 # Verify guest feed and sport filter pills (alphabetical)
 - assertVisible: "Matches"
 - assertVisible: "Tournaments"
-- assertVisible: "Basketball"
+- assertVisible: ".*Basketball.*"
 
-# Switch to Favorites tab and verify prompt or empty state
-- tapOn: "Favorites"
+# Switch to Following/Favorites tab and verify prompt or empty state
+- tapOn: "Following|Favorites"
 - assertVisible:
     text: "Favorites|Following|Favoritos|Sign In"
 

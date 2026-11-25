@@ -22,9 +22,9 @@ appId: dev.goncaloforte.scoreboard
 - tapOn:
     id: "menu-my-matches-btn"
 - assertVisible:
-    id: "workspace-tab-tournaments"
+    id: "workspace-tab-my-tournaments"
 - tapOn:
-    id: "workspace-tab-tournaments"
+    id: "workspace-tab-my-tournaments"
 
 # 3. Assert navigated to My Tournaments
 - assertVisible:
@@ -64,6 +64,7 @@ appId: dev.goncaloforte.scoreboard
     timeout: 10000
 - tapOn:
     id: "success-modal-confirm-btn"
+- waitForAnimationToEnd
 
 # 9. Wait for tournament details screen to load
 - extendedWaitUntil:
@@ -72,7 +73,7 @@ appId: dev.goncaloforte.scoreboard
 
 # 10. CLEANUP TOURNAMENT: Delete created tournament
 - tapOn:
-    id: "organizer-settings-btn"
+    id: "tab-settings"
 - scrollUntilVisible:
     element:
       id: "settings-delete-tournament-btn"
@@ -84,7 +85,7 @@ appId: dev.goncaloforte.scoreboard
     id: "android:id/button1"
     optional: true
 - tapOn:
-    text: ".*(Eliminar|Delete).*"
+    text: "^(Eliminar|Delete)$"
     optional: true
 - tapOn:
     text: "OK"
@@ -109,7 +110,7 @@ appId: dev.goncaloforte.scoreboard
 
 # 12. Assert My Matches workspace tabs
 - assertVisible:
-    id: "workspace-tab-matches"
+    id: "workspace-tab-my-matches"
 - assertVisible:
     id: "workspace-tab-umpiring"
 - assertVisible:
@@ -127,6 +128,7 @@ appId: dev.goncaloforte.scoreboard
 - tapOn:
     id: "match-team2-input"
 - inputText: "Porto E2E"
+- tapOn: ".*Create New Match.*"
 
 - tapOn:
     id: "match-sport-dropdown-trigger"
@@ -143,6 +145,7 @@ appId: dev.goncaloforte.scoreboard
     timeout: 10000
 - tapOn:
     id: "success-modal-confirm-btn"
+- waitForAnimationToEnd
 
 # 15. Wait for match to appear in Match Detail screen
 - extendedWaitUntil:
@@ -150,10 +153,19 @@ appId: dev.goncaloforte.scoreboard
     timeout: 10000
 
 # 16. Open Scoreboard Console (validates orientation lock & ensures no native crash)
-- assertVisible:
-    id: "start-scoreboard-btn"
+- extendedWaitUntil:
+    visible:
+      id: "start-scoreboard-btn"
+    timeout: 10000
 - tapOn:
     id: "start-scoreboard-btn"
+- runFlow:
+    when:
+      visible:
+        id: "start-scoreboard-btn"
+    commands:
+      - tapOn:
+          id: "start-scoreboard-btn"
 
 # 17. CRITICAL ASSERTION: Assert Scoreboard opened successfully in Landscape without crash
 - extendedWaitUntil:
@@ -167,9 +179,18 @@ appId: dev.goncaloforte.scoreboard
 # 18. Exit Scoreboard back to Match Detail screen (restores Portrait mode)
 - tapOn:
     id: "scoreboard-back-btn"
+- runFlow:
+    when:
+      platform: iOS
+      visible:
+        id: "scoreboard-back-btn"
+    commands:
+      - tapOn:
+          point: "91%,11%"
 
 - extendedWaitUntil:
-    visible: "Benfica E2E"
+    visible:
+      id: "match-detail-back-btn"
     timeout: 10000
 
 # 19. CLEANUP MATCH: Navigate back to My Matches list and delete
@@ -177,7 +198,7 @@ appId: dev.goncaloforte.scoreboard
     id: "match-detail-back-btn"
 
 - extendedWaitUntil:
-    visible: "Benfica E2E"
+    visible: ".*Benfica E2E.*"
     timeout: 10000
 - tapOn:
     id: ".*match-delete-btn.*"

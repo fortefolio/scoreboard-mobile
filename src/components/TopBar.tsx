@@ -167,6 +167,7 @@ export function TopBar({ onSearchPress }: TopBarProps) {
         <TouchableOpacity
           style={styles.userMenuOverlay}
           activeOpacity={1}
+          accessible={false}
           onPress={() => setUserMenuVisible(false)}
         >
           <View

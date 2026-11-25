@@ -388,6 +388,7 @@ export default function MyMatchesScreen() {
                   style={styles.confirmDeleteBtn}
                   onPress={confirmDeleteMatch}
                   disabled={deletingMatch}
+                  testID="confirm-delete-match-btn"
                 >
                   {deletingMatch ? (
                     <ActivityIndicator size="small" color="#ffffff" />

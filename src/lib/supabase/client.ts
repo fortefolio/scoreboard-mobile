@@ -1,8 +1,12 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
+const isLocalE2E = process.env.EXPO_PUBLIC_E2E_LOCAL === "true";
+
 // Storage adapter that persists Supabase auth session using SecureStore on iOS/Android and localStorage on Web
+// (Local E2E Simulator builds built without code signing cannot access iOS Keychain, so they use AsyncStorage.)
 const ExpoSecureStoreAdapter = {
   getItem: async (key: string): Promise<string | null> => {
     if (Platform.OS === "web") {
@@ -10,6 +14,9 @@ const ExpoSecureStoreAdapter = {
         return window.localStorage.getItem(key);
       }
       return null;
+    }
+    if (isLocalE2E) {
+      return AsyncStorage.getItem(key);
     }
     try {
       return await SecureStore.getItemAsync(key);
@@ -25,6 +32,10 @@ const ExpoSecureStoreAdapter = {
       }
       return;
     }
+    if (isLocalE2E) {
+      await AsyncStorage.setItem(key, value);
+      return;
+    }
     try {
       await SecureStore.setItemAsync(key, value);
     } catch (e) {
@@ -36,6 +47,10 @@ const ExpoSecureStoreAdapter = {
       if (typeof window !== "undefined" && window.localStorage) {
         window.localStorage.removeItem(key);
       }
+      return;
+    }
+    if (isLocalE2E) {
+      await AsyncStorage.removeItem(key);
       return;
     }
     try {
@@ -72,7 +87,12 @@ function getSupabaseUrl(): string {
     return devUrl;
   }
 
-  if (!envUrl || !envUrl.startsWith("https://")) {
+  const isE2eLocal = process.env.EXPO_PUBLIC_E2E_LOCAL === "true";
+  const isLoopbackHttp = Boolean(
+    envUrl && /^http:\/\/(10\.0\.2\.2|127\.0\.0\.1|localhost)(:\d+)?(\/|$)/.test(envUrl)
+  );
+
+  if (!envUrl || (!envUrl.startsWith("https://") && !(isE2eLocal && isLoopbackHttp))) {
     throw new Error("EXPO_PUBLIC_SUPABASE_URL must be configured with https:// in production builds.");
   }
 

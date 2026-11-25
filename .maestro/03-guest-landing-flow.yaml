@@ -26,6 +26,15 @@ appId: dev.goncaloforte.scoreboard
     element:
       text: ".*TECHNICAL CAPABILITIES.*"
     direction: DOWN
-- assertVisible: ".*Umpire-to-Crowd Instant Sync.*"
-- assertVisible: ".*Automated Tournament Engine.*"
-- assertVisible: ".*Broadcast Overlays.*"
+- scrollUntilVisible:
+    element:
+      text: ".*Umpire-to-Crowd Instant Sync.*"
+    direction: DOWN
+- scrollUntilVisible:
+    element:
+      text: ".*Automated Tournament Engine.*"
+    direction: DOWN
+- scrollUntilVisible:
+    element:
+      text: ".*Broadcast Overlays.*"
+    direction: DOWN

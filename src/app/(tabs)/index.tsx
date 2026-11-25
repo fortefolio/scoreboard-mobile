@@ -64,14 +64,14 @@ export default function MatchesFeedScreen() {
       const [matchesRes, tournamentsRes] = await Promise.all([
         supabase
           .from("matches")
-          .select("*, tournaments(name), organizer:users!organizer_id(username)")
-          .order("created_at", { ascending: false })
-          .limit(300),
-        supabase
-          .from("tournaments")
-          .select("*, organizer:users!organizer_id(username)")
+          .select("id, tournament_id, organizer_id, umpire_id, sport_type, status, participants, scores, round_number, match_order, bracket_type, group_label, court, scheduled_at, created_at, tournaments(name), organizer:users!organizer_id(username)")
           .order("created_at", { ascending: false })
           .limit(100),
+        supabase
+          .from("tournaments")
+          .select("id, name, sport_type, status, visibility, start_date, end_date, organizer_id, created_at, organizer:users!organizer_id(username)")
+          .order("created_at", { ascending: false })
+          .limit(50),
       ]);
 
       if (matchesRes.data) setMatches(matchesRes.data);

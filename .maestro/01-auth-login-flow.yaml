@@ -20,10 +20,10 @@ appId: dev.goncaloforte.scoreboard
           id: "auth-email-input"
       - tapOn:
           id: "auth-email-input"
-      - inputText: "gmail@chucknorris.com"
+      - inputText: "e2e-test@scoreboard.local"
       - tapOn:
           id: "auth-password-input"
-      - inputText: "123qwe"
+      - inputText: "E2eTestPass123!"
       - tapOn: "SCORE:BOARD"
       - tapOn:
           id: "auth-submit-btn"
@@ -42,4 +42,4 @@ appId: dev.goncaloforte.scoreboard
 - assertVisible:
     id: "menu-logout-btn"
 - tapOn:
-    id: "topbar-avatar-btn"
+    point: "20%,50%"

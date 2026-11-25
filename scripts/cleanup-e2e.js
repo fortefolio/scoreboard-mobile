@@ -5,8 +5,8 @@ const SUPABASE_ANON_KEY =
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
   "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH";
 
-const TEST_EMAIL = process.env.TEST_EMAIL || "gmail@chucknorris.com";
-const TEST_PASSWORD = process.env.TEST_PASSWORD || "123qwe";
+const TEST_EMAIL = process.env.TEST_EMAIL || "e2e-test@scoreboard.local";
+const TEST_PASSWORD = process.env.TEST_PASSWORD || "E2eTestPass123!";
 
 async function main() {
   console.log("=== ScoreBoard E2E Post-Test Cleanup ===");
